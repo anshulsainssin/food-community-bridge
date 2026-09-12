@@ -14,13 +14,316 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      claims: {
+        Row: {
+          created_at: string
+          donation_id: string
+          id: string
+          receiver_id: string
+        }
+        Insert: {
+          created_at?: string
+          donation_id: string
+          id?: string
+          receiver_id: string
+        }
+        Update: {
+          created_at?: string
+          donation_id?: string
+          id?: string
+          receiver_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claims_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: true
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donations: {
+        Row: {
+          claimed_at: string | null
+          claimed_by: string | null
+          completed_at: string | null
+          contact_info: string | null
+          created_at: string
+          diet: string
+          donor_id: string
+          food_type: string
+          id: string
+          notes: string | null
+          pickup_address: string
+          pickup_deadline: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          prepared_at: string | null
+          quantity: string
+          servings: number | null
+          status: string
+          updated_at: string
+          weight_kg: number | null
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          completed_at?: string | null
+          contact_info?: string | null
+          created_at?: string
+          diet: string
+          donor_id: string
+          food_type: string
+          id?: string
+          notes?: string | null
+          pickup_address: string
+          pickup_deadline?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          prepared_at?: string | null
+          quantity: string
+          servings?: number | null
+          status?: string
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          completed_at?: string | null
+          contact_info?: string | null
+          created_at?: string
+          diet?: string
+          donor_id?: string
+          food_type?: string
+          id?: string
+          notes?: string | null
+          pickup_address?: string
+          pickup_deadline?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          prepared_at?: string | null
+          quantity?: string
+          servings?: number | null
+          status?: string
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          donation_id: string | null
+          id: string
+          read: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          donation_id?: string | null
+          id?: string
+          read?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          donation_id?: string | null
+          id?: string
+          read?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: false
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pickup_events: {
+        Row: {
+          actor_id: string | null
+          donation_id: string
+          id: string
+          occurred_at: string
+          status: string
+        }
+        Insert: {
+          actor_id?: string | null
+          donation_id: string
+          id?: string
+          occurred_at?: string
+          status: string
+        }
+        Update: {
+          actor_id?: string | null
+          donation_id?: string
+          id?: string
+          occurred_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_events_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: false
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          latitude: number | null
+          location_label: string | null
+          longitude: number | null
+          organization: string | null
+          phone: string | null
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          latitude?: number | null
+          location_label?: string | null
+          longitude?: number | null
+          organization?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          latitude?: number | null
+          location_label?: string | null
+          longitude?: number | null
+          organization?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      advance_donation_status: {
+        Args: { p_donation_id: string; p_status: string }
+        Returns: {
+          claimed_at: string | null
+          claimed_by: string | null
+          completed_at: string | null
+          contact_info: string | null
+          created_at: string
+          diet: string
+          donor_id: string
+          food_type: string
+          id: string
+          notes: string | null
+          pickup_address: string
+          pickup_deadline: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          prepared_at: string | null
+          quantity: string
+          servings: number | null
+          status: string
+          updated_at: string
+          weight_kg: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "donations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      claim_donation: {
+        Args: { p_donation_id: string }
+        Returns: {
+          claimed_at: string | null
+          claimed_by: string | null
+          completed_at: string | null
+          contact_info: string | null
+          created_at: string
+          diet: string
+          donor_id: string
+          food_type: string
+          id: string
+          notes: string | null
+          pickup_address: string
+          pickup_deadline: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          prepared_at: string | null
+          quantity: string
+          servings: number | null
+          status: string
+          updated_at: string
+          weight_kg: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "donations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      donation_parties: {
+        Args: { p_donation_id: string }
+        Returns: {
+          donor_name: string
+          donor_organization: string
+          donor_phone: string
+          receiver_name: string
+          receiver_organization: string
+          receiver_phone: string
+        }[]
+      }
+      my_dashboard_stats: {
+        Args: never
+        Returns: {
+          active_donations: number
+          completed_pickups: number
+          food_saved_kg: number
+          meals_this_month: number
+          people_fed: number
+        }[]
+      }
+      network_impact_stats: {
+        Args: never
+        Returns: {
+          claimed_donations: number
+          donations_completed: number
+          food_saved_kg: number
+          on_time_pickups: number
+          people_fed: number
+          pickups_completed: number
+          total_donations: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
