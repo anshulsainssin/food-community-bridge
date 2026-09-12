@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Clock3, MapPin, Navigation, Utensils } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Clock3, Crosshair, HeartHandshake, MapPin, Navigation, Search, Utensils } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { useNearbyNgos, useSearchArea } from "@/hooks/use-nearby";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+
 
 export const Route = createFileRoute("/donations")({
   head: () => ({ meta: [
@@ -61,12 +63,32 @@ function DonationsPage() {
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pincode, setPincode] = useState("");
   const { user, profile } = useProfile();
 
-  const origin =
+  const profileCoords =
     profile?.latitude != null && profile?.longitude != null
-      ? { lat: profile.latitude, lon: profile.longitude }
+      ? { latitude: profile.latitude, longitude: profile.longitude }
       : null;
+
+  const {
+    area,
+    detect,
+    detecting,
+    searchPincode,
+    searching,
+    error: areaError,
+  } = useSearchArea(profileCoords, profile?.location_label ?? null);
+
+  const origin = area.coords ? { lat: area.coords.latitude, lon: area.coords.longitude } : null;
+
+  const { ngos, loading: loadingNgos } = useNearbyNgos(area.coords, maxDistance, Boolean(user));
+
+  function submitPincode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void searchPincode(pincode);
+  }
+
 
   const load = useCallback(async () => {
     const { data, error: loadError } = await supabase
@@ -136,28 +158,114 @@ function DonationsPage() {
         description="Surplus donations shared by nearby kitchens and stores. Claim what your community can collect before the pickup deadline."
       />
 
-      <section className="flex flex-wrap gap-2 border-b border-border px-5 py-5 sm:px-8 lg:px-12">
-        {filters.map((option) => (
-          <Button key={option} variant={filter === option ? "primary" : "outline"} onClick={() => setFilter(option)}>
-            {option}
-          </Button>
-        ))}
-        <select
-          aria-label="Distance"
-          value={maxDistance}
-          onChange={(event) => setMaxDistance(Number(event.target.value))}
-          className="h-10 border border-input bg-transparent px-3 text-sm outline-none focus:border-foreground"
-        >
-          {distanceOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <span className="ml-auto self-center text-xs text-muted-foreground">{visible.length} donations</span>
+      <section className="border-b border-border px-4 py-5 sm:px-8 lg:px-12">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <form onSubmit={submitPincode} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <label className="block min-w-0">
+              <span className="label-caps text-muted-foreground">Search by pincode</span>
+              <div className="mt-2 flex min-w-0 items-center gap-2 border-b border-input">
+                <Search className="size-4 shrink-0 text-muted-foreground" />
+                <input
+                  value={pincode}
+                  onChange={(event) => setPincode(event.target.value)}
+                  inputMode="numeric"
+                  placeholder="Enter a postal code"
+                  aria-label="Pincode"
+                  className="h-11 w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+                />
+              </div>
+            </label>
+            <div className="flex gap-2 sm:items-end">
+              <Button type="submit" className="flex-1 sm:flex-none" disabled={searching}>
+                {searching ? "Searching…" : "Search"}
+              </Button>
+              <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={detect} disabled={detecting}>
+                <Crosshair className="size-4" />
+                {detecting ? "Locating…" : "Use my location"}
+              </Button>
+            </div>
+          </form>
+          <p className="min-w-0 text-xs leading-5 text-muted-foreground lg:pb-3 lg:text-right">
+            {area.label ? <span className="line-clamp-2 break-words">Showing results near {area.label}</span> : "No location set yet"}
+          </p>
+        </div>
+        {areaError && <p className="mt-3 text-xs text-accent">{areaError}</p>}
       </section>
 
-      {error && <p className="border-b border-border px-5 py-4 text-sm text-accent sm:px-8 lg:px-12">{error}</p>}
+      <section className="border-b border-border px-4 py-4 sm:px-8 lg:px-12">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+          {filters.map((option) => (
+            <Button
+              key={option}
+              className="shrink-0"
+              variant={filter === option ? "primary" : "outline"}
+              onClick={() => setFilter(option)}
+            >
+              {option}
+            </Button>
+          ))}
+          <select
+            aria-label="Distance"
+            value={maxDistance}
+            onChange={(event) => setMaxDistance(Number(event.target.value))}
+            className="h-11 shrink-0 border border-input bg-transparent px-3 text-sm outline-none focus:border-foreground"
+          >
+            {distanceOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">{visible.length} donations</p>
+      </section>
+
+      <section className="border-b border-border px-4 py-6 sm:px-8 lg:px-12">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+          <h2 className="label-caps truncate text-foreground">Nearby urgent NGOs</h2>
+          <span className="shrink-0 text-xs text-muted-foreground">{ngos.length}</span>
+        </div>
+        {!user ? (
+          <p className="mt-4 text-sm text-muted-foreground">Sign in to see receiving organizations near you.</p>
+        ) : loadingNgos ? (
+          <p className="mt-4 text-sm text-muted-foreground">Loading nearby organizations…</p>
+        ) : ngos.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">No NGOs or volunteers registered in this area yet.</p>
+        ) : (
+          <div className="mt-5 grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3">
+            {ngos.map((ngo) => (
+              <article key={ngo.id} className="bg-background p-5">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{ngo.organization || ngo.full_name || "Community partner"}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{ngo.role || "Receiver"}</p>
+                  </div>
+                  {ngo.urgent_claims > 0 && <StatusBadge value="Urgent" />}
+                </div>
+                <div className="mt-4 space-y-2 text-xs text-muted-foreground">
+                  <p className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-accent" />
+                    <span className="min-w-0 break-words">{ngo.location_label || "Area not shared"}</span>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <Navigation className="size-3.5 shrink-0 text-accent" />
+                    {ngo.distance_km == null ? "Distance not available" : `${ngo.distance_km.toFixed(1)} km away`}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <HeartHandshake className="size-3.5 shrink-0 text-accent" />
+                    {ngo.active_claims === 0
+                      ? "No pickups in progress"
+                      : `${ngo.active_claims} pickup${ngo.active_claims === 1 ? "" : "s"} in progress${ngo.urgent_claims > 0 ? ` · ${ngo.urgent_claims} urgent` : ""}`}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {error && <p className="border-b border-border px-4 py-4 text-sm text-accent sm:px-8 lg:px-12">{error}</p>}
+
 
       <section className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3">
         {loading ? (

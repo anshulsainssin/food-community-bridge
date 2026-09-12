@@ -312,6 +312,21 @@ export type Database = {
           people_fed: number
         }[]
       }
+      nearby_urgent_ngos: {
+        Args: { p_lat: number; p_lon: number; p_radius_km?: number }
+        Returns: {
+          active_claims: number
+          distance_km: number
+          full_name: string
+          id: string
+          latitude: number
+          location_label: string
+          longitude: number
+          organization: string
+          role: string
+          urgent_claims: number
+        }[]
+      }
       network_impact_stats: {
         Args: never
         Returns: {
