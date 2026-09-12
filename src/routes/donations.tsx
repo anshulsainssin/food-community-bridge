@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Clock3, MapPin, Navigation, Utensils } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -57,28 +57,42 @@ function distanceKm(a: { lat: number; lon: number }, b: { lat: number; lon: numb
 function DonationsPage() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [maxDistance, setMaxDistance] = useState(0);
-  const [claimed, setClaimed] = useState<string[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
-  const { profile } = useProfile();
+  const [claiming, setClaiming] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { user, profile } = useProfile();
 
   const origin =
     profile?.latitude != null && profile?.longitude != null
       ? { lat: profile.latitude, lon: profile.longitude }
       : null;
 
-  useEffect(() => {
-    async function load() {
-      const { data, error } = await supabase
-        .from("donations")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) console.error(error);
-      setDonations((data as Donation[] | null) ?? []);
-      setLoading(false);
-    }
-    void load();
+  const load = useCallback(async () => {
+    const { data, error: loadError } = await supabase
+      .from("donations")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (loadError) console.error(loadError);
+    setDonations((data as Donation[] | null) ?? []);
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function claim(donationId: string) {
+    setError(null);
+    setClaiming(donationId);
+    const { error: claimError } = await supabase.rpc("claim_donation", { p_donation_id: donationId });
+    setClaiming(null);
+    if (claimError) {
+      setError(claimError.message);
+      return;
+    }
+    await load();
+  }
 
   const withDistance = useMemo(
     () =>
@@ -143,18 +157,22 @@ function DonationsPage() {
         <span className="ml-auto self-center text-xs text-muted-foreground">{visible.length} donations</span>
       </section>
 
+      {error && <p className="border-b border-border px-5 py-4 text-sm text-accent sm:px-8 lg:px-12">{error}</p>}
+
       <section className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3">
         {loading ? (
           <p className="bg-background p-10 text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">Loading donations…</p>
         ) : (
           visible.map(({ item, distance }) => {
-            const isClaimed = claimed.includes(item.id);
-            const urgent = isUrgent(item.pickup_deadline);
+            const claimedByMe = user != null && item.claimed_by === user.id;
+            const isMine = user != null && item.donor_id === user.id;
+            const isClaimed = item.claimed_by != null;
+            const urgent = isUrgent(item.pickup_deadline) && !isClaimed;
             return (
               <article key={item.id} className="flex flex-col bg-background p-5 sm:p-7">
                 <div className="flex items-start justify-between gap-3">
-                  <StatusBadge value={isClaimed ? "Claimed" : urgent ? "Urgent" : item.status} />
-                  {urgent && !isClaimed && (
+                  <StatusBadge value={urgent ? "Urgent" : item.status} />
+                  {urgent && (
                     <span className="flex items-center gap-1 text-xs text-accent">
                       <AlertTriangle className="size-3.5" />
                       Closing soon
@@ -183,11 +201,21 @@ function DonationsPage() {
                 </div>
                 <Button
                   className="mt-7 w-full"
-                  variant={isClaimed ? "outline" : "primary"}
-                  disabled={isClaimed}
-                  onClick={() => setClaimed((prev) => [...prev, item.id])}
+                  variant={isClaimed || isMine ? "outline" : "primary"}
+                  disabled={isClaimed || isMine || !user || claiming === item.id}
+                  onClick={() => void claim(item.id)}
                 >
-                  {isClaimed ? "Claimed by you" : "Claim food"}
+                  {isMine
+                    ? "Your donation"
+                    : claimedByMe
+                      ? "Claimed by you"
+                      : isClaimed
+                        ? "Already claimed"
+                        : !user
+                          ? "Sign in to claim"
+                          : claiming === item.id
+                            ? "Claiming…"
+                            : "Claim food"}
                 </Button>
               </article>
             );
@@ -196,7 +224,7 @@ function DonationsPage() {
 
         {!loading && visible.length === 0 && (
           <p className="bg-background p-10 text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">
-            No donations match this filter right now.
+            {donations.length === 0 ? "No donations yet." : "No donations match this filter right now."}
           </p>
         )}
       </section>
