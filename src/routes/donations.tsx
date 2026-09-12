@@ -63,12 +63,32 @@ function DonationsPage() {
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pincode, setPincode] = useState("");
   const { user, profile } = useProfile();
 
-  const origin =
+  const profileCoords =
     profile?.latitude != null && profile?.longitude != null
-      ? { lat: profile.latitude, lon: profile.longitude }
+      ? { latitude: profile.latitude, longitude: profile.longitude }
       : null;
+
+  const {
+    area,
+    detect,
+    detecting,
+    searchPincode,
+    searching,
+    error: areaError,
+  } = useSearchArea(profileCoords, profile?.location_label ?? null);
+
+  const origin = area.coords ? { lat: area.coords.latitude, lon: area.coords.longitude } : null;
+
+  const { ngos, loading: loadingNgos } = useNearbyNgos(area.coords, maxDistance, Boolean(user));
+
+  function submitPincode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void searchPincode(pincode);
+  }
+
 
   const load = useCallback(async () => {
     const { data, error: loadError } = await supabase
