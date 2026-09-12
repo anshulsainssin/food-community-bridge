@@ -41,7 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur md:px-7">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu" onClick={() => setMobileMenu(true)}><Menu className="size-5" /></Button>
-          <Link to="/" className="font-display text-2xl italic leading-none">Food Waste Connect</Link>
+          <Link to="/"><p className="font-display text-2xl italic leading-none">Food Waste Connect</p><p className="label-caps mt-1 text-muted-foreground">Community network</p></Link>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
