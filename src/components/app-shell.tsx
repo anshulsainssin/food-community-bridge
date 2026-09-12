@@ -3,7 +3,9 @@ import { BarChart3, Bell, HandHeart, Home, LogOut, Menu, Truck, UserRound, X } f
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useNotifications } from "@/hooks/use-notifications";
 import { useProfile } from "@/hooks/use-profile";
+import { formatCount, useNetworkStats } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
@@ -16,9 +18,12 @@ const navItems = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const navigate = useNavigate();
   const { user, profile } = useProfile();
+  const { items: notifications, unread, markAllRead } = useNotifications(user?.id);
+  const { stats: network } = useNetworkStats(Boolean(user));
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -36,10 +41,47 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur md:px-7">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu" onClick={() => setMobileMenu(true)}><Menu className="size-5" /></Button>
-          <Link to="/"><p className="font-display text-2xl italic leading-none">Food Waste Connect</p><p className="label-caps mt-1 text-muted-foreground">Community network</p></Link>
+          <Link to="/" className="font-display text-2xl italic leading-none">Food Waste Connect</Link>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" aria-label="Notifications" className="relative"><Bell className="size-4" /><span className="absolute right-2 top-2 size-1.5 rounded-full bg-accent" /></Button>
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+              className="relative"
+              onClick={() => {
+                setShowNotifications((open) => !open);
+                if (!showNotifications && unread > 0) void markAllRead();
+              }}
+            >
+              <Bell className="size-4" />
+              {unread > 0 && <span className="absolute right-2 top-2 size-1.5 rounded-full bg-accent" />}
+            </Button>
+            {showNotifications && (
+              <div className="absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] border border-border-strong bg-card shadow-sm">
+                <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                  <p className="label-caps text-muted-foreground">Notifications</p>
+                  <Button variant="ghost" size="icon" aria-label="Close notifications" onClick={() => setShowNotifications(false)}><X className="size-4" /></Button>
+                </div>
+                <div className="max-h-80 divide-y divide-border overflow-y-auto">
+                  {!user ? (
+                    <p className="px-4 py-6 text-sm text-muted-foreground">Sign in to see your notifications.</p>
+                  ) : notifications.length === 0 ? (
+                    <p className="px-4 py-6 text-sm text-muted-foreground">No notifications</p>
+                  ) : (
+                    notifications.map((item) => (
+                      <article key={item.id} className="px-4 py-3">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        {item.body && <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.body}</p>}
+                        <p className="mt-1 text-[11px] text-muted-foreground">{new Date(item.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           {user ? (
             <div className="hidden items-center gap-3 border-l border-border pl-4 sm:flex">
               <div><p className="text-sm font-medium">{profile?.full_name ?? user.email}</p><p className="text-xs text-muted-foreground">{profile?.role ?? profile?.organization ?? "Member"}</p></div>
@@ -56,7 +98,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="mx-auto flex max-w-[1600px]">
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 border-r border-border bg-sidebar p-4 md:flex md:flex-col">
           <nav className="space-y-1">{navigation()}</nav>
-          <div className="mt-auto border-t border-sidebar-border pt-5"><p className="label-caps text-muted-foreground">Network impact</p><p className="mt-2 font-display text-3xl">1,860 people</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Fed through completed community pickups.</p></div>
+          <div className="mt-auto border-t border-sidebar-border pt-5">
+            <p className="label-caps text-muted-foreground">Network impact</p>
+            <p className="mt-2 font-display text-3xl">{formatCount(network.people_fed)} people</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {network.people_fed > 0 ? "Fed through completed community pickups." : "No completed pickups recorded yet."}
+            </p>
+          </div>
         </aside>
         <main className="min-w-0 flex-1 pb-24 md:pb-10">{children}</main>
       </div>
