@@ -1,24 +1,170 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Check, ChevronRight, ClipboardList, MapPin, PackageOpen, Plus, Truck, Users, UtensilsCrossed } from "lucide-react";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
+import { Button } from "@/components/ui/button";
+import { useLocationSync, useProfile } from "@/hooks/use-profile";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
+
+
 export const Route = createFileRoute("/")({
+  head: () => ({ meta: [
+    { title: "Donor Dashboard | Food Waste Connect" },
+    { name: "description", content: "Manage food donations, pickups, and community impact with Food Waste Connect." },
+    { property: "og:title", content: "Food Waste Connect Donor Dashboard" },
+    { property: "og:description", content: "Manage donations and see the impact of rescued food." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
+const stats = [
+  { label: "Food saved", value: "2,480", unit: "kg", icon: UtensilsCrossed },
+  { label: "People fed", value: "1,860", unit: "people", icon: Users },
+  { label: "Active donations", value: "07", unit: "in progress", icon: PackageOpen },
+  { label: "Completed pickups", value: "128", unit: "all time", icon: Check },
+];
+
+type Donation = Tables<"donations">;
+
+function formatWhen(iso: string | null) {
+  if (!iso) return "No pickup deadline";
+  return `Pickup by ${new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
+}
+
 function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+  const navigate = useNavigate();
+  const { user, profile, updateProfile } = useProfile();
+  const [diet, setDiet] = useState("Vegetarian");
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [myDonations, setMyDonations] = useState<Donation[]>([]);
+
+  const { status: locationStatus } = useLocationSync(
+    Boolean(user),
+    profile?.latitude != null && profile?.longitude != null,
+    (coords) => updateProfile({ latitude: coords.latitude, longitude: coords.longitude }),
   );
+
+  const firstName = (profile?.full_name ?? user?.email?.split("@")[0] ?? "there").split(" ")[0];
+
+  const loadMine = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("donations")
+      .select("*")
+      .eq("donor_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setMyDonations((data as Donation[] | null) ?? []);
+  }, []);
+
+  useEffect(() => {
+    if (user?.id) void loadMine(user.id);
+    else setMyDonations([]);
+  }, [user?.id, loadMine]);
+
+  async function submitDonation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+
+    if (!user) {
+      void navigate({ to: "/auth" });
+      return;
+    }
+
+    const formEl = event.currentTarget;
+    const form = new FormData(formEl);
+    const address = String(form.get("pickup_location") ?? "").trim();
+
+    setSaving(true);
+    const coords = await currentCoords();
+    const { error: insertError } = await supabase.from("donations").insert({
+      donor_id: user.id,
+      food_type: String(form.get("food_type") ?? ""),
+      diet,
+      quantity: String(form.get("quantity") ?? ""),
+      prepared_at: toTimestamp(form.get("prepared_at")),
+      pickup_deadline: toTimestamp(form.get("pickup_deadline")),
+      contact_info: String(form.get("contact") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+      pickup_address: address,
+      pickup_latitude: coords?.latitude ?? profile?.latitude ?? null,
+      pickup_longitude: coords?.longitude ?? profile?.longitude ?? null,
+    });
+    setSaving(false);
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+    formEl.reset();
+    setDiet("Vegetarian");
+    setSubmitted(true);
+    await loadMine(user.id);
+  }
+
+
+  return (
+    <AppShell>
+      <PageIntro
+        eyebrow="Overview / September 04"
+        title={<>Welcome back, <span className="italic">{firstName}.</span></>}
+        description="Your contributions have redistributed 214 meals this month. Three community partners are ready for new donations today."
+        action={
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button size="wide" onClick={() => document.querySelector("#donate")?.scrollIntoView({ behavior: "smooth" })}><Plus className="size-4" />New donation</Button>
+            <Button variant="outline" size="wide" onClick={() => document.querySelector("#recent")?.scrollIntoView({ behavior: "smooth" })}>View donations</Button>
+          </div>
+        }
+      />
+
+      <section className="grid grid-cols-2 border-b border-border xl:grid-cols-4">{stats.map(({ label, value, unit, icon: Icon }, index) => <article key={label} className={`p-5 sm:p-7 ${index % 2 === 0 ? "border-r border-border" : ""} ${index < 2 ? "border-b border-border xl:border-b-0" : ""} ${index === 1 ? "xl:border-r" : ""}`}><div className="flex items-center justify-between"><p className="label-caps text-muted-foreground">{label}</p><Icon className="size-4 text-accent" /></div><p className="mt-5 font-display text-4xl sm:text-5xl">{value}</p><p className="mt-1 text-xs text-muted-foreground">{unit}</p></article>)}</section>
+
+      <div className="grid lg:grid-cols-[1fr_1.05fr]">
+        <div className="border-b border-border lg:border-b-0 lg:border-r">
+          <section className="border-b border-border px-5 py-8 sm:px-8 lg:px-10" id="recent"><div className="flex items-baseline justify-between"><h2 className="label-caps text-foreground">Recent donations</h2><span className="text-xs text-muted-foreground">{myDonations.length} entries</span></div><div className="mt-7 divide-y divide-border">{myDonations.length === 0 ? <p className="text-sm text-muted-foreground">No donations yet. Share your first surplus food below.</p> : myDonations.map((item) => <article key={item.id} className="group py-5 first:pt-0"><div className="flex items-start justify-between gap-4"><div className="min-w-0"><h3 className="font-display text-2xl">{item.food_type}</h3><p className="mt-2 text-xs text-muted-foreground">{item.quantity} · {item.pickup_address || "Location not available"}</p><p className="mt-1 text-xs text-muted-foreground">{formatWhen(item.pickup_deadline)}</p></div><StatusBadge value={item.status} /></div></article>)}</div></section>
+          <section className="px-5 py-8 sm:px-8 lg:px-10"><h2 className="label-caps">Quick actions</h2><div className="mt-5 grid gap-2 sm:grid-cols-2">{[{label:"Create donation",icon:Plus,target:"#donate"},{label:"Review pickups",icon:Truck,target:"#recent"},{label:"Donation history",icon:ClipboardList,target:"#recent"},{label:"Pickup locations",icon:MapPin,target:"#donate"}].map(({label,icon:Icon,target}) => <Button key={label} variant="outline" className="h-14 justify-between px-4" onClick={() => document.querySelector(target)?.scrollIntoView({behavior:"smooth"})}><span className="flex items-center gap-2"><Icon className="size-4" />{label}</span><ChevronRight className="size-4 text-muted-foreground" /></Button>)}</div></section>
+        </div>
+
+        <section id="donate" className="bg-muted/25 px-5 py-9 sm:px-8 lg:px-10 lg:py-10">
+          <p className="label-caps text-accent">Donation registry</p><h2 className="mt-3 font-display text-4xl italic">Share surplus food</h2><p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">Add pickup details so a nearby community partner can collect the food safely and on time.</p>
+          {submitted ? <div className="mt-8 border border-border-strong bg-card p-6"><div className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="size-5" /></div><h3 className="mt-5 font-display text-3xl">Donation ready</h3><p className="mt-2 text-sm text-muted-foreground">Your donation has been saved with its pickup location.</p><Button className="mt-6" variant="outline" onClick={() => setSubmitted(false)}>Add another</Button></div> : <form className="mt-8 space-y-6" onSubmit={submitDonation}>
+            <label className="block"><span className="label-caps text-muted-foreground">Food type</span><select name="food_type" required className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground"><option value="">Select food type</option><option>Cooked meals</option><option>Fresh produce</option><option>Bakery items</option><option>Packaged food</option></select></label>
+            <fieldset><legend className="label-caps text-muted-foreground">Dietary type</legend><div className="mt-2 grid grid-cols-2 gap-2">{["Vegetarian","Non-vegetarian"].map((option) => <Button key={option} type="button" variant={diet === option ? "primary" : "outline"} onClick={() => setDiet(option)}>{option}</Button>)}</div></fieldset>
+            <div className="grid gap-6 sm:grid-cols-2"><Field name="quantity" label="Quantity / people served" type="number" placeholder="40" /><Field name="prepared_at" label="Food prepared time" type="datetime-local" /></div>
+            <div className="grid gap-6 sm:grid-cols-2"><Field name="pickup_deadline" label="Pickup deadline" type="datetime-local" /><Field name="contact" label="Contact information" type="tel" placeholder="+91 98765 43210" /></div>
+            <Field name="pickup_location" label="Pickup location" placeholder="12 Garden Avenue, Central Market" />
+            <label className="block"><span className="label-caps text-muted-foreground">Additional notes</span><textarea name="notes" rows={3} placeholder="Packaging details, allergens, or pickup instructions" className="mt-2 w-full resize-none border-b border-input bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-foreground" /></label>
+            {locationStatus === "denied" && <p className="text-xs text-muted-foreground">Location access is off, so the pickup address will be saved without coordinates.</p>}
+            {error && <p className="text-sm text-accent">{error}</p>}
+            <Button type="submit" size="wide" className="w-full" disabled={saving}>Submit donation</Button>
+          </form>}
+        </section>
+      </div>
+    </AppShell>
+  );
+}
+
+function toTimestamp(value: FormDataEntryValue | null) {
+  const text = String(value ?? "").trim();
+  return text ? new Date(text).toISOString() : null;
+}
+
+function currentCoords(): Promise<{ latitude: number; longitude: number } | null> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  });
+}
+
+function Field({ label, name, type = "text", placeholder }: { label: string; name: string; type?: string; placeholder?: string }) {
+  return <label className="block"><span className="label-caps text-muted-foreground">{label}</span><input required name={name} type={type} placeholder={placeholder} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 focus:border-foreground" /></label>;
 }
