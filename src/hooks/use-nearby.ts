@@ -112,11 +112,13 @@ export function useNearbyNgos(coords: Coords | null, radiusKm: number, enabled: 
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.rpc("nearby_urgent_ngos", {
+    const args = {
       p_lat: coords?.latitude ?? null,
       p_lon: coords?.longitude ?? null,
       p_radius_km: radiusKm > 0 ? radiusKm : 25,
-    });
+    } as unknown as { p_lat: number; p_lon: number; p_radius_km: number };
+    const { data, error } = await supabase.rpc("nearby_urgent_ngos", args);
+
     if (error) console.error(error);
     setNgos(((data as NearbyNgo[] | null) ?? []).map((row) => ({
       ...row,

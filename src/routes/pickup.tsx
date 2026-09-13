@@ -139,7 +139,7 @@ function PickupPage() {
         action={<StatusBadge value={donation?.status ?? "Available"} />}
       />
       <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="border-b border-border p-5 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
+        <section className="border-b border-border p-4 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
           <h2 className="label-caps">Status timeline</h2>
           <div className="mt-8">
             {steps.map((step, index) => {
@@ -187,8 +187,8 @@ function PickupPage() {
             </Button>
           )}
         </section>
-        <section className="bg-muted/25 p-5 sm:p-8 lg:p-10">
-          <h2 className="font-display text-3xl italic">Pickup details</h2>
+        <section className="bg-muted/25 p-4 sm:p-8 lg:p-10">
+          <h2 className="font-display text-2xl italic sm:text-3xl">Pickup details</h2>
           <div className="mt-7 divide-y divide-border">
             <Detail icon={MapPin} label="Pickup area" value={donation?.pickup_address || "Location not available"} />
             <Detail icon={Clock3} label="Pickup deadline" value={formatMoment(donation?.pickup_deadline ?? null) ?? "No deadline set"} />
@@ -202,7 +202,7 @@ function PickupPage() {
           </div>
           <div className="mt-8 border border-border-strong bg-card p-5">
             <p className="label-caps text-muted-foreground">Donation information</p>
-            <p className="mt-3 font-display text-2xl">{donation?.quantity || "Quantity not recorded"}</p>
+            <p className="mt-3 font-display text-2xl break-words">{donation?.quantity || "Quantity not recorded"}</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {donation?.diet ?? ""}
               {donation?.prepared_at ? `. Prepared ${formatMoment(donation.prepared_at)}` : ""}
@@ -219,9 +219,9 @@ function Detail({ icon: Icon, label, value }: { icon: typeof MapPin; label: stri
   return (
     <div className="flex gap-3 py-5 first:pt-0">
       <Icon className="mt-0.5 size-4 shrink-0 text-accent" />
-      <div>
+      <div className="min-w-0">
         <p className="label-caps text-muted-foreground">{label}</p>
-        <p className="mt-1 text-sm">{value}</p>
+        <p className="mt-1 text-sm break-words">{value}</p>
       </div>
     </div>
   );
