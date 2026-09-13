@@ -277,36 +277,37 @@ function DonationsPage() {
             const isClaimed = item.claimed_by != null;
             const urgent = isUrgent(item.pickup_deadline) && !isClaimed;
             return (
-              <article key={item.id} className="flex flex-col bg-background p-5 sm:p-7">
-                <div className="flex items-start justify-between gap-3">
+              <article key={item.id} className="flex flex-col bg-background p-4 sm:p-7">
+                <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
                   <StatusBadge value={urgent ? "Urgent" : item.status} />
                   {urgent && (
-                    <span className="flex items-center gap-1 text-xs text-accent">
-                      <AlertTriangle className="size-3.5" />
-                      Closing soon
+                    <span className="flex min-w-0 items-center justify-end gap-1 text-xs text-accent">
+                      <AlertTriangle className="size-3.5 shrink-0" />
+                      <span className="truncate">Closing soon</span>
                     </span>
                   )}
                 </div>
-                <h2 className="mt-5 font-display text-3xl leading-tight">{item.food_type}</h2>
+                <h2 className="mt-5 font-display text-2xl leading-tight break-words sm:text-3xl">{item.food_type}</h2>
                 <p className="mt-2 text-xs text-muted-foreground">{item.diet}</p>
                 <div className="mt-6 space-y-3 text-sm">
-                  <p className="flex items-center gap-2">
-                    <Utensils className="size-4 text-accent" />
-                    {item.quantity}
+                  <p className="flex items-start gap-2">
+                    <Utensils className="mt-0.5 size-4 shrink-0 text-accent" />
+                    <span className="min-w-0 break-words">{item.quantity}</span>
                   </p>
-                  <p className="flex items-center gap-2">
-                    <Clock3 className="size-4 text-accent" />
-                    Pickup by {formatDeadline(item.pickup_deadline)}
+                  <p className="flex items-start gap-2">
+                    <Clock3 className="mt-0.5 size-4 shrink-0 text-accent" />
+                    <span className="min-w-0 break-words">Pickup by {formatDeadline(item.pickup_deadline)}</span>
                   </p>
-                  <p className="flex items-center gap-2">
-                    <Navigation className="size-4 text-accent" />
-                    {distance == null ? "Distance not available" : `${distance.toFixed(1)} km away`}
+                  <p className="flex items-start gap-2">
+                    <Navigation className="mt-0.5 size-4 shrink-0 text-accent" />
+                    <span className="min-w-0 break-words">{distance == null ? "Distance not available" : `${distance.toFixed(1)} km away`}</span>
                   </p>
-                  <p className="flex items-center gap-2">
-                    <MapPin className="size-4 text-accent" />
-                    {item.pickup_address || "Location not available"}
+                  <p className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 size-4 shrink-0 text-accent" />
+                    <span className="min-w-0 break-words">{item.pickup_address || "Location not available"}</span>
                   </p>
                 </div>
+
                 <Button
                   className="mt-7 w-full"
                   variant={isClaimed || isMine ? "outline" : "primary"}
