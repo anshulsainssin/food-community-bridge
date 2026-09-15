@@ -137,7 +137,7 @@ function PickupPage() {
             ? `${donation.quantity}${donation.weight_kg != null ? ` · ${donation.weight_kg} kg` : ""} · ${donation.diet}.`
             : "Loading pickup details."
         }
-        action={<StatusBadge value={donation?.status ?? "Available"} />}
+        action={<StatusBadge value={donation ? displayStatus(donation) : "Available"} />}
       />
       <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
         <section className="border-b border-border p-4 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
