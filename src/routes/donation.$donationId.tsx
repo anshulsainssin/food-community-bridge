@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/use-profile";
+import { displayStatus } from "@/lib/donation-status";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -113,7 +114,7 @@ function DonationDetailsPage() {
       {!loading && donation && (
         <>
           <section className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-5 sm:px-8 lg:px-12">
-            <StatusBadge value={donation.status} />
+            <StatusBadge value={displayStatus(donation)} />
             <span className="text-xs text-muted-foreground">
               {donation.claimed_at ? `Claimed ${formatStamp(donation.claimed_at)}` : "Not claimed yet"}
             </span>

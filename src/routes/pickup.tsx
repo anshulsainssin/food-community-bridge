@@ -6,6 +6,7 @@ import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
+import { displayStatus } from "@/lib/donation-status";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/pickup")({
@@ -70,7 +71,7 @@ function PickupPage() {
       .limit(20);
 
     const rows = (data as Donation[] | null) ?? [];
-    const active = rows.find((row) => row.status !== "Completed") ?? rows[0] ?? null;
+    const active = rows.find((row) => row.status !== "Completed" && row.status !== "Expired") ?? rows[0] ?? null;
     setDonation(active);
 
     if (active) {
@@ -93,8 +94,9 @@ function PickupPage() {
     void load();
   }, [load]);
 
+  const expired = donation?.status === "Expired";
   const stage = Math.max(0, steps.indexOf(donation?.status ?? "Available"));
-  const nextStatus = steps[stage + 1];
+  const nextStatus = expired ? undefined : steps[stage + 1];
 
   async function advance() {
     if (!donation || !nextStatus) return;
@@ -136,7 +138,7 @@ function PickupPage() {
             ? `${donation.quantity}${donation.weight_kg != null ? ` · ${donation.weight_kg} kg` : ""} · ${donation.diet}.`
             : "Loading pickup details."
         }
-        action={<StatusBadge value={donation?.status ?? "Available"} />}
+        action={<StatusBadge value={donation ? displayStatus(donation) : "Available"} />}
       />
       <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
         <section className="border-b border-border p-4 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
@@ -169,7 +171,11 @@ function PickupPage() {
             })}
           </div>
           {error && <p className="mt-3 text-sm text-accent">{error}</p>}
-          {nextStatus ? (
+          {expired ? (
+            <Button size="wide" className="mt-3 w-full" disabled>
+              Donation expired
+            </Button>
+          ) : nextStatus ? (
             <Button size="wide" className="mt-3 w-full" onClick={() => void advance()} disabled={working || stage === 0}>
               {stage === 0
                 ? "Waiting to be claimed"
