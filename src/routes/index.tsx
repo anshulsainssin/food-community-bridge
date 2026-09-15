@@ -6,6 +6,7 @@ import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLocationSync, useProfile } from "@/hooks/use-profile";
 import { formatCount, formatWeight, useMyStats } from "@/hooks/use-stats";
+import { displayStatus } from "@/lib/donation-status";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
