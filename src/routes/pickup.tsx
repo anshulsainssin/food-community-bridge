@@ -6,6 +6,7 @@ import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
+import { displayStatus } from "@/lib/donation-status";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/pickup")({
@@ -70,7 +71,7 @@ function PickupPage() {
       .limit(20);
 
     const rows = (data as Donation[] | null) ?? [];
-    const active = rows.find((row) => row.status !== "Completed") ?? rows[0] ?? null;
+    const active = rows.find((row) => row.status !== "Completed" && row.status !== "Expired") ?? rows[0] ?? null;
     setDonation(active);
 
     if (active) {
