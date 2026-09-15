@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { DonationMap, type MapPoint } from "@/components/donation-map";
 import { useNearbyNgos, useSearchArea } from "@/hooks/use-nearby";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
@@ -148,6 +149,30 @@ function DonationsPage() {
     [withDistance, filter, maxDistance],
   );
 
+  const mapPoints: MapPoint[] = useMemo(() => {
+    const donationPoints: MapPoint[] = visible
+      .filter(({ item }) => item.pickup_latitude != null && item.pickup_longitude != null)
+      .map(({ item }) => ({
+        id: `donation-${item.id}`,
+        lat: item.pickup_latitude as number,
+        lon: item.pickup_longitude as number,
+        title: item.food_type,
+        detail: item.pickup_address || item.quantity,
+        kind: "donation",
+        donationId: item.id,
+      }));
+    const ngoPoints: MapPoint[] = ngos
+      .filter((ngo) => ngo.latitude != null && ngo.longitude != null)
+      .map((ngo) => ({
+        id: `ngo-${ngo.id}`,
+        lat: ngo.latitude as number,
+        lon: ngo.longitude as number,
+        title: ngo.organization || ngo.full_name || "Community partner",
+        detail: ngo.role || "Receiver",
+        kind: "ngo",
+      }));
+    return [...donationPoints, ...ngoPoints];
+  }, [visible, ngos]);
 
   return (
     <AppShell>
@@ -220,6 +245,17 @@ function DonationsPage() {
           </select>
         </div>
         <p className="mt-3 text-xs text-muted-foreground">{visible.length} donations</p>
+      </section>
+
+      <section className="border-b border-border px-4 py-6 sm:px-8 lg:px-12">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+          <h2 className="label-caps truncate text-foreground">Map view</h2>
+          <span className="shrink-0 text-xs text-muted-foreground">{mapPoints.length} pins</span>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">Blue pins are donation pickup points, orange pins are registered NGOs and volunteers.</p>
+        <div className="mt-4">
+          <DonationMap center={origin} points={mapPoints} />
+        </div>
       </section>
 
       <section className="border-b border-border px-4 py-6 sm:px-8 lg:px-12">
