@@ -302,6 +302,7 @@ export type Database = {
           receiver_phone: string
         }[]
       }
+      expire_old_donations: { Args: never; Returns: number }
       my_dashboard_stats: {
         Args: never
         Returns: {
