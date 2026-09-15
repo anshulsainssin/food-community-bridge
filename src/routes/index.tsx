@@ -59,7 +59,9 @@ function Index() {
   const loadMine = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("donations")
-      .select("*")
+      .select(
+        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
+      )
       .eq("donor_id", userId)
       .order("created_at", { ascending: false })
       .limit(10);

@@ -65,7 +65,9 @@ function PickupPage() {
     }
     const { data } = await supabase
       .from("donations")
-      .select("*")
+      .select(
+        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
+      )
       .or(`donor_id.eq.${user.id},claimed_by.eq.${user.id}`)
       .order("updated_at", { ascending: false })
       .limit(20);
@@ -199,7 +201,7 @@ function PickupPage() {
             <Detail icon={MapPin} label="Pickup area" value={donation?.pickup_address || "Location not available"} />
             <Detail icon={Clock3} label="Pickup deadline" value={formatMoment(donation?.pickup_deadline ?? null) ?? "No deadline set"} />
             <Detail icon={UserRound} label="Donor" value={personLine(parties?.donor_name ?? null, parties?.donor_organization ?? null)} />
-            <Detail icon={Phone} label="Donor contact" value={parties?.donor_phone || donation?.contact_info || "Not provided"} />
+            <Detail icon={Phone} label="Donor contact" value={parties?.donor_phone || "Not provided"} />
             <Detail
               icon={Truck}
               label="NGO / volunteer"

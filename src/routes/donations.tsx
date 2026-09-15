@@ -94,7 +94,9 @@ function DonationsPage() {
   const load = useCallback(async () => {
     const { data, error: loadError } = await supabase
       .from("donations")
-      .select("*")
+      .select(
+        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
+      )
       .order("created_at", { ascending: false });
     if (loadError) console.error(loadError);
     setDonations((data as Donation[] | null) ?? []);
