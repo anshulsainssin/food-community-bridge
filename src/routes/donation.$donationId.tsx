@@ -48,7 +48,6 @@ function DonationDetailsPage() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    setLoading(true);
     const { data } = await supabase
       .from("donations")
       .select(
@@ -73,8 +72,30 @@ function DonationDetailsPage() {
   }, [donationId]);
 
   useEffect(() => {
+    setLoading(true);
     void load();
   }, [load, user?.id]);
+
+  // Live updates: the status/timeline reflects real-time changes from the donor or claimant
+  // without needing a page refresh.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`donation-${donationId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "donations", filter: `id=eq.${donationId}` },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "pickup_events", filter: `donation_id=eq.${donationId}` },
+        () => void load(),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [donationId, load]);
 
   const facts = donation
     ? [

@@ -1,21 +1,25 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-export type PincodePlace = {
+export type GeocodedPlace = {
   label: string;
   latitude: number;
   longitude: number;
 };
 
-/** Looks up coordinates for a postal code using OpenStreetMap's public geocoder. */
-export const lookupPincode = createServerFn({ method: "GET" })
+/**
+ * Looks up coordinates for a free-text location (postal code, village, district, or
+ * state — e.g. "110001", "Saharanpur", or "UP, Saharanpur, Titron") using OpenStreetMap's
+ * public geocoder.
+ */
+export const lookupLocation = createServerFn({ method: "GET" })
   .inputValidator((data) =>
-    z.object({ pincode: z.string().trim().min(3).max(12), country: z.string().trim().max(56).optional() }).parse(data),
+    z.object({ query: z.string().trim().min(2).max(120), country: z.string().trim().max(56).optional() }).parse(data),
   )
-  .handler(async ({ data }): Promise<PincodePlace | null> => {
+  .handler(async ({ data }): Promise<GeocodedPlace | null> => {
     async function search(countryCodes?: string) {
       const params = new URLSearchParams({
-        postalcode: data.pincode,
+        q: data.query,
         format: "json",
         limit: "1",
         addressdetails: "1",
@@ -24,13 +28,13 @@ export const lookupPincode = createServerFn({ method: "GET" })
 
       const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
         headers: {
-          "User-Agent": "food-waste-connect/1.0 (pincode lookup)",
+          "User-Agent": "food-waste-connect/1.0 (location lookup)",
           Accept: "application/json",
         },
       });
 
       if (!response.ok) {
-        throw new Error(`Postal code lookup failed [${response.status}]: ${await response.text()}`);
+        throw new Error(`Location lookup failed [${response.status}]: ${await response.text()}`);
       }
 
       const results = (await response.json()) as Array<{ lat: string; lon: string; display_name: string }>;

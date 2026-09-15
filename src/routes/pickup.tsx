@@ -96,6 +96,28 @@ function PickupPage() {
     void load();
   }, [load]);
 
+  // Live pickup updates: whichever party (donor or claimant) advances the status,
+  // the other side's tracker updates immediately, no refresh needed.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`pickup-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "donations", filter: `donor_id=eq.${user.id}` },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "donations", filter: `claimed_by=eq.${user.id}` },
+        () => void load(),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, load]);
+
   const expired = donation?.status === "Expired";
   const stage = Math.max(0, steps.indexOf(donation?.status ?? "Available"));
   const nextStatus = expired ? undefined : steps[stage + 1];

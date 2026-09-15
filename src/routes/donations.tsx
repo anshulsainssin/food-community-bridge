@@ -64,7 +64,7 @@ function DonationsPage() {
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pincode, setPincode] = useState("");
+  const [locationQuery, setLocationQuery] = useState("");
   const { user, profile } = useProfile();
 
   const profileCoords =
@@ -76,7 +76,7 @@ function DonationsPage() {
     area,
     detect,
     detecting,
-    searchPincode,
+    searchLocation,
     searching,
     error: areaError,
   } = useSearchArea(profileCoords, profile?.location_label ?? null);
@@ -85,9 +85,9 @@ function DonationsPage() {
 
   const { ngos, loading: loadingNgos } = useNearbyNgos(area.coords, maxDistance, Boolean(user));
 
-  function submitPincode(event: FormEvent<HTMLFormElement>) {
+  function submitLocation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void searchPincode(pincode);
+    void searchLocation(locationQuery);
   }
 
 
@@ -163,17 +163,16 @@ function DonationsPage() {
 
       <section className="border-b border-border px-4 py-5 sm:px-8 lg:px-12">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <form onSubmit={submitPincode} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <form onSubmit={submitLocation} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
             <label className="block min-w-0">
-              <span className="label-caps text-muted-foreground">Search by pincode</span>
+              <span className="label-caps text-muted-foreground">Search by location or pincode</span>
               <div className="mt-2 flex min-w-0 items-center gap-2 border-b border-input">
                 <Search className="size-4 shrink-0 text-muted-foreground" />
                 <input
-                  value={pincode}
-                  onChange={(event) => setPincode(event.target.value)}
-                  inputMode="numeric"
-                  placeholder="Enter a postal code"
-                  aria-label="Pincode"
+                  value={locationQuery}
+                  onChange={(event) => setLocationQuery(event.target.value)}
+                  placeholder="e.g. Saharanpur, UP or a postal code"
+                  aria-label="Location or pincode"
                   className="h-11 w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
                 />
               </div>
@@ -233,7 +232,7 @@ function DonationsPage() {
         ) : loadingNgos ? (
           <p className="mt-4 text-sm text-muted-foreground">Loading nearby organizations…</p>
         ) : ngos.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">No NGOs or volunteers registered in this area yet.</p>
+          <p className="mt-4 text-sm text-muted-foreground">No NGOs registered nearby.</p>
         ) : (
           <div className="mt-5 grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3">
             {ngos.map((ngo) => (

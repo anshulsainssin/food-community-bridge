@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useLocationSync, useProfile } from "@/hooks/use-profile";
 import { formatCount, formatWeight, useMyStats } from "@/hooks/use-stats";
 import { displayStatus } from "@/lib/donation-status";
+import { playNotificationSound } from "@/lib/notification-sound";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -77,6 +78,25 @@ function Index() {
     }
   }, [user?.id, loadMine]);
 
+  // Live status updates (e.g. an NGO claiming or advancing a pickup) reach this dashboard without a refresh.
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`donor-dashboard-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "donations", filter: `donor_id=eq.${user.id}` },
+        () => {
+          void loadMine(user.id);
+          void reloadStats();
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadMine, reloadStats]);
+
   const today = new Date().toLocaleDateString(undefined, { month: "long", day: "numeric" });
   const description = !user
     ? "Sign in to share surplus food, track pickups, and see the impact of what you have donated."
@@ -125,6 +145,7 @@ function Index() {
     formEl.reset();
     setDiet("Vegetarian");
     setSubmitted(true);
+    playNotificationSound();
     await loadMine(user.id);
     await reloadStats();
   }

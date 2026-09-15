@@ -1,12 +1,13 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { BarChart3, Bell, HandHeart, Home, LogOut, Menu, Truck, UserRound, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount, useNetworkStats } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
+import { primeNotificationAudio } from "@/lib/notification-sound";
 
 const navItems = [
   { label: "Overview", to: "/", icon: Home },
@@ -24,6 +25,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user, profile } = useProfile();
   const { items: notifications, unread, markAllRead } = useNotifications(user?.id);
   const { stats: network } = useNetworkStats(Boolean(user));
+
+  // Browsers block audio until the visitor has interacted with the page at least once.
+  useEffect(() => {
+    const unlock = () => {
+      primeNotificationAudio();
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
 
   async function signOut() {
     await supabase.auth.signOut();

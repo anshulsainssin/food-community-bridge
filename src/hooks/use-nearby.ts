@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { lookupPincode } from "@/lib/geocode.functions";
+import { lookupLocation } from "@/lib/geocode.functions";
 
 export type Coords = { latitude: number; longitude: number };
 
 export type SearchArea = {
   coords: Coords | null;
   label: string | null;
-  source: "device" | "profile" | "pincode" | null;
+  source: "device" | "profile" | "search" | null;
 };
 
 export type NearbyNgo = {
@@ -26,7 +26,7 @@ export type NearbyNgo = {
 
 /**
  * Resolves the area to search in: the device location when the browser allows it,
- * the saved profile location otherwise, or a manually entered postal code.
+ * the saved profile location otherwise, or a manually entered location/pincode.
  */
 export function useSearchArea(profileCoords: Coords | null, profileLabel: string | null) {
   const [area, setArea] = useState<SearchArea>({ coords: null, label: null, source: null });
@@ -37,7 +37,7 @@ export function useSearchArea(profileCoords: Coords | null, profileLabel: string
   // Fall back to the saved profile location until something better is known.
   useEffect(() => {
     setArea((current) => {
-      if (current.source === "device" || current.source === "pincode") return current;
+      if (current.source === "device" || current.source === "search") return current;
       if (!profileCoords) return current;
       return { coords: profileCoords, label: profileLabel, source: "profile" };
     });
@@ -63,13 +63,13 @@ export function useSearchArea(profileCoords: Coords | null, profileLabel: string
       (geoError) => {
         setDetecting(false);
         if (geoError.code === geoError.PERMISSION_DENIED) {
-          setError("Location permission was declined. Allow location access or search by postal code instead.");
+          setError("Location permission was declined. Allow location access or search by location/pincode instead.");
         } else if (geoError.code === geoError.POSITION_UNAVAILABLE) {
-          setError("Your location is unavailable right now. Try again or search by postal code.");
+          setError("Your location is unavailable right now. Try again or search by location/pincode.");
         } else if (geoError.code === geoError.TIMEOUT) {
-          setError("Locating you took too long. Try again or search by postal code.");
+          setError("Locating you took too long. Try again or search by location/pincode.");
         } else {
-          setError("Could not detect your location. Search by postal code instead.");
+          setError("Could not detect your location. Search by location/pincode instead.");
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
@@ -81,33 +81,33 @@ export function useSearchArea(profileCoords: Coords | null, profileLabel: string
     detect();
   }, [detect]);
 
-  const searchPincode = useCallback(async (pincode: string) => {
-    const trimmed = pincode.trim();
-    if (trimmed.length < 3) {
-      setError("Enter a valid postal code.");
+  const searchLocation = useCallback(async (query: string) => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setError("Enter a location or postal code.");
       return;
     }
     setError(null);
     setSearching(true);
     try {
-      const place = await lookupPincode({ data: { pincode: trimmed } });
+      const place = await lookupLocation({ data: { query: trimmed } });
       if (!place) {
-        setError(`No location found for ${trimmed}.`);
+        setError(`No location found for "${trimmed}".`);
         return;
       }
       setArea({
         coords: { latitude: place.latitude, longitude: place.longitude },
         label: place.label,
-        source: "pincode",
+        source: "search",
       });
     } catch {
-      setError("Postal code lookup is unavailable right now.");
+      setError("Location lookup is unavailable right now.");
     } finally {
       setSearching(false);
     }
   }, []);
 
-  return { area, detect, detecting, searchPincode, searching, error };
+  return { area, detect, detecting, searchLocation, searching, error };
 }
 
 /** Nearby NGOs and volunteers, ordered by how urgent their pickups are. */
