@@ -17,9 +17,9 @@ export const lookupLocation = createServerFn({ method: "GET" })
     z.object({ query: z.string().trim().min(2).max(120), country: z.string().trim().max(56).optional() }).parse(data),
   )
   .handler(async ({ data }): Promise<GeocodedPlace | null> => {
-    async function search(countryCodes?: string) {
+    async function search(query: string, countryCodes?: string) {
       const params = new URLSearchParams({
-        q: data.query,
+        q: query,
         format: "json",
         limit: "1",
         addressdetails: "1",
@@ -48,7 +48,25 @@ export const lookupLocation = createServerFn({ method: "GET" })
       return { label: first.display_name, latitude, longitude };
     }
 
-    // Prefer a match in the requested country, then fall back to a worldwide search.
-    return (await search(data.country ?? "in")) ?? (await search());
+    const countryCodes = data.country ?? "in";
+
+    // A bare 6-digit PIN code (e.g. "247343") often returns nothing from Nominatim on its
+    // own, especially for rural codes — appending ", India" gives it enough context to match.
+    if (/^\d{6}$/.test(data.query)) {
+      return (
+        (await search(`${data.query}, India`, countryCodes)) ??
+        (await search(data.query, countryCodes)) ??
+        (await search(data.query))
+      );
+    }
+
+    // Prefer a match in the requested country; if that comes back empty (small villages like
+    // "Titron" often aren't indexed on their own), retry with the state appended before
+    // falling back to a worldwide search.
+    return (
+      (await search(data.query, countryCodes)) ??
+      (await search(`${data.query}, Uttar Pradesh, India`, countryCodes)) ??
+      (await search(data.query))
+    );
   });
 
