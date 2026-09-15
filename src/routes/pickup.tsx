@@ -94,8 +94,9 @@ function PickupPage() {
     void load();
   }, [load]);
 
+  const expired = donation?.status === "Expired";
   const stage = Math.max(0, steps.indexOf(donation?.status ?? "Available"));
-  const nextStatus = steps[stage + 1];
+  const nextStatus = expired ? undefined : steps[stage + 1];
 
   async function advance() {
     if (!donation || !nextStatus) return;
@@ -170,7 +171,11 @@ function PickupPage() {
             })}
           </div>
           {error && <p className="mt-3 text-sm text-accent">{error}</p>}
-          {nextStatus ? (
+          {expired ? (
+            <Button size="wide" className="mt-3 w-full" disabled>
+              Donation expired
+            </Button>
+          ) : nextStatus ? (
             <Button size="wide" className="mt-3 w-full" onClick={() => void advance()} disabled={working || stage === 0}>
               {stage === 0
                 ? "Waiting to be claimed"
