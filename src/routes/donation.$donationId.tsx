@@ -114,7 +114,7 @@ function DonationDetailsPage() {
       {!loading && donation && (
         <>
           <section className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-5 sm:px-8 lg:px-12">
-            <StatusBadge value={donation.status} />
+            <StatusBadge value={displayStatus(donation)} />
             <span className="text-xs text-muted-foreground">
               {donation.claimed_at ? `Claimed ${formatStamp(donation.claimed_at)}` : "Not claimed yet"}
             </span>
