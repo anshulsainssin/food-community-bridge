@@ -276,11 +276,12 @@ function DonationsPage() {
             const claimedByMe = user != null && item.claimed_by === user.id;
             const isMine = user != null && item.donor_id === user.id;
             const isClaimed = item.claimed_by != null;
-            const urgent = isUrgent(item.pickup_deadline) && !isClaimed;
+            const expired = isExpiredDonation(item);
+            const urgent = isUrgent(item.pickup_deadline) && !isClaimed && !expired;
             return (
               <article key={item.id} className="flex flex-col bg-background p-4 sm:p-7">
                 <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
-                  <StatusBadge value={urgent ? "Urgent" : item.status} />
+                  <StatusBadge value={expired ? "Expired" : urgent ? "Urgent" : item.status} />
                   {urgent && (
                     <span className="flex min-w-0 items-center justify-end gap-1 text-xs text-accent">
                       <AlertTriangle className="size-3.5 shrink-0" />
@@ -311,11 +312,13 @@ function DonationsPage() {
 
                 <Button
                   className="mt-7 w-full"
-                  variant={isClaimed || isMine ? "outline" : "primary"}
-                  disabled={isClaimed || isMine || !user || claiming === item.id}
+                  variant={isClaimed || isMine || expired ? "outline" : "primary"}
+                  disabled={isClaimed || isMine || expired || !user || claiming === item.id}
                   onClick={() => void claim(item.id)}
                 >
-                  {isMine
+                  {expired
+                    ? "Expired"
+                    : isMine
                     ? "Your donation"
                     : claimedByMe
                       ? "Claimed by you"
