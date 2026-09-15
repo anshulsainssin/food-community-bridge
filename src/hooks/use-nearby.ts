@@ -53,17 +53,26 @@ export function useSearchArea(profileCoords: Coords | null, profileLabel: string
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setDetecting(false);
+        setError(null);
         setArea({
           coords: { latitude: position.coords.latitude, longitude: position.coords.longitude },
           label: "Your current location",
           source: "device",
         });
       },
-      () => {
+      (geoError) => {
         setDetecting(false);
-        setError("Location permission was declined. Search by postal code instead.");
+        if (geoError.code === geoError.PERMISSION_DENIED) {
+          setError("Location permission was declined. Allow location access or search by postal code instead.");
+        } else if (geoError.code === geoError.POSITION_UNAVAILABLE) {
+          setError("Your location is unavailable right now. Try again or search by postal code.");
+        } else if (geoError.code === geoError.TIMEOUT) {
+          setError("Locating you took too long. Try again or search by postal code.");
+        } else {
+          setError("Could not detect your location. Search by postal code instead.");
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
     );
   }, []);
 
