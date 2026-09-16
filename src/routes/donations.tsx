@@ -283,6 +283,15 @@ function DonationsPage() {
 
       {error && <p className="border-b border-border px-4 py-4 text-sm text-accent sm:px-8 lg:px-12">{error}</p>}
 
+      {!loading && mapMarkers.length > 0 && (
+        <section className="border-b border-border">
+          <ClientOnly fallback={<div className="h-72 w-full animate-pulse bg-muted sm:h-96" aria-hidden="true" />}>
+            <Suspense fallback={<div className="h-72 w-full animate-pulse bg-muted sm:h-96" aria-hidden="true" />}>
+              <DonationMap className="h-72 w-full sm:h-96" markers={mapMarkers} />
+            </Suspense>
+          </ClientOnly>
+        </section>
+      )}
 
       <section className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3">
         {loading ? (
