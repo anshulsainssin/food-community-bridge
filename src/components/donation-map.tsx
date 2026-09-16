@@ -45,8 +45,9 @@ export default function DonationMap({ markers, className }: { markers: DonationM
       points.push([item.latitude, item.longitude]);
     }
 
-    if (points.length === 1) {
-      map.setView(points[0], 15);
+    const single = points[0];
+    if (points.length === 1 && single) {
+      map.setView(single, 15);
     } else if (points.length > 1) {
       map.fitBounds(L.latLngBounds(points), { padding: [32, 32] });
     } else {
