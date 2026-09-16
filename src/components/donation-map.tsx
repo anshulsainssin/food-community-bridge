@@ -7,7 +7,7 @@ export type DonationMapMarker = {
   latitude: number;
   longitude: number;
   title: string;
-  subtitle?: string;
+  subtitle?: string | undefined;
 };
 
 const markerIcon = L.icon({
