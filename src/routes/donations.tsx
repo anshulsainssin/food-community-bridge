@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { ClientOnly, createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, Clock3, Crosshair, HeartHandshake, MapPin, Navigation, Search, Utensils } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ const distanceOptions = [
 ];
 
 type Donation = Tables<"donations">;
+
+const DonationMap = lazy(() => import("@/components/donation-map"));
 
 function formatDeadline(iso: string | null) {
   if (!iso) return "No deadline";
@@ -144,6 +146,20 @@ function DonationsPage() {
           filter === "Nearby" ? (a.distance ?? Infinity) - (b.distance ?? Infinity) : 0,
         ),
     [withDistance, filter, maxDistance],
+  );
+
+  const mapMarkers = useMemo(
+    () =>
+      visible
+        .filter(({ item }) => item.pickup_latitude != null && item.pickup_longitude != null)
+        .map(({ item }) => ({
+          id: item.id,
+          latitude: item.pickup_latitude!,
+          longitude: item.pickup_longitude!,
+          title: item.food_type,
+          subtitle: item.pickup_address || undefined,
+        })),
+    [visible],
   );
 
 
