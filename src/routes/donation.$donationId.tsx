@@ -1,6 +1,6 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { ClientOnly, createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft, Clock3, MapPin, NotebookPen, Phone, Scale, Utensils, Users } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,12 @@ export const Route = createFileRoute("/donation/$donationId")({
 
 type Donation = Tables<"donations">;
 type PickupEvent = Tables<"pickup_events">;
+
+const DonationMap = lazy(() => import("@/components/donation-map"));
+
+function MapFallback() {
+  return <div className="h-72 w-full animate-pulse bg-muted sm:h-96" aria-hidden="true" />;
+}
 type Parties = {
   donor_name: string | null;
   donor_organization: string | null;
@@ -131,6 +137,27 @@ function DonationDetailsPage() {
               </article>
             ))}
           </section>
+
+          {donation.pickup_latitude != null && donation.pickup_longitude != null && (
+            <section className="border-b border-border">
+              <ClientOnly fallback={<MapFallback />}>
+                <Suspense fallback={<MapFallback />}>
+                  <DonationMap
+                    className="h-72 w-full sm:h-96"
+                    markers={[
+                      {
+                        id: donation.id,
+                        latitude: donation.pickup_latitude,
+                        longitude: donation.pickup_longitude,
+                        title: donation.food_type,
+                        subtitle: donation.pickup_address || undefined,
+                      },
+                    ]}
+                  />
+                </Suspense>
+              </ClientOnly>
+            </section>
+          )}
 
           <section className="grid lg:grid-cols-2">
             <div className="border-b border-border px-4 py-8 sm:px-8 lg:border-b-0 lg:border-r lg:px-10">
