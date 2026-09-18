@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useLocationSync, useProfile } from "@/hooks/use-profile";
 import { formatCount, formatWeight, useMyStats } from "@/hooks/use-stats";
 import { displayStatus } from "@/lib/donation-status";
+import { lookupLocation } from "@/lib/geocode.functions";
 import { playNotificationSound } from "@/lib/notification-sound";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -137,7 +138,18 @@ function Index() {
       photoUrl = supabase.storage.from("donation-photos").getPublicUrl(path).data.publicUrl;
     }
 
-    const coords = await currentCoords();
+    const pincode = String(form.get("pincode") ?? "").trim();
+    let pickupCoords: { latitude: number; longitude: number } | null = null;
+    if (pincode) {
+      try {
+        const place = await lookupLocation({ data: { query: pincode } });
+        if (place) pickupCoords = { latitude: place.latitude, longitude: place.longitude };
+      } catch {
+        // A pincode that fails to resolve isn't fatal — fall through to device/profile coordinates below.
+      }
+    }
+    if (!pickupCoords) pickupCoords = await currentCoords();
+
     const { error: insertError } = await supabase.from("donations").insert({
       donor_id: user.id,
       food_type: String(form.get("food_type") ?? ""),
@@ -150,8 +162,8 @@ function Index() {
       contact_info: String(form.get("contact") ?? ""),
       notes: String(form.get("notes") ?? ""),
       pickup_address: address,
-      pickup_latitude: coords?.latitude ?? profile?.latitude ?? null,
-      pickup_longitude: coords?.longitude ?? profile?.longitude ?? null,
+      pickup_latitude: pickupCoords?.latitude ?? profile?.latitude ?? null,
+      pickup_longitude: pickupCoords?.longitude ?? profile?.longitude ?? null,
       photo_url: photoUrl,
     });
     setSaving(false);
@@ -200,6 +212,7 @@ function Index() {
             <div className="grid gap-6 sm:grid-cols-2"><Field name="quantity" label="Quantity / people served" type="number" /><Field name="weight_kg" label="Weight (kg, optional)" type="number" step="0.1" required={false} /></div>
             <div className="grid gap-6 sm:grid-cols-2"><Field name="prepared_at" label="Food prepared time" type="datetime-local" /><Field name="pickup_deadline" label="Pickup deadline" type="datetime-local" /></div>
             <div className="grid gap-6 sm:grid-cols-2"><Field name="contact" label="Contact information" type="tel" /><Field name="pickup_location" label="Pickup location" /></div>
+            <Field name="pincode" label="Pincode (optional, sets the exact map location)" required={false} />
             <label className="block"><span className="label-caps text-muted-foreground">Additional notes</span><textarea name="notes" rows={3} placeholder="Packaging details, allergens, or pickup instructions" className="mt-2 w-full resize-none border-b border-input bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 focus:border-foreground" /></label>
             <label className="block"><span className="label-caps text-muted-foreground">Photo (optional)</span><input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} className="mt-2 block w-full text-sm text-muted-foreground file:mr-4 file:h-10 file:cursor-pointer file:border-0 file:bg-foreground file:px-4 file:text-xs file:font-medium file:text-background" />{photoFile && <p className="mt-2 text-xs text-muted-foreground">{photoFile.name}</p>}</label>
             {error && <p className="text-sm text-accent">{error}</p>}

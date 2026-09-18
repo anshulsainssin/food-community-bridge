@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, Clock3, MapPin, Phone, Truck, UserRound } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Check, Clock3, History, MapPin, Phone, Truck, UserRound } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
@@ -49,6 +49,7 @@ function personLine(name: string | null, organization: string | null) {
 function PickupPage() {
   const { user } = useProfile();
   const [donation, setDonation] = useState<Donation | null>(null);
+  const [history, setHistory] = useState<Donation[]>([]);
   const [events, setEvents] = useState<PickupEvent[]>([]);
   const [parties, setParties] = useState<Parties | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +59,7 @@ function PickupPage() {
   const load = useCallback(async () => {
     if (!user) {
       setDonation(null);
+      setHistory([]);
       setEvents([]);
       setParties(null);
       setLoading(false);
@@ -75,6 +77,7 @@ function PickupPage() {
     const rows = (data as Donation[] | null) ?? [];
     const active = rows.find((row) => row.status !== "Completed" && row.status !== "Expired") ?? rows[0] ?? null;
     setDonation(active);
+    setHistory(active ? rows.filter((row) => row.id !== active.id) : rows);
 
     if (active) {
       const [eventsResult, partiesResult] = await Promise.all([
@@ -146,6 +149,7 @@ function PickupPage() {
           title={<>No pickup <span className="italic">in progress.</span></>}
           description={user ? "Claim a donation or publish one of your own, and its pickup will be tracked here." : "Sign in to track a pickup."}
         />
+        <HistorySection history={history} />
       </AppShell>
     );
   }
@@ -241,7 +245,43 @@ function PickupPage() {
           </div>
         </section>
       </div>
+      <HistorySection history={history} />
     </AppShell>
+  );
+}
+
+function HistorySection({ history }: { history: Donation[] }) {
+  return (
+    <section className="px-4 py-8 sm:px-8 lg:px-12">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3">
+        <h2 className="label-caps flex items-center gap-2 text-foreground">
+          <History className="size-4 text-accent" />
+          Claim &amp; donation history
+        </h2>
+        <span className="shrink-0 text-xs text-muted-foreground">{history.length} entries</span>
+      </div>
+      <div className="mt-6 divide-y divide-border">
+        {history.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No past pickups yet.</p>
+        ) : (
+          history.map((item) => (
+            <article key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-4 first:pt-0">
+              <div className="min-w-0">
+                <h3 className="font-medium break-words">
+                  <Link to="/donation/$donationId" params={{ donationId: item.id }} className="hover:underline">
+                    {item.food_type}
+                  </Link>
+                </h3>
+                <p className="mt-1 text-xs break-words text-muted-foreground">
+                  {item.quantity} · {item.pickup_address || "Location not available"}
+                </p>
+              </div>
+              <span className="shrink-0"><StatusBadge value={displayStatus(item)} /></span>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
   );
 }
 

@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { DONOR_ROLE, NGO_ROLE, roleHomePath } from "@/lib/roles";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -26,14 +27,21 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<string>(DONOR_ROLE);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) void navigate({ to: "/", replace: true });
+    void supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      void navigate({ to: await destinationForUser(data.session.user.id), replace: true });
     });
   }, [navigate]);
+
+  async function destinationForUser(userId: string) {
+    const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+    return roleHomePath(data?.role ?? null);
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,18 +51,18 @@ function AuthPage() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } },
+        options: { emailRedirectTo: window.location.origin, data: { full_name: fullName, role } },
       });
       setBusy(false);
       if (error) return setMessage(error.message);
       if (!data.session) return setMessage("Check your email to confirm your account.");
-      void navigate({ to: "/", replace: true });
+      void navigate({ to: roleHomePath(role), replace: true });
       return;
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return setMessage(error.message);
-    void navigate({ to: "/", replace: true });
+    void navigate({ to: data.user ? await destinationForUser(data.user.id) : "/", replace: true });
   }
 
   async function googleSignIn() {
@@ -62,7 +70,8 @@ function AuthPage() {
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     if (result.error) return setMessage("Google sign-in failed. Please try again.");
     if (result.redirected) return;
-    void navigate({ to: "/", replace: true });
+    const { data } = await supabase.auth.getUser();
+    void navigate({ to: data.user ? await destinationForUser(data.user.id) : "/", replace: true });
   }
 
   return (
@@ -75,10 +84,23 @@ function AuthPage() {
 
         <form className="mt-8 space-y-6" onSubmit={submit}>
           {mode === "signup" && (
-            <label className="block">
-              <span className="label-caps text-muted-foreground">Full name</span>
-              <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
-            </label>
+            <>
+              <label className="block">
+                <span className="label-caps text-muted-foreground">Full name</span>
+                <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
+              </label>
+              <fieldset>
+                <legend className="label-caps text-muted-foreground">I am a</legend>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <Button type="button" variant={role === DONOR_ROLE ? "primary" : "outline"} onClick={() => setRole(DONOR_ROLE)}>
+                    Food donor
+                  </Button>
+                  <Button type="button" variant={role === NGO_ROLE ? "primary" : "outline"} onClick={() => setRole(NGO_ROLE)}>
+                    NGO / Volunteer
+                  </Button>
+                </div>
+              </fieldset>
+            </>
           )}
           <label className="block">
             <span className="label-caps text-muted-foreground">Email</span>
