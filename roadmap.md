@@ -8,3 +8,4 @@
 
 ## Open
 - [ ] Browser-based signed-in UI test — blocked: session minting doesn't reach this sandbox; needs user sign-in in the preview
+- [x] Pincode search flies map to location; fallback message when no listings (done)
