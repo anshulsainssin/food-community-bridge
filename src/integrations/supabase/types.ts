@@ -112,6 +112,60 @@ export type Database = {
         }
         Relationships: []
       }
+      ngo_registrations: {
+        Row: {
+          area_label: string | null
+          contact_email: string | null
+          contact_person: string
+          contact_phone: string
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          organization_name: string
+          pincode: string
+          registration_80g: string
+          status: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          area_label?: string | null
+          contact_email?: string | null
+          contact_person: string
+          contact_phone: string
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          organization_name: string
+          pincode: string
+          registration_80g: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          area_label?: string | null
+          contact_email?: string | null
+          contact_person?: string
+          contact_phone?: string
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          organization_name?: string
+          pincode?: string
+          registration_80g?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -338,6 +392,19 @@ export type Database = {
           people_fed: number
           pickups_completed: number
           total_donations: number
+        }[]
+      }
+      ngo_admin_stats: {
+        Args: never
+        Returns: {
+          active_distributions: number
+          delivered: number
+          food_claimed_kg: number
+          meals_claimed: number
+          open_requests: number
+          pending_pickups: number
+          people_served: number
+          total_claims: number
         }[]
       }
     }
