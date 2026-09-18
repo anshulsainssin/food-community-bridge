@@ -247,7 +247,9 @@ function DonationsPage() {
         ) : loadingNgos ? (
           <p className="mt-4 text-sm text-muted-foreground">Loading nearby organizations…</p>
         ) : ngos.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">No NGOs or volunteers registered in this area yet.</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            {area.coords ? "No active NGO listings found in this region yet." : "No NGOs or volunteers registered in this area yet."}
+          </p>
         ) : (
           <div className="mt-5 grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3">
             {ngos.map((ngo) => (
