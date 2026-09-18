@@ -35,14 +35,18 @@ function FitToPoints({ center, points }: { center: { lat: number; lon: number } 
   const map = useMap();
 
   useEffect(() => {
+    // A known center (from search or "Use my location") always wins: fly smoothly straight
+    // to it at a fixed, legible zoom, regardless of how far scattered the donation/NGO pins
+    // are — that's what "search this pincode" or "use my location" means. Only fall back to
+    // fitting the pins' bounding box when no center has been resolved yet at all.
+    if (center) {
+      map.flyTo([center.lat, center.lon], 13, { duration: 1.25 });
+      return;
+    }
     if (points.length > 0) {
       const bounds = L.latLngBounds(points.map((point) => [point.lat, point.lon] as [number, number]));
-      if (center) bounds.extend([center.lat, center.lon]);
       map.fitBounds(bounds.pad(0.25), { maxZoom: 13 });
-    } else if (center) {
-      map.setView([center.lat, center.lon], 12);
     }
-    // Only re-fit when the actual set of points or the center changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, center?.lat, center?.lon, points.map((p) => `${p.id}:${p.lat}:${p.lon}`).join(",")]);
 
@@ -59,7 +63,7 @@ export function MapPanel({ center, points }: { center: { lat: number; lon: numbe
   return (
     <MapContainer
       center={initialCenter}
-      zoom={center ? 12 : 5}
+      zoom={center ? 13 : 5}
       scrollWheelZoom={false}
       className="h-80 w-full"
       attributionControl={true}

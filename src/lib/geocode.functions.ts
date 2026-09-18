@@ -17,14 +17,8 @@ export const lookupLocation = createServerFn({ method: "GET" })
     z.object({ query: z.string().trim().min(2).max(120), country: z.string().trim().max(56).optional() }).parse(data),
   )
   .handler(async ({ data }): Promise<GeocodedPlace | null> => {
-    async function search(query: string, countryCodes?: string) {
-      const params = new URLSearchParams({
-        q: query,
-        format: "json",
-        limit: "1",
-        addressdetails: "1",
-      });
-      if (countryCodes) params.set("countrycodes", countryCodes);
+    async function search(extraParams: Record<string, string>) {
+      const params = new URLSearchParams({ format: "json", limit: "1", addressdetails: "1", ...extraParams });
 
       const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
         headers: {
@@ -50,13 +44,16 @@ export const lookupLocation = createServerFn({ method: "GET" })
 
     const countryCodes = data.country ?? "in";
 
-    // A bare 6-digit PIN code (e.g. "247343") often returns nothing from Nominatim on its
-    // own, especially for rural codes — appending ", India" gives it enough context to match.
+    // A bare 6-digit PIN code (e.g. "247343", "247776") often returns nothing from Nominatim's
+    // free-text search on its own, especially for small towns — try the structured
+    // postalcode+country query first (matches Nominatim's own documented structured-search
+    // form), then fall back to increasingly loose free-text attempts.
     if (/^\d{6}$/.test(data.query)) {
       return (
-        (await search(`${data.query}, India`, countryCodes)) ??
-        (await search(data.query, countryCodes)) ??
-        (await search(data.query))
+        (await search({ postalcode: data.query, country: "India" })) ??
+        (await search({ q: `${data.query}, India`, countrycodes: countryCodes })) ??
+        (await search({ q: data.query, countrycodes: countryCodes })) ??
+        (await search({ q: data.query }))
       );
     }
 
@@ -64,9 +61,9 @@ export const lookupLocation = createServerFn({ method: "GET" })
     // "Titron" often aren't indexed on their own), retry with the state appended before
     // falling back to a worldwide search.
     return (
-      (await search(data.query, countryCodes)) ??
-      (await search(`${data.query}, Uttar Pradesh, India`, countryCodes)) ??
-      (await search(data.query))
+      (await search({ q: data.query, countrycodes: countryCodes })) ??
+      (await search({ q: `${data.query}, Uttar Pradesh, India`, countrycodes: countryCodes })) ??
+      (await search({ q: data.query }))
     );
   });
 
