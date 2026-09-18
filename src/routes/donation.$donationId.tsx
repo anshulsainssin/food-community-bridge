@@ -51,7 +51,7 @@ function DonationDetailsPage() {
     const { data } = await supabase
       .from("donations")
       .select(
-        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
+        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,photo_url,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
       )
       .eq("id", donationId)
       .maybeSingle();
@@ -146,6 +146,12 @@ function DonationDetailsPage() {
               {donation.claimed_at ? `Claimed ${formatStamp(donation.claimed_at)}` : "Not claimed yet"}
             </span>
           </section>
+
+          {donation.photo_url && (
+            <section className="border-b border-border px-4 py-6 sm:px-8 lg:px-12">
+              <img src={donation.photo_url} alt="" className="max-h-96 w-full rounded-sm object-cover" />
+            </section>
+          )}
 
           <section className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3">
             {facts.map(({ label, value, icon: Icon }) => (

@@ -40,6 +40,8 @@ function Index() {
   const [saving, setSaving] = useState(false);
   const [myDonations, setMyDonations] = useState<Donation[]>([]);
   const [loadingDonations, setLoadingDonations] = useState(true);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const { stats, reload: reloadStats } = useMyStats(user?.id);
 
   useLocationSync(
@@ -61,7 +63,7 @@ function Index() {
     const { data } = await supabase
       .from("donations")
       .select(
-        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
+        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,photo_url,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
       )
       .eq("donor_id", userId)
       .order("created_at", { ascending: false })
@@ -120,6 +122,21 @@ function Index() {
     const weight = toNumber(form.get("weight_kg"));
 
     setSaving(true);
+
+    let photoUrl: string | null = null;
+    if (photoFile) {
+      setUploadingPhoto(true);
+      const path = `${user.id}/${crypto.randomUUID()}-${photoFile.name}`;
+      const { error: uploadError } = await supabase.storage.from("donation-photos").upload(path, photoFile);
+      setUploadingPhoto(false);
+      if (uploadError) {
+        setSaving(false);
+        setError(`Photo upload failed: ${uploadError.message}`);
+        return;
+      }
+      photoUrl = supabase.storage.from("donation-photos").getPublicUrl(path).data.publicUrl;
+    }
+
     const coords = await currentCoords();
     const { error: insertError } = await supabase.from("donations").insert({
       donor_id: user.id,
@@ -135,6 +152,7 @@ function Index() {
       pickup_address: address,
       pickup_latitude: coords?.latitude ?? profile?.latitude ?? null,
       pickup_longitude: coords?.longitude ?? profile?.longitude ?? null,
+      photo_url: photoUrl,
     });
     setSaving(false);
 
@@ -144,6 +162,7 @@ function Index() {
     }
     formEl.reset();
     setDiet("Vegetarian");
+    setPhotoFile(null);
     setSubmitted(true);
     playNotificationSound();
     await loadMine(user.id);
@@ -169,7 +188,7 @@ function Index() {
 
       <div className="grid lg:grid-cols-[1fr_1.05fr]">
         <div className="border-b border-border lg:border-b-0 lg:border-r">
-          <section className="border-b border-border px-4 py-8 sm:px-8 lg:px-10" id="recent"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3"><h2 className="label-caps truncate text-foreground">Recent donations</h2><span className="shrink-0 text-xs text-muted-foreground">{myDonations.length} entries</span></div><div className="mt-7 divide-y divide-border">{loadingDonations ? <p className="text-sm text-muted-foreground">Loading donations…</p> : !user ? <p className="text-sm text-muted-foreground">Sign in to see your donations.</p> : myDonations.length === 0 ? <p className="text-sm text-muted-foreground">No donations yet. Share your first surplus food below.</p> : myDonations.map((item) => <article key={item.id} className="group py-5 first:pt-0"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3"><div className="min-w-0"><h3 className="font-display text-xl break-words sm:text-2xl"><Link to="/donation/$donationId" params={{ donationId: item.id }} className="hover:underline">{item.food_type}</Link></h3><p className="mt-2 text-xs break-words text-muted-foreground">{item.quantity} · {item.pickup_address || "Location not available"}</p><p className="mt-1 text-xs text-muted-foreground">{formatWhen(item.pickup_deadline)}</p></div><span className="shrink-0"><StatusBadge value={displayStatus(item)} /></span></div></article>)}</div></section>
+          <section className="border-b border-border px-4 py-8 sm:px-8 lg:px-10" id="recent"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3"><h2 className="label-caps truncate text-foreground">Recent donations</h2><span className="shrink-0 text-xs text-muted-foreground">{myDonations.length} entries</span></div><div className="mt-7 divide-y divide-border">{loadingDonations ? <p className="text-sm text-muted-foreground">Loading donations…</p> : !user ? <p className="text-sm text-muted-foreground">Sign in to see your donations.</p> : myDonations.length === 0 ? <p className="text-sm text-muted-foreground">No donations yet. Share your first surplus food below.</p> : myDonations.map((item) => <article key={item.id} className="group py-5 first:pt-0"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3"><div className="flex min-w-0 gap-3">{item.photo_url && <img src={item.photo_url} alt="" className="size-14 shrink-0 rounded-sm object-cover" />}<div className="min-w-0"><h3 className="font-display text-xl break-words sm:text-2xl"><Link to="/donation/$donationId" params={{ donationId: item.id }} className="hover:underline">{item.food_type}</Link></h3><p className="mt-2 text-xs break-words text-muted-foreground">{item.quantity} · {item.pickup_address || "Location not available"}</p><p className="mt-1 text-xs text-muted-foreground">{formatWhen(item.pickup_deadline)}</p></div></div><span className="shrink-0"><StatusBadge value={displayStatus(item)} /></span></div></article>)}</div></section>
           <section className="px-4 py-8 sm:px-8 lg:px-10"><h2 className="label-caps">Quick actions</h2><div className="mt-5 grid gap-2 sm:grid-cols-2">{[{label:"Create donation",icon:Plus,target:"#donate"},{label:"Review pickups",icon:Truck,target:"#recent"},{label:"Donation history",icon:ClipboardList,target:"#recent"},{label:"Pickup locations",icon:MapPin,target:"#donate"}].map(({label,icon:Icon,target}) => <Button key={label} variant="outline" className="h-14 w-full justify-between px-4" onClick={() => document.querySelector(target)?.scrollIntoView({behavior:"smooth"})}><span className="flex min-w-0 items-center gap-2"><Icon className="size-4 shrink-0" /><span className="truncate">{label}</span></span><ChevronRight className="size-4 shrink-0 text-muted-foreground" /></Button>)}</div></section>
         </div>
 
@@ -182,8 +201,9 @@ function Index() {
             <div className="grid gap-6 sm:grid-cols-2"><Field name="prepared_at" label="Food prepared time" type="datetime-local" /><Field name="pickup_deadline" label="Pickup deadline" type="datetime-local" /></div>
             <div className="grid gap-6 sm:grid-cols-2"><Field name="contact" label="Contact information" type="tel" /><Field name="pickup_location" label="Pickup location" /></div>
             <label className="block"><span className="label-caps text-muted-foreground">Additional notes</span><textarea name="notes" rows={3} placeholder="Packaging details, allergens, or pickup instructions" className="mt-2 w-full resize-none border-b border-input bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 focus:border-foreground" /></label>
+            <label className="block"><span className="label-caps text-muted-foreground">Photo (optional)</span><input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} className="mt-2 block w-full text-sm text-muted-foreground file:mr-4 file:h-10 file:cursor-pointer file:border-0 file:bg-foreground file:px-4 file:text-xs file:font-medium file:text-background" />{photoFile && <p className="mt-2 text-xs text-muted-foreground">{photoFile.name}</p>}</label>
             {error && <p className="text-sm text-accent">{error}</p>}
-            <Button type="submit" size="wide" className="w-full" disabled={saving}>{saving ? "Saving…" : user ? "Publish donation" : "Sign in to donate"}</Button>
+            <Button type="submit" size="wide" className="w-full" disabled={saving}>{saving ? (uploadingPhoto ? "Uploading photo…" : "Saving…") : user ? "Publish donation" : "Sign in to donate"}</Button>
           </form>}
         </section>
       </div>

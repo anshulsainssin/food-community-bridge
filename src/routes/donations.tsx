@@ -96,7 +96,7 @@ function DonationsPage() {
     const { data, error: loadError } = await supabase
       .from("donations")
       .select(
-        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
+        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,photo_url,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
       )
       .order("created_at", { ascending: false });
     if (loadError) console.error(loadError);
@@ -326,6 +326,7 @@ function DonationsPage() {
                     </span>
                   )}
                 </div>
+                {item.photo_url && <img src={item.photo_url} alt="" className="mt-5 h-40 w-full rounded-sm object-cover" />}
                 <h2 className="mt-5 font-display text-2xl leading-tight break-words sm:text-3xl">{item.food_type}</h2>
                 <p className="mt-2 text-xs text-muted-foreground">{item.diet}</p>
                 <div className="mt-6 space-y-3 text-sm">

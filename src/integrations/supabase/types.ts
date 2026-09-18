@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      admins: {
+        Row: {
+          created_at: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       claims: {
         Row: {
           created_at: string
@@ -43,6 +58,30 @@ export type Database = {
           },
         ]
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+        }
+        Relationships: []
+      }
       donations: {
         Row: {
           claimed_at: string | null
@@ -55,6 +94,7 @@ export type Database = {
           food_type: string
           id: string
           notes: string | null
+          photo_url: string | null
           pickup_address: string
           pickup_deadline: string | null
           pickup_latitude: number | null
@@ -77,6 +117,7 @@ export type Database = {
           food_type: string
           id?: string
           notes?: string | null
+          photo_url?: string | null
           pickup_address: string
           pickup_deadline?: string | null
           pickup_latitude?: number | null
@@ -99,6 +140,7 @@ export type Database = {
           food_type?: string
           id?: string
           notes?: string | null
+          photo_url?: string | null
           pickup_address?: string
           pickup_deadline?: string | null
           pickup_latitude?: number | null
@@ -224,11 +266,142 @@ export type Database = {
         }
         Relationships: []
       }
+      volunteer_signups: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          location_label: string | null
+          message: string | null
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          location_label?: string | null
+          message?: string | null
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          location_label?: string | null
+          message?: string | null
+          name?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_dashboard_stats: {
+        Args: never
+        Returns: {
+          active_requests: number
+          expired_donations: number
+          food_saved_kg: number
+          meals_delivered: number
+          pending_contact_messages: number
+          pending_volunteer_signups: number
+          total_donations: number
+          total_users: number
+        }[]
+      }
+      admin_list_contact_messages: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "contact_messages"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_list_donations: {
+        Args: never
+        Returns: {
+          claimed_at: string | null
+          claimed_by: string | null
+          completed_at: string | null
+          contact_info: string | null
+          created_at: string
+          diet: string
+          donor_id: string
+          food_type: string
+          id: string
+          notes: string | null
+          photo_url: string | null
+          pickup_address: string
+          pickup_deadline: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          prepared_at: string | null
+          quantity: string
+          servings: number | null
+          status: string
+          updated_at: string
+          weight_kg: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "donations"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_list_profiles: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          latitude: number | null
+          location_label: string | null
+          longitude: number | null
+          organization: string | null
+          phone: string | null
+          role: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_list_volunteer_signups: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          location_label: string | null
+          message: string | null
+          name: string
+          phone: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "volunteer_signups"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       advance_donation_status: {
         Args: { p_donation_id: string; p_status: string }
         Returns: {
@@ -242,6 +415,7 @@ export type Database = {
           food_type: string
           id: string
           notes: string | null
+          photo_url: string | null
           pickup_address: string
           pickup_deadline: string | null
           pickup_latitude: number | null
@@ -273,6 +447,7 @@ export type Database = {
           food_type: string
           id: string
           notes: string | null
+          photo_url: string | null
           pickup_address: string
           pickup_deadline: string | null
           pickup_latitude: number | null

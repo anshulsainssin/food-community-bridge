@@ -1,20 +1,29 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, Bell, HandHeart, Home, LogOut, Menu, Truck, UserRound, X } from "lucide-react";
+import { BarChart3, Bell, HandHeart, Home, Info, LogOut, Mail, Menu, ShieldCheck, Truck, UserRound, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useIsAdmin } from "@/hooks/use-admin";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount, useNetworkStats } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
 import { primeNotificationAudio } from "@/lib/notification-sound";
 
+// The primary five stay on the mobile bottom bar exactly as before.
 const navItems = [
   { label: "Overview", to: "/", icon: Home },
   { label: "Find food", to: "/donations", icon: HandHeart },
   { label: "Pickup", to: "/pickup", icon: Truck },
   { label: "Impact", to: "/impact", icon: BarChart3 },
   { label: "Profile", to: "/profile", icon: UserRound },
+] as const;
+
+// About/Contact (and Admin, once granted) only appear in the sidebar and mobile drawer —
+// the bottom tab bar stays at its existing five slots.
+const secondaryNavItems = [
+  { label: "About", to: "/about", icon: Info },
+  { label: "Contact", to: "/contact", icon: Mail },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -25,6 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user, profile } = useProfile();
   const { items: notifications, unread, markAllRead } = useNotifications(user?.id);
   const { stats: network } = useNetworkStats(Boolean(user));
+  const { isAdmin } = useIsAdmin(user?.id);
 
   // Browsers block audio until the visitor has interacted with the page at least once.
   useEffect(() => {
@@ -46,7 +56,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     void navigate({ to: "/auth", replace: true });
   }
 
-  const navigation = (mobile = false) => navItems.map(({ label, to, icon: Icon }) => (
+  const fullNavItems = [
+    ...navItems,
+    ...secondaryNavItems,
+    ...(isAdmin ? [{ label: "Admin", to: "/admin", icon: ShieldCheck } as const] : []),
+  ];
+
+  const navigation = (mobile = false) => fullNavItems.map(({ label, to, icon: Icon }) => (
     <Button key={to} asChild variant="nav" className={mobile ? "w-full justify-start" : "w-full justify-start"} data-active={pathname === to} onClick={() => mobile && setMobileMenu(false)}>
       <Link to={to}><Icon className="size-4" />{label}</Link>
     </Button>

@@ -66,7 +66,7 @@ function PickupPage() {
     const { data } = await supabase
       .from("donations")
       .select(
-        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
+        "id,donor_id,food_type,diet,quantity,servings,weight_kg,prepared_at,pickup_deadline,notes,photo_url,status,pickup_address,pickup_latitude,pickup_longitude,claimed_by,claimed_at,completed_at,created_at,updated_at",
       )
       .or(`donor_id.eq.${user.id},claimed_by.eq.${user.id}`)
       .order("updated_at", { ascending: false })
