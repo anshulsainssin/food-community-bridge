@@ -20,17 +20,35 @@ const markerIcon = L.icon({
   shadowSize: [41, 41],
 });
 
+export type DonationMapFocus = {
+  latitude: number;
+  longitude: number;
+  label: string;
+};
+
 /**
  * Lightweight OpenStreetMap view with a marker per donation.
+ * When `focus` is set, the map flies to that point and shows a main marker there.
  * Browser-only — render it through React.lazy + <ClientOnly>.
  */
-export default function DonationMap({ markers, className }: { markers: DonationMapMarker[]; className?: string }) {
+export default function DonationMap({
+  markers,
+  focus,
+  className,
+}: {
+  markers: DonationMapMarker[];
+  focus?: DonationMapFocus | null;
+  className?: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const focusMarkerRef = useRef<L.Marker | null>(null);
   const markersKey = JSON.stringify(markers);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const map = L.map(containerRef.current, { scrollWheelZoom: false });
+    mapRef.current = map;
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
@@ -56,9 +74,25 @@ export default function DonationMap({ markers, className }: { markers: DonationM
 
     return () => {
       map.remove();
+      mapRef.current = null;
+      focusMarkerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [markersKey]);
+
+  // Fly to the searched area and drop the main marker there.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    focusMarkerRef.current?.remove();
+    focusMarkerRef.current = null;
+    if (!focus) return;
+    map.flyTo([focus.latitude, focus.longitude], 12);
+    focusMarkerRef.current = L.marker([focus.latitude, focus.longitude], { icon: markerIcon })
+      .addTo(map)
+      .bindPopup(`<strong>${focus.label}</strong>`)
+      .openPopup();
+  }, [focus?.latitude, focus?.longitude, focus?.label, markersKey]);
 
   return <div ref={containerRef} className={className} style={{ zIndex: 0 }} />;
 }
