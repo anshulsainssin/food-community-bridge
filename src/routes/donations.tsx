@@ -314,6 +314,7 @@ function DonationsPage() {
             const isMine = user != null && item.donor_id === user.id;
             const isClaimed = item.claimed_by != null;
             const expired = isExpiredDonation(item);
+            const notPacked = item.status === "Posted";
             const urgent = isUrgent(item.pickup_deadline) && !isClaimed && !expired;
             return (
               <article key={item.id} className="flex flex-col bg-background p-4 sm:p-7">
@@ -350,8 +351,8 @@ function DonationsPage() {
 
                 <Button
                   className="mt-7 w-full"
-                  variant={isClaimed || isMine || expired ? "outline" : "primary"}
-                  disabled={isClaimed || isMine || expired || !user || claiming === item.id}
+                  variant={isClaimed || isMine || expired || notPacked ? "outline" : "primary"}
+                  disabled={isClaimed || isMine || expired || notPacked || !user || claiming === item.id}
                   onClick={() => void claim(item.id)}
                 >
                   {expired
@@ -362,11 +363,13 @@ function DonationsPage() {
                       ? "Claimed by you"
                       : isClaimed
                         ? "Already claimed"
-                        : !user
-                          ? "Sign in to claim"
-                          : claiming === item.id
-                            ? "Claiming…"
-                            : "Claim food"}
+                        : notPacked
+                          ? "Awaiting donor packing"
+                          : !user
+                            ? "Sign in to claim"
+                            : claiming === item.id
+                              ? "Claiming…"
+                              : "Claim food"}
                 </Button>
               </article>
             );

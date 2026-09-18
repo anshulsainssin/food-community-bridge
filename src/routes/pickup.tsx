@@ -6,7 +6,7 @@ import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
-import { displayStatus } from "@/lib/donation-status";
+import { displayStatus, PICKUP_STEPS } from "@/lib/donation-status";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/pickup")({
@@ -22,8 +22,6 @@ export const Route = createFileRoute("/pickup")({
   }),
   component: PickupPage,
 });
-
-const steps = ["Available", "Claimed", "Pickup in Progress", "Picked Up", "Completed"];
 
 type Donation = Tables<"donations">;
 type PickupEvent = Tables<"pickup_events">;
@@ -75,7 +73,7 @@ function PickupPage() {
       .limit(20);
 
     const rows = (data as Donation[] | null) ?? [];
-    const active = rows.find((row) => row.status !== "Completed" && row.status !== "Expired") ?? rows[0] ?? null;
+    const active = rows.find((row) => row.status !== "Delivered" && row.status !== "Expired") ?? rows[0] ?? null;
     setDonation(active);
     setHistory(active ? rows.filter((row) => row.id !== active.id) : rows);
 
@@ -122,16 +120,17 @@ function PickupPage() {
   }, [user?.id, load]);
 
   const expired = donation?.status === "Expired";
-  const stage = Math.max(0, steps.indexOf(donation?.status ?? "Available"));
-  const nextStatus = expired ? undefined : steps[stage + 1];
+  const stage = Math.max(0, PICKUP_STEPS.findIndex((step) => step.value === donation?.status));
+  const nextStatus = expired ? undefined : PICKUP_STEPS[stage + 1]?.value;
+  const isDonor = donation != null && user != null && donation.donor_id === user.id;
 
-  async function advance() {
-    if (!donation || !nextStatus) return;
+  async function advance(status: string) {
+    if (!donation) return;
     setError(null);
     setWorking(true);
     const { error: rpcError } = await supabase.rpc("advance_donation_status", {
       p_donation_id: donation.id,
-      p_status: nextStatus,
+      p_status: status,
     });
     setWorking(false);
     if (rpcError) {
@@ -166,16 +165,16 @@ function PickupPage() {
             ? `${donation.quantity}${donation.weight_kg != null ? ` · ${donation.weight_kg} kg` : ""} · ${donation.diet}.`
             : "Loading pickup details."
         }
-        action={<StatusBadge value={donation ? displayStatus(donation) : "Available"} />}
+        action={<StatusBadge value={donation ? displayStatus(donation) : "Posted"} />}
       />
       <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
         <section className="border-b border-border p-4 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
           <h2 className="label-caps">Status timeline</h2>
           <div className="mt-8">
-            {steps.map((step, index) => {
-              const moment = formatMoment(eventByStatus.get(step)?.occurred_at ?? null);
+            {PICKUP_STEPS.map(({ value, label }, index) => {
+              const moment = formatMoment(eventByStatus.get(value)?.occurred_at ?? null);
               return (
-                <div key={step} className="relative flex min-h-20 gap-4">
+                <div key={value} className="relative flex min-h-20 gap-4">
                   <div
                     className={`z-10 flex size-8 shrink-0 items-center justify-center rounded-full border ${
                       index <= stage
@@ -185,13 +184,13 @@ function PickupPage() {
                   >
                     {index < stage ? <Check className="size-4" /> : <span className="text-xs">{index + 1}</span>}
                   </div>
-                  {index < steps.length - 1 && (
+                  {index < PICKUP_STEPS.length - 1 && (
                     <span className={`absolute left-[15px] top-8 h-12 w-px ${index < stage ? "bg-primary" : "bg-border"}`} />
                   )}
                   <div className="pt-1">
-                    <p className="font-medium">{step}</p>
+                    <p className="font-medium">{label}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {moment ?? (index === stage ? "Current status" : index < stage ? "Completed" : "Pending")}
+                      {moment ?? (index === stage ? "Current status" : index < stage ? "Done" : "Pending")}
                     </p>
                   </div>
                 </div>
@@ -203,21 +202,27 @@ function PickupPage() {
             <Button size="wide" className="mt-3 w-full" disabled>
               Donation expired
             </Button>
+          ) : stage === 0 ? (
+            isDonor ? (
+              <Button size="wide" className="mt-3 w-full" onClick={() => void advance("Packed")} disabled={working}>
+                {working ? "Updating…" : "Mark as packed"}
+              </Button>
+            ) : (
+              <Button size="wide" className="mt-3 w-full" disabled>
+                Waiting for the donor to pack this
+              </Button>
+            )
+          ) : stage === 1 ? (
+            <Button size="wide" className="mt-3 w-full" disabled>
+              Waiting to be claimed
+            </Button>
           ) : nextStatus ? (
-            <Button size="wide" className="mt-3 w-full" onClick={() => void advance()} disabled={working || stage === 0}>
-              {stage === 0
-                ? "Waiting to be claimed"
-                : working
-                  ? "Updating…"
-                  : nextStatus === "Pickup in Progress"
-                    ? "Start pickup"
-                    : nextStatus === "Picked Up"
-                      ? "Confirm pickup"
-                      : "Mark completed"}
+            <Button size="wide" className="mt-3 w-full" onClick={() => void advance(nextStatus)} disabled={working}>
+              {working ? "Updating…" : nextStatus === "In Transit" ? "Mark in transit" : "Mark delivered"}
             </Button>
           ) : (
             <Button size="wide" className="mt-3 w-full" disabled>
-              Pickup completed
+              Delivered
             </Button>
           )}
         </section>

@@ -43,6 +43,7 @@ function Index() {
   const [loadingDonations, setLoadingDonations] = useState(true);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [markingId, setMarkingId] = useState<string | null>(null);
   const { stats, reload: reloadStats } = useMyStats(user?.id);
 
   useLocationSync(
@@ -80,6 +81,17 @@ function Index() {
       setLoadingDonations(false);
     }
   }, [user?.id, loadMine]);
+
+  async function markPacked(donationId: string) {
+    if (!user) return;
+    setMarkingId(donationId);
+    const { error: rpcError } = await supabase.rpc("advance_donation_status", {
+      p_donation_id: donationId,
+      p_status: "Packed",
+    });
+    setMarkingId(null);
+    if (!rpcError) await loadMine(user.id);
+  }
 
   // Live status updates (e.g. an NGO claiming or advancing a pickup) reach this dashboard without a refresh.
   useEffect(() => {
@@ -200,7 +212,7 @@ function Index() {
 
       <div className="grid lg:grid-cols-[1fr_1.05fr]">
         <div className="border-b border-border lg:border-b-0 lg:border-r">
-          <section className="border-b border-border px-4 py-8 sm:px-8 lg:px-10" id="recent"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3"><h2 className="label-caps truncate text-foreground">Recent donations</h2><span className="shrink-0 text-xs text-muted-foreground">{myDonations.length} entries</span></div><div className="mt-7 divide-y divide-border">{loadingDonations ? <p className="text-sm text-muted-foreground">Loading donations…</p> : !user ? <p className="text-sm text-muted-foreground">Sign in to see your donations.</p> : myDonations.length === 0 ? <p className="text-sm text-muted-foreground">No donations yet. Share your first surplus food below.</p> : myDonations.map((item) => <article key={item.id} className="group py-5 first:pt-0"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3"><div className="flex min-w-0 gap-3">{item.photo_url && <img src={item.photo_url} alt="" className="size-14 shrink-0 rounded-sm object-cover" />}<div className="min-w-0"><h3 className="font-display text-xl break-words sm:text-2xl"><Link to="/donation/$donationId" params={{ donationId: item.id }} className="hover:underline">{item.food_type}</Link></h3><p className="mt-2 text-xs break-words text-muted-foreground">{item.quantity} · {item.pickup_address || "Location not available"}</p><p className="mt-1 text-xs text-muted-foreground">{formatWhen(item.pickup_deadline)}</p></div></div><span className="shrink-0"><StatusBadge value={displayStatus(item)} /></span></div></article>)}</div></section>
+          <section className="border-b border-border px-4 py-8 sm:px-8 lg:px-10" id="recent"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3"><h2 className="label-caps truncate text-foreground">Recent donations</h2><span className="shrink-0 text-xs text-muted-foreground">{myDonations.length} entries</span></div><div className="mt-7 divide-y divide-border">{loadingDonations ? <p className="text-sm text-muted-foreground">Loading donations…</p> : !user ? <p className="text-sm text-muted-foreground">Sign in to see your donations.</p> : myDonations.length === 0 ? <p className="text-sm text-muted-foreground">No donations yet. Share your first surplus food below.</p> : myDonations.map((item) => <article key={item.id} className="group py-5 first:pt-0"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3"><div className="flex min-w-0 gap-3">{item.photo_url && <img src={item.photo_url} alt="" className="size-14 shrink-0 rounded-sm object-cover" />}<div className="min-w-0"><h3 className="font-display text-xl break-words sm:text-2xl"><Link to="/donation/$donationId" params={{ donationId: item.id }} className="hover:underline">{item.food_type}</Link></h3><p className="mt-2 text-xs break-words text-muted-foreground">{item.quantity} · {item.pickup_address || "Location not available"}</p><p className="mt-1 text-xs text-muted-foreground">{formatWhen(item.pickup_deadline)}</p></div></div><div className="flex shrink-0 flex-col items-end gap-2"><StatusBadge value={displayStatus(item)} />{item.status === "Posted" && <Button className="h-8 px-3 text-xs" onClick={() => void markPacked(item.id)} disabled={markingId === item.id}>{markingId === item.id ? "Marking…" : "Mark packed"}</Button>}</div></div></article>)}</div></section>
           <section className="px-4 py-8 sm:px-8 lg:px-10"><h2 className="label-caps">Quick actions</h2><div className="mt-5 grid gap-2 sm:grid-cols-2">{[{label:"Create donation",icon:Plus,target:"#donate"},{label:"Review pickups",icon:Truck,target:"#recent"},{label:"Donation history",icon:ClipboardList,target:"#recent"},{label:"Pickup locations",icon:MapPin,target:"#donate"}].map(({label,icon:Icon,target}) => <Button key={label} variant="outline" className="h-14 w-full justify-between px-4" onClick={() => document.querySelector(target)?.scrollIntoView({behavior:"smooth"})}><span className="flex min-w-0 items-center gap-2"><Icon className="size-4 shrink-0" /><span className="truncate">{label}</span></span><ChevronRight className="size-4 shrink-0 text-muted-foreground" /></Button>)}</div></section>
         </div>
 

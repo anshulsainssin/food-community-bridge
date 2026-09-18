@@ -156,6 +156,6 @@ export function PageIntro({ eyebrow, title, description, action }: { eyebrow: st
 }
 
 export function StatusBadge({ value }: { value: string }) {
-  const style = value === "Urgent" || value === "Available" ? "bg-accent/15 text-accent" : value === "Completed" || value === "Picked Up" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary";
+  const style = value === "Urgent" || value === "Posted" ? "bg-accent/15 text-accent" : value === "Delivered" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary";
   return <span className={`label-caps inline-flex rounded-sm px-2 py-1 ${style}`}>{value}</span>;
 }
