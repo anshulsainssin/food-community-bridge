@@ -3,7 +3,6 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { DONOR_ROLE, NGO_ROLE, roleHomePath } from "@/lib/roles";
 
 export const Route = createFileRoute("/auth")({
@@ -67,11 +66,15 @@ function AuthPage() {
 
   async function googleSignIn() {
     setMessage(null);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (result.error) return setMessage("Google sign-in failed. Please try again.");
-    if (result.redirected) return;
-    const { data } = await supabase.auth.getUser();
-    void navigate({ to: data.user ? await destinationForUser(data.user.id) : "/", replace: true });
+    // Goes through Supabase Auth's own Google provider (Google Cloud OAuth client configured
+    // directly in the Supabase/Lovable Cloud dashboard), not the Lovable OAuth broker. This is
+    // a full-page redirect to Google and back — landing back on /auth lets the effect above
+    // pick up the new session and route to the right dashboard by role.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth` },
+    });
+    if (error) setMessage("Google sign-in failed. Please try again.");
   }
 
   return (
