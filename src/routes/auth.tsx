@@ -3,7 +3,6 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -19,6 +18,19 @@ export const Route = createFileRoute("/auth")({
   }),
   component: AuthPage,
 });
+
+// The Fetch API throws a generic "Failed to fetch" / "NetworkError" / "Load failed" error
+// (varies by browser) when a request never reaches a server at all — DNS failure, no
+// connectivity, a blocked/unreachable host, or a rejected CORS preflight. Supabase's auth
+// client also returns this as an `error` object rather than throwing in most cases. Surface
+// it plainly either way, without hiding which request failed.
+function networkErrorMessage(err: unknown) {
+  const raw = err instanceof Error ? err.message : String(err);
+  const isNetworkFailure = /failed to fetch|networkerror|load failed|network request failed/i.test(raw);
+  return isNetworkFailure
+    ? `Could not reach the authentication server (${raw}). Check your internet connection, and that the Supabase project is online and reachable from this network.`
+    : raw;
+}
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -39,30 +51,47 @@ function AuthPage() {
     event.preventDefault();
     setBusy(true);
     setMessage(null);
-    if (mode === "signup") {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } },
-      });
-      setBusy(false);
-      if (error) return setMessage(error.message);
-      if (!data.session) return setMessage("Check your email to confirm your account.");
+    try {
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin, data: { full_name: fullName } },
+        });
+        if (error) return setMessage(networkErrorMessage(error));
+        if (!data.session) return setMessage("Check your email to confirm your account.");
+        void navigate({ to: "/", replace: true });
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return setMessage(networkErrorMessage(error));
       void navigate({ to: "/", replace: true });
-      return;
+    } catch (err) {
+      // A thrown exception (network/DNS/CORS failure reaching Supabase, not a normal auth
+      // rejection) previously left the button stuck disabled with no visible message at all.
+      setMessage(networkErrorMessage(err));
+    } finally {
+      setBusy(false);
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) return setMessage(error.message);
-    void navigate({ to: "/", replace: true });
   }
 
   async function googleSignIn() {
     setMessage(null);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (result.error) return setMessage("Google sign-in failed. Please try again.");
-    if (result.redirected) return;
-    void navigate({ to: "/", replace: true });
+    // Goes through Supabase Auth's own Google provider (configured in the Supabase/Lovable
+    // Cloud dashboard), not the Lovable OAuth broker (lovable.auth.signInWithOAuth), which
+    // redirects to /~oauth/initiate — a route that only exists on Lovable's own hosting and
+    // 404s anywhere else (including local dev and this Cloudflare deployment). This is a
+    // full-page redirect to Google and back; landing back on /auth lets the effect above pick
+    // up the new session and redirect home.
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth` },
+      });
+      if (error) setMessage(networkErrorMessage(error));
+    } catch (err) {
+      setMessage(networkErrorMessage(err));
+    }
   }
 
   return (
