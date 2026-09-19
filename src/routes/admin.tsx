@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Mail, PackageOpen, ShieldAlert, UsersRound, UtensilsCrossed } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Check, Mail, PackageOpen, Search, ShieldAlert, UsersRound, UtensilsCrossed } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useIsAdmin } from "@/hooks/use-admin";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount, formatWeight } from "@/hooks/use-stats";
-import { displayStatus } from "@/lib/donation-status";
+import { displayStatus, PICKUP_STEPS } from "@/lib/donation-status";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables as TablesType } from "@/integrations/supabase/types";
 
@@ -71,6 +71,8 @@ function AdminPage() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [signups, setSignups] = useState<VolunteerSignup[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [donationQuery, setDonationQuery] = useState("");
+  const [donationStatusFilter, setDonationStatusFilter] = useState("All");
 
   const load = useCallback(async () => {
     setLoadingData(true);
@@ -106,6 +108,30 @@ function AdminPage() {
   useEffect(() => {
     if (isAdmin) void load();
   }, [isAdmin, load]);
+
+  const statusCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const donation of donations) {
+      const status = displayStatus(donation);
+      counts.set(status, (counts.get(status) ?? 0) + 1);
+    }
+    return counts;
+  }, [donations]);
+
+  const donationStatusOptions = ["All", ...PICKUP_STEPS.map((step) => step.value), "Expired"];
+
+  const filteredDonations = useMemo(() => {
+    const query = donationQuery.trim().toLowerCase();
+    return donations.filter((donation) => {
+      if (donationStatusFilter !== "All" && displayStatus(donation) !== donationStatusFilter) return false;
+      if (!query) return true;
+      return (
+        donation.food_type.toLowerCase().includes(query) ||
+        (donation.pickup_address ?? "").toLowerCase().includes(query) ||
+        (donation.contact_info ?? "").toLowerCase().includes(query)
+      );
+    });
+  }, [donations, donationQuery, donationStatusFilter]);
 
   if (authLoading || adminLoading) {
     return (
@@ -177,10 +203,42 @@ function AdminPage() {
           </TabsList>
 
           <TabsContent value="donations" className="mt-6">
+            {!loadingData && donations.length > 0 && (
+              <div className="mb-6 flex flex-wrap gap-2">
+                {donationStatusOptions.slice(1).map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setDonationStatusFilter(donationStatusFilter === status ? "All" : status)}
+                    className={`border px-3 py-1.5 text-xs ${
+                      donationStatusFilter === status
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border-strong text-muted-foreground hover:border-foreground"
+                    }`}
+                  >
+                    {status} · {statusCounts.get(status) ?? 0}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!loadingData && donations.length > 0 && (
+              <div className="mb-4 flex items-center gap-2 border-b border-input pb-2">
+                <Search className="size-4 shrink-0 text-muted-foreground" />
+                <input
+                  value={donationQuery}
+                  onChange={(event) => setDonationQuery(event.target.value)}
+                  placeholder="Search by food type, address, or contact"
+                  aria-label="Search donations"
+                  className="h-9 w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+                />
+              </div>
+            )}
             {loadingData ? (
               <p className="text-sm text-muted-foreground">Loading donations…</p>
             ) : donations.length === 0 ? (
               <p className="text-sm text-muted-foreground">No donations yet.</p>
+            ) : filteredDonations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No donations match this search/filter.</p>
             ) : (
               <Table>
                 <TableHeader>
@@ -193,7 +251,7 @@ function AdminPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {donations.map((donation) => (
+                  {filteredDonations.map((donation) => (
                     <TableRow key={donation.id}>
                       <TableCell className="max-w-40 truncate">{donation.food_type}</TableCell>
                       <TableCell><StatusBadge value={displayStatus(donation)} /></TableCell>

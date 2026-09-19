@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, Bell, HandHeart, Home, Info, LogOut, Mail, Menu, ShieldCheck, Truck, UserRound, X } from "lucide-react";
+import { BarChart3, Bell, BellOff, HandHeart, Home, Info, LogOut, Mail, Menu, ShieldCheck, Truck, UserRound, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -8,33 +8,46 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount, useNetworkStats } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
-import { primeNotificationAudio } from "@/lib/notification-sound";
+import { useLanguage } from "@/lib/i18n";
+import { isNotificationSoundEnabled, primeNotificationAudio, setNotificationSoundEnabled } from "@/lib/notification-sound";
 
 // The primary five stay on the mobile bottom bar exactly as before.
 const navItems = [
-  { label: "Overview", to: "/", icon: Home },
-  { label: "Find food", to: "/donations", icon: HandHeart },
-  { label: "Pickup", to: "/pickup", icon: Truck },
-  { label: "Impact", to: "/impact", icon: BarChart3 },
-  { label: "Profile", to: "/profile", icon: UserRound },
+  { labelKey: "nav.overview", to: "/", icon: Home },
+  { labelKey: "nav.findFood", to: "/donations", icon: HandHeart },
+  { labelKey: "nav.pickup", to: "/pickup", icon: Truck },
+  { labelKey: "nav.impact", to: "/impact", icon: BarChart3 },
+  { labelKey: "nav.profile", to: "/profile", icon: UserRound },
 ] as const;
 
 // About/Contact (and Admin, once granted) only appear in the sidebar and mobile drawer —
 // the bottom tab bar stays at its existing five slots.
 const secondaryNavItems = [
-  { label: "About", to: "/about", icon: Info },
-  { label: "Contact", to: "/contact", icon: Mail },
+  { labelKey: "nav.about", to: "/about", icon: Info },
+  { labelKey: "nav.contact", to: "/contact", icon: Mail },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const navigate = useNavigate();
   const { user, profile } = useProfile();
   const { items: notifications, unread, markAllRead } = useNotifications(user?.id);
   const { stats: network } = useNetworkStats(Boolean(user));
   const { isAdmin } = useIsAdmin(user?.id);
+  const { language, setLanguage, t } = useLanguage();
+
+  useEffect(() => {
+    setSoundEnabled(isNotificationSoundEnabled());
+  }, []);
+
+  function toggleSound() {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    setNotificationSoundEnabled(next);
+  }
 
   // Browsers block audio until the visitor has interacted with the page at least once.
   useEffect(() => {
@@ -59,12 +72,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const fullNavItems = [
     ...navItems,
     ...secondaryNavItems,
-    ...(isAdmin ? [{ label: "Admin", to: "/admin", icon: ShieldCheck } as const] : []),
+    ...(isAdmin ? [{ labelKey: "nav.admin", to: "/admin", icon: ShieldCheck } as const] : []),
   ];
 
-  const navigation = (mobile = false) => fullNavItems.map(({ label, to, icon: Icon }) => (
+  const navigation = (mobile = false) => fullNavItems.map(({ labelKey, to, icon: Icon }) => (
     <Button key={to} asChild variant="nav" className={mobile ? "w-full justify-start" : "w-full justify-start"} data-active={pathname === to} onClick={() => mobile && setMobileMenu(false)}>
-      <Link to={to}><Icon className="size-4" />{label}</Link>
+      <Link to={to}><Icon className="size-4" />{t(labelKey)}</Link>
     </Button>
   ));
 
@@ -94,37 +107,70 @@ export function AppShell({ children }: { children: ReactNode }) {
             {showNotifications && (
               <div className="absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] border border-border-strong bg-card shadow-sm">
                 <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                  <p className="label-caps text-muted-foreground">Notifications</p>
-                  <Button variant="ghost" size="icon" aria-label="Close notifications" onClick={() => setShowNotifications(false)}><X className="size-4" /></Button>
+                  <p className="label-caps text-muted-foreground">{t("notifications.title")}</p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={soundEnabled ? t("notifications.soundOn") : t("notifications.soundOff")}
+                      aria-pressed={soundEnabled}
+                      onClick={toggleSound}
+                    >
+                      {soundEnabled ? <Bell className="size-4" /> : <BellOff className="size-4" />}
+                    </Button>
+                    <Button variant="ghost" size="icon" aria-label="Close notifications" onClick={() => setShowNotifications(false)}><X className="size-4" /></Button>
+                  </div>
                 </div>
                 <div className="max-h-80 divide-y divide-border overflow-y-auto">
                   {!user ? (
-                    <p className="px-4 py-6 text-sm text-muted-foreground">Sign in to see your notifications.</p>
+                    <p className="px-4 py-6 text-sm text-muted-foreground">{t("notifications.signInPrompt")}</p>
                   ) : notifications.length === 0 ? (
-                    <p className="px-4 py-6 text-sm text-muted-foreground">No notifications</p>
+                    <p className="px-4 py-6 text-sm text-muted-foreground">{t("notifications.empty")}</p>
                   ) : (
                     notifications.map((item) => (
-                      <article key={item.id} className="px-4 py-3">
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="block w-full px-4 py-3 text-left hover:bg-muted/40"
+                        onClick={() => {
+                          setShowNotifications(false);
+                          if (item.donation_id) {
+                            void navigate({ to: "/donation/$donationId", params: { donationId: item.donation_id } });
+                          } else {
+                            void navigate({ to: "/pickup" });
+                          }
+                        }}
+                      >
                         <p className="text-sm font-medium">{item.title}</p>
                         {item.body && <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.body}</p>}
                         <p className="mt-1 text-[11px] text-muted-foreground">{new Date(item.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>
-                      </article>
+                      </button>
                     ))
                   )}
                 </div>
               </div>
             )}
           </div>
+          <button
+            type="button"
+            className="label-caps shrink-0 border border-border-strong px-2 py-1.5 text-[11px] text-muted-foreground hover:border-foreground hover:text-foreground"
+            aria-label="Switch language"
+            onClick={() => setLanguage(language === "en" ? "hi" : "en")}
+          >
+            <span className={language === "en" ? "text-foreground" : ""}>EN</span>
+            <span className="mx-1">|</span>
+            <span className={language === "hi" ? "text-foreground" : ""}>हिं</span>
+          </button>
           {user ? (
             <>
               <div className="hidden min-w-0 items-center gap-3 border-l border-border pl-4 sm:flex">
                 <div className="min-w-0 max-w-[9rem] lg:max-w-[14rem]"><p className="truncate text-sm font-medium">{profile?.full_name ?? user.email}</p><p className="truncate text-xs text-muted-foreground">{profile?.role ?? profile?.organization ?? "Member"}</p></div>
-                <Button variant="ghost" size="icon" aria-label="Sign out" onClick={signOut}><LogOut className="size-4" /></Button>
+                <Button variant="ghost" size="icon" aria-label={t("auth.signOut")} onClick={signOut}><LogOut className="size-4" /></Button>
               </div>
-              <Button variant="ghost" size="icon" className="sm:hidden" aria-label="Sign out" onClick={signOut}><LogOut className="size-4" /></Button>
+              <Button variant="ghost" size="icon" className="sm:hidden" aria-label={t("auth.signOut")} onClick={signOut}><LogOut className="size-4" /></Button>
             </>
           ) : (
-            <Button asChild variant="outline" className="ml-1"><Link to="/auth">Sign in</Link></Button>
+            <Button asChild variant="outline" className="ml-1"><Link to="/auth">{t("auth.signIn")}</Link></Button>
           )}
 
         </div>
@@ -136,7 +182,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 border-r border-border bg-sidebar p-4 md:flex md:flex-col">
           <nav className="space-y-1">{navigation()}</nav>
           <div className="mt-auto border-t border-sidebar-border pt-5">
-            <p className="label-caps text-muted-foreground">Network impact</p>
+            <p className="label-caps text-muted-foreground">{t("networkImpact")}</p>
             <p className="mt-2 font-display text-3xl">{formatCount(network.people_fed)} people</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {network.people_fed > 0 ? "Fed through completed community pickups." : "No completed pickups recorded yet."}
@@ -146,7 +192,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="min-w-0 flex-1 pb-24 md:pb-10">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">{navItems.map(({ label, to, icon: Icon }) => <Button key={to} asChild variant="ghost" className={`h-16 min-w-0 flex-col gap-1 px-0 text-[9px] ${pathname === to ? "text-foreground" : ""}`}><Link to={to}><Icon className="size-4 shrink-0" /><span className="w-full truncate px-1 text-center">{label}</span></Link></Button>)}</nav>
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">{navItems.map(({ labelKey, to, icon: Icon }) => <Button key={to} asChild variant="ghost" className={`h-16 min-w-0 flex-col gap-1 px-0 text-[9px] ${pathname === to ? "text-foreground" : ""}`}><Link to={to}><Icon className="size-4 shrink-0" /><span className="w-full truncate px-1 text-center">{t(labelKey)}</span></Link></Button>)}</nav>
     </div>
   );
 }

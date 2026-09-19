@@ -46,22 +46,28 @@ function AuthPage() {
     event.preventDefault();
     setBusy(true);
     setMessage(null);
-    if (mode === "signup") {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: window.location.origin, data: { full_name: fullName, role } },
-      });
-      setBusy(false);
+    try {
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin, data: { full_name: fullName, role } },
+        });
+        if (error) return setMessage(error.message);
+        if (!data.session) return setMessage("Check your email to confirm your account.");
+        void navigate({ to: roleHomePath(role), replace: true });
+        return;
+      }
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return setMessage(error.message);
-      if (!data.session) return setMessage("Check your email to confirm your account.");
-      void navigate({ to: roleHomePath(role), replace: true });
-      return;
+      void navigate({ to: data.user ? await destinationForUser(data.user.id) : "/", replace: true });
+    } catch (err) {
+      // A thrown exception (network/DNS/CORS failure reaching Supabase, not a normal auth
+      // rejection) previously left the button stuck disabled with no visible message at all.
+      setMessage(err instanceof Error ? err.message : "Could not reach the server. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) return setMessage(error.message);
-    void navigate({ to: data.user ? await destinationForUser(data.user.id) : "/", replace: true });
   }
 
   async function googleSignIn() {
@@ -70,11 +76,15 @@ function AuthPage() {
     // directly in the Supabase/Lovable Cloud dashboard), not the Lovable OAuth broker. This is
     // a full-page redirect to Google and back — landing back on /auth lets the effect above
     // pick up the new session and route to the right dashboard by role.
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth` },
-    });
-    if (error) setMessage("Google sign-in failed. Please try again.");
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth` },
+      });
+      if (error) setMessage("Google sign-in failed. Please try again.");
+    } catch {
+      setMessage("Could not reach the server. Please try again.");
+    }
   }
 
   return (

@@ -1,6 +1,27 @@
 let audioCtx: AudioContext | null = null;
 let unlocked = false;
 
+const SOUND_PREF_KEY = "fwc-notification-sound-enabled";
+
+/** Defaults to on; persisted per-browser so the choice survives refresh. */
+export function isNotificationSoundEnabled(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return window.localStorage.getItem(SOUND_PREF_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+export function setNotificationSoundEnabled(enabled: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SOUND_PREF_KEY, enabled ? "on" : "off");
+  } catch {
+    // Storage can be unavailable (private mode); the toggle still works for this tab session.
+  }
+}
+
 function getContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
   const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -24,6 +45,7 @@ export function primeNotificationAudio() {
 
 /** Plays a short two-tone chime for a new donation or notification. No-ops quietly if audio isn't available or allowed yet. */
 export function playNotificationSound() {
+  if (!isNotificationSoundEnabled()) return;
   const ctx = getContext();
   if (!ctx) return;
 
