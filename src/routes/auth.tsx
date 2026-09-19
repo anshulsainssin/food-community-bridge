@@ -20,6 +20,18 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+// The Fetch API throws a generic "Failed to fetch" / "NetworkError" / "Load failed" TypeError
+// (varies by browser) when a request never reaches a server at all — DNS failure, no
+// connectivity, a blocked/unreachable host, or a rejected CORS preflight. Surface that plainly
+// rather than the raw browser string, without hiding which request failed.
+function networkErrorMessage(err: unknown) {
+  const raw = err instanceof Error ? err.message : String(err);
+  const isNetworkFailure = /failed to fetch|networkerror|load failed|network request failed/i.test(raw);
+  return isNetworkFailure
+    ? `Could not reach the authentication server (${raw}). Check your internet connection, and that the Supabase project is online and reachable from this network.`
+    : raw;
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -53,18 +65,18 @@ function AuthPage() {
           password,
           options: { emailRedirectTo: window.location.origin, data: { full_name: fullName, role } },
         });
-        if (error) return setMessage(error.message);
+        if (error) return setMessage(networkErrorMessage(error));
         if (!data.session) return setMessage("Check your email to confirm your account.");
         void navigate({ to: roleHomePath(role), replace: true });
         return;
       }
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return setMessage(error.message);
+      if (error) return setMessage(networkErrorMessage(error));
       void navigate({ to: data.user ? await destinationForUser(data.user.id) : "/", replace: true });
     } catch (err) {
       // A thrown exception (network/DNS/CORS failure reaching Supabase, not a normal auth
       // rejection) previously left the button stuck disabled with no visible message at all.
-      setMessage(err instanceof Error ? err.message : "Could not reach the server. Please try again.");
+      setMessage(networkErrorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -81,9 +93,9 @@ function AuthPage() {
         provider: "google",
         options: { redirectTo: `${window.location.origin}/auth` },
       });
-      if (error) setMessage("Google sign-in failed. Please try again.");
-    } catch {
-      setMessage("Could not reach the server. Please try again.");
+      if (error) setMessage(error.message ? networkErrorMessage(error) : "Google sign-in failed. Please try again.");
+    } catch (err) {
+      setMessage(networkErrorMessage(err));
     }
   }
 
