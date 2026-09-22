@@ -1,9 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { DONOR_ROLE, NGO_ROLE, roleHomePath } from "@/lib/roles";
+import { setDemoRole } from "@/lib/demo";
+import { DONOR_ROLE, NGO_ROLE } from "@/lib/roles";
+import { useState } from "react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -20,83 +21,18 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-// The Fetch API throws a generic "Failed to fetch" / "NetworkError" / "Load failed" TypeError
-// (varies by browser) when a request never reaches a server at all — DNS failure, no
-// connectivity, a blocked/unreachable host, or a rejected CORS preflight. Surface that plainly
-// rather than the raw browser string, without hiding which request failed.
-function networkErrorMessage(err: unknown) {
-  const raw = err instanceof Error ? err.message : String(err);
-  const isNetworkFailure = /failed to fetch|networkerror|load failed|network request failed/i.test(raw);
-  return isNetworkFailure
-    ? `Could not reach the authentication server (${raw}). Check your internet connection, and that the Supabase project is online and reachable from this network.`
-    : raw;
-}
-
 function AuthPage() {
-  const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<string>(DONOR_ROLE);
-  const [message, setMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    void supabase.auth.getSession().then(async ({ data }) => {
-      if (!data.session) return;
-      void navigate({ to: await destinationForUser(data.session.user.id), replace: true });
-    });
-  }, [navigate]);
-
-  async function destinationForUser(userId: string) {
-    const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
-    return roleHomePath(data?.role ?? null);
+  function demoLogin(target: "/" | "/admin" = "/") {
+    setDemoRole(target === "/admin" ? "admin" : "user");
+    window.location.href = target;
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setBusy(true);
-    setMessage(null);
-    try {
-      if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin, data: { full_name: fullName, role } },
-        });
-        if (error) return setMessage(networkErrorMessage(error));
-        if (!data.session) return setMessage("Check your email to confirm your account.");
-        void navigate({ to: roleHomePath(role), replace: true });
-        return;
-      }
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return setMessage(networkErrorMessage(error));
-      void navigate({ to: data.user ? await destinationForUser(data.user.id) : "/", replace: true });
-    } catch (err) {
-      // A thrown exception (network/DNS/CORS failure reaching Supabase, not a normal auth
-      // rejection) previously left the button stuck disabled with no visible message at all.
-      setMessage(networkErrorMessage(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function googleSignIn() {
-    setMessage(null);
-    // Goes through Supabase Auth's own Google provider (Google Cloud OAuth client configured
-    // directly in the Supabase/Lovable Cloud dashboard), not the Lovable OAuth broker. This is
-    // a full-page redirect to Google and back — landing back on /auth lets the effect above
-    // pick up the new session and route to the right dashboard by role.
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth` },
-      });
-      if (error) setMessage(error.message ? networkErrorMessage(error) : "Google sign-in failed. Please try again.");
-    } catch (err) {
-      setMessage(networkErrorMessage(err));
-    }
+    demoLogin("/");
   }
 
   return (
@@ -112,7 +48,7 @@ function AuthPage() {
             <>
               <label className="block">
                 <span className="label-caps text-muted-foreground">Full name</span>
-                <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
+                <input className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
               </label>
               <fieldset>
                 <legend className="label-caps text-muted-foreground">I am a</legend>
@@ -129,19 +65,26 @@ function AuthPage() {
           )}
           <label className="block">
             <span className="label-caps text-muted-foreground">Email</span>
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
+            <input type="email" className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
           </label>
           <label className="block">
             <span className="label-caps text-muted-foreground">Password</span>
-            <input required type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
+            <input type="password" className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
           </label>
-          {message && <p className="text-sm text-accent">{message}</p>}
-          <Button type="submit" size="wide" className="w-full" disabled={busy}>{mode === "signin" ? "Sign in" : "Create account"}</Button>
+          <Button type="submit" size="wide" className="w-full">{mode === "signin" ? "Sign in" : "Create account"}</Button>
         </form>
 
-        <Button variant="outline" size="wide" className="mt-3 w-full" onClick={googleSignIn}>Continue with Google</Button>
+        <Button variant="outline" size="wide" className="mt-3 w-full" onClick={() => demoLogin("/")}>
+          Continue with Google
+        </Button>
 
-        <button type="button" className="mt-6 text-xs text-muted-foreground underline" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMessage(null); }}>
+        <div className="mt-4 text-center">
+          <button type="button" className="text-xs text-muted-foreground underline" onClick={() => demoLogin("/admin")}>
+            Continue as Demo Admin
+          </button>
+        </div>
+
+        <button type="button" className="mt-6 text-xs text-muted-foreground underline" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); }}>
           {mode === "signin" ? "Need an account? Create one" : "Already have an account? Sign in"}
         </button>
       </div>

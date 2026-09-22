@@ -9,6 +9,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
+import { clearDemoRole, isDemoActive } from "@/lib/demo";
 import { useLanguage } from "@/lib/i18n";
 import { isNotificationSoundEnabled, primeNotificationAudio, setNotificationSoundEnabled } from "@/lib/notification-sound";
 
@@ -67,6 +68,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   async function signOut() {
+    if (isDemoActive()) {
+      clearDemoRole();
+      window.location.href = "/auth";
+      return;
+    }
     await supabase.auth.signOut();
     void navigate({ to: "/auth", replace: true });
   }
@@ -198,4 +204,3 @@ export function AppShell({ children }: { children: ReactNode }) {
 export function PageIntro({ eyebrow, title, description, action }: { eyebrow: string; title: ReactNode; description: string; action?: ReactNode }) {
   return <section className="reveal border-b border-border px-4 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-14"><p className="label-caps text-accent">{eyebrow}</p><div className="mt-4 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between"><div className="min-w-0"><h1 className="font-display text-4xl leading-[0.98] break-words sm:text-5xl lg:text-6xl">{title}</h1><p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:mt-5 sm:text-base">{description}</p></div>{action}</div></section>;
 }
-
