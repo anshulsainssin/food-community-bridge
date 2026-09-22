@@ -9,6 +9,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
+import { clearDemoRole, isDemoActive } from "@/lib/demo";
 import { useLanguage } from "@/lib/i18n";
 import { isNotificationSoundEnabled, primeNotificationAudio, setNotificationSoundEnabled } from "@/lib/notification-sound";
 
@@ -67,6 +68,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   async function signOut() {
+    if (isDemoActive()) {
+      clearDemoRole();
+      window.location.href = "/auth";
+      return;
+    }
     await supabase.auth.signOut();
     void navigate({ to: "/auth", replace: true });
   }

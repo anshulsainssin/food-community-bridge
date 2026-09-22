@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { DEMO_ADMIN } from "@/lib/demo";
 
 /** Whether the signed-in user is in the admins allowlist. Not self-service — see migrations. */
 export function useIsAdmin(userId: string | null | undefined) {
@@ -11,6 +12,12 @@ export function useIsAdmin(userId: string | null | undefined) {
     let active = true;
     if (!userId) {
       setIsAdmin(false);
+      setLoading(false);
+      return;
+    }
+    // Demo admin bypasses the real DB check.
+    if (userId === DEMO_ADMIN.id) {
+      setIsAdmin(true);
       setLoading(false);
       return;
     }
