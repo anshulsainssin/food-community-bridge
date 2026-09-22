@@ -8,6 +8,7 @@ import { useIsAdmin } from "@/hooks/use-admin";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { INVENTORY_CATEGORIES, stockStatus, type StockStatus } from "@/lib/kitchen";
+import { useLanguage } from "@/lib/i18n";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/inventory")({
@@ -35,12 +36,19 @@ const STATUS_STYLE: Record<StockStatus, string> = {
 function InventoryPage() {
   const { user } = useProfile();
   const { isAdmin } = useIsAdmin(user?.id);
+  const { t } = useLanguage();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stockDrafts, setStockDrafts] = useState<Record<string, string>>({});
+
+  const STATUS_LABELS: Record<StockStatus, string> = {
+    "Reorder Now": t("inventory.status.reorderNow"),
+    "Low Stock": t("inventory.status.lowStock"),
+    "In Stock": t("inventory.status.inStock"),
+  };
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("kitchen_inventory").select("*").order("category").order("item_name");
@@ -112,14 +120,14 @@ function InventoryPage() {
   return (
     <AppShell>
       <PageIntro
-        eyebrow="Live Kitchen Inventory"
-        title={<>Raw rations, <span className="italic">tracked daily.</span></>}
-        description="Grains, pulses, vegetables, and cooking oil on hand at the Ratna Nidhi Central Kitchen, updated as stock moves, with automatic re-order alerts."
+        eyebrow={t("inventory.eyebrow")}
+        title={<>{t("inventory.titleMain")} <span className="italic">{t("inventory.titleEmphasis")}</span></>}
+        description={t("inventory.description")}
         action={
           isAdmin ? (
             <Button size="wide" onClick={() => setShowAdd((v) => !v)}>
               <Plus className="size-4" />
-              {showAdd ? "Cancel" : "Add item"}
+              {showAdd ? t("inventory.cancel") : t("inventory.addItem")}
             </Button>
           ) : undefined
         }
@@ -129,7 +137,7 @@ function InventoryPage() {
         <section className="border-b border-border bg-accent/5 px-4 py-5 sm:px-8 lg:px-12">
           <div className="flex items-center gap-2">
             <AlertTriangle className="size-4 text-accent" />
-            <h2 className="label-caps text-accent">Re-order alerts · {reorderItems.length}</h2>
+            <h2 className="label-caps text-accent">{t("inventory.reorderAlerts")} · {reorderItems.length}</h2>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
             {reorderItems.map((item) => item.item_name).join(", ")} {reorderItems.length === 1 ? "is" : "are"} at or below the re-order threshold.
@@ -166,16 +174,16 @@ function InventoryPage() {
             </label>
             <div className="sm:col-span-2 lg:col-span-5">
               {error && <p className="mb-3 text-sm text-accent">{error}</p>}
-              <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save item"}</Button>
+              <Button type="submit" disabled={saving}>{saving ? t("inventory.saving") : t("inventory.saveItem")}</Button>
             </div>
           </form>
         </section>
       )}
 
       {loading ? (
-        <p className="p-10 text-sm text-muted-foreground">Loading inventory…</p>
+        <p className="p-10 text-sm text-muted-foreground">{t("inventory.loadingInventory")}</p>
       ) : items.length === 0 ? (
-        <p className="p-10 text-sm text-muted-foreground">No inventory items recorded yet.</p>
+        <p className="p-10 text-sm text-muted-foreground">{t("inventory.noItems")}</p>
       ) : (
         INVENTORY_CATEGORIES.map((category) => {
           const categoryItems = items.filter((item) => item.category === category);
@@ -194,12 +202,12 @@ function InventoryPage() {
                     <article key={item.id} className="bg-background p-5">
                       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                         <p className="min-w-0 truncate font-medium">{item.item_name}</p>
-                        <span className={`label-caps shrink-0 rounded-sm px-2 py-1 ${STATUS_STYLE[status]}`}>{status}</span>
+                        <span className={`label-caps shrink-0 rounded-sm px-2 py-1 ${STATUS_STYLE[status]}`}>{STATUS_LABELS[status]}</span>
                       </div>
                       <p className="mt-3 font-display text-3xl">
                         {item.current_stock} <span className="text-base text-muted-foreground">{item.unit}</span>
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">Re-order at {item.reorder_threshold} {item.unit}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{t("inventory.reorderAt")} {item.reorder_threshold} {item.unit}</p>
                       {isAdmin && (
                         <div className="mt-4 flex items-center gap-2">
                           <input
@@ -212,7 +220,7 @@ function InventoryPage() {
                             className="h-9 w-full min-w-0 border-b border-input bg-transparent text-sm outline-none focus:border-foreground"
                           />
                           <Button className="h-9 shrink-0 px-3 text-xs" disabled={draft == null || draft === ""} onClick={() => void saveStock(item)}>
-                            Update
+                            {t("inventory.update")}
                           </Button>
                         </div>
                       )}

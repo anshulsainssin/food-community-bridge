@@ -187,9 +187,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="space-y-1">{navigation()}</nav>
           <div className="mt-auto border-t border-sidebar-border pt-5">
             <p className="label-caps text-muted-foreground">{t("networkImpact")}</p>
-            <p className="mt-2 font-display text-3xl">{formatCount(kitchen.meals_cooked_today)} meals</p>
+            <p className="mt-2 font-display text-3xl">{formatCount(kitchen.meals_cooked_today)} {t("appShell.mealsSidebar")}</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              {kitchen.meals_cooked_today > 0 ? "Cooked today across all kitchen centers." : "No meals logged yet today."}
+              {kitchen.meals_cooked_today > 0 ? t("appShell.cookedToday") : t("appShell.noMealsToday")}
             </p>
           </div>
         </aside>
@@ -204,3 +204,4 @@ export function AppShell({ children }: { children: ReactNode }) {
 export function PageIntro({ eyebrow, title, description, action }: { eyebrow: string; title: ReactNode; description: string; action?: ReactNode }) {
   return <section className="reveal border-b border-border px-4 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-14"><p className="label-caps text-accent">{eyebrow}</p><div className="mt-4 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between"><div className="min-w-0"><h1 className="font-display text-4xl leading-[0.98] break-words sm:text-5xl lg:text-6xl">{title}</h1><p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:mt-5 sm:text-base">{description}</p></div>{action}</div></section>;
 }
+
