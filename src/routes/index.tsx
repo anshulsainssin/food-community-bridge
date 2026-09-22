@@ -5,6 +5,7 @@ import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useKitchenStats } from "@/hooks/use-kitchen";
 import { formatCount } from "@/hooks/use-stats";
+import { useLanguage } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,39 +23,41 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { stats, loading } = useKitchenStats();
+  const { language, t } = useLanguage();
 
-  const today = new Date().toLocaleDateString(undefined, { month: "long", day: "numeric" });
+  const locale = language === "hi" ? "hi-IN" : undefined;
+  const today = new Date().toLocaleDateString(locale, { month: "long", day: "numeric" });
 
   const tiles = [
-    { label: "Meals cooked today", value: formatCount(stats.meals_cooked_today), unit: "meals", icon: UtensilsCrossed },
-    { label: "Beneficiary children served", value: formatCount(stats.children_served_today), unit: "children", icon: Users },
-    { label: "Active kitchen centers", value: formatCount(stats.active_kitchen_centers), unit: "centers", icon: Building2 },
-    { label: "Meals sponsored", value: formatCount(stats.total_meals_sponsored), unit: "all time", icon: PackageOpen },
+    { labelKey: "home.tile.mealsToday", value: formatCount(stats.meals_cooked_today), unitKey: "home.tile.mealsUnit", icon: UtensilsCrossed },
+    { labelKey: "home.tile.children", value: formatCount(stats.children_served_today), unitKey: "home.tile.childrenUnit", icon: Users },
+    { labelKey: "home.tile.centers", value: formatCount(stats.active_kitchen_centers), unitKey: "home.tile.centersUnit", icon: Building2 },
+    { labelKey: "home.tile.sponsored", value: formatCount(stats.total_meals_sponsored), unitKey: "home.tile.allTime", icon: PackageOpen },
   ];
 
   return (
     <AppShell>
       <PageIntro
-        eyebrow={`Ratna Nidhi Central Kitchen · ${today}`}
-        title={<>Ratna Nidhi Central Kitchen <span className="italic">&amp; Daily Meal Project.</span></>}
-        description="Preparing 2,200+ fresh cooked meals every single day for children at partner schools and distribution centers — raw ration to plate, tracked live."
+        eyebrow={`${t("home.eyebrow")} · ${today}`}
+        title={<>{t("home.titleMain")} <span className="italic">{t("home.titleEmphasis")}</span></>}
+        description={t("home.description")}
         action={
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="wide"><Link to="/sponsor">Sponsor a Meal</Link></Button>
-            <Button asChild variant="outline" size="wide"><Link to="/inventory">Live Kitchen Inventory</Link></Button>
+            <Button asChild size="wide"><Link to="/sponsor">{t("home.sponsorBtn")}</Link></Button>
+            <Button asChild variant="outline" size="wide"><Link to="/inventory">{t("home.inventoryBtn")}</Link></Button>
           </div>
         }
       />
 
       <section className="grid grid-cols-2 border-b border-border xl:grid-cols-4">
-        {tiles.map(({ label, value, unit, icon: Icon }, index) => (
-          <article key={label} className={`min-w-0 p-4 sm:p-7 ${index % 2 === 0 ? "border-r border-border" : ""} ${index < 2 ? "border-b border-border xl:border-b-0" : ""} ${index === 1 ? "xl:border-r" : ""}`}>
+        {tiles.map(({ labelKey, value, unitKey, icon: Icon }, index) => (
+          <article key={labelKey} className={`min-w-0 p-4 sm:p-7 ${index % 2 === 0 ? "border-r border-border" : ""} ${index < 2 ? "border-b border-border xl:border-b-0" : ""} ${index === 1 ? "xl:border-r" : ""}`}>
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-              <p className="label-caps truncate text-muted-foreground">{label}</p>
+              <p className="label-caps truncate text-muted-foreground">{t(labelKey)}</p>
               <Icon className="size-4 shrink-0 text-accent" />
             </div>
             <p className="mt-4 font-display text-3xl break-words sm:mt-5 sm:text-5xl">{loading ? "…" : value}</p>
-            <p className="mt-1 truncate text-xs text-muted-foreground">{unit}</p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">{t(unitKey)}</p>
           </article>
         ))}
       </section>
@@ -62,31 +65,31 @@ function Index() {
       <section className="grid gap-px bg-border sm:grid-cols-3">
         <article className="bg-background p-6 sm:p-8">
           <UtensilsCrossed className="size-5 text-accent" />
-          <h2 className="mt-5 font-display text-2xl">Sponsor a Meal</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">₹500 sponsors 50 fresh cooked meals. Track your sponsorship and get a dynamic impact certificate.</p>
+          <h2 className="mt-5 font-display text-2xl">{t("home.card.sponsor.title")}</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("home.card.sponsor.desc")}</p>
           <Button asChild variant="outline" className="mt-6">
             <Link to="/sponsor">
-              Sponsor now <ArrowRight className="size-4" />
+              {t("home.card.sponsor.cta")} <ArrowRight className="size-4" />
             </Link>
           </Button>
         </article>
         <article className="bg-background p-6 sm:p-8">
           <PackageOpen className="size-5 text-accent" />
-          <h2 className="mt-5 font-display text-2xl">Live Kitchen Inventory</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">Daily raw ration stock — grains, pulses, vegetables, and cooking oil — with automatic re-order alerts.</p>
+          <h2 className="mt-5 font-display text-2xl">{t("home.card.inventory.title")}</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("home.card.inventory.desc")}</p>
           <Button asChild variant="outline" className="mt-6">
             <Link to="/inventory">
-              View inventory <ArrowRight className="size-4" />
+              {t("home.card.inventory.cta")} <ArrowRight className="size-4" />
             </Link>
           </Button>
         </article>
         <article className="bg-background p-6 sm:p-8">
           <Building2 className="size-5 text-accent" />
-          <h2 className="mt-5 font-display text-2xl">Distribution Tracker</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">See every school and center receiving meals today, live on the map.</p>
+          <h2 className="mt-5 font-display text-2xl">{t("home.card.distribution.title")}</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("home.card.distribution.desc")}</p>
           <Button asChild variant="outline" className="mt-6">
             <Link to="/distribution">
-              Track distribution <ArrowRight className="size-4" />
+              {t("home.card.distribution.cta")} <ArrowRight className="size-4" />
             </Link>
           </Button>
         </article>
