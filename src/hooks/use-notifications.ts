@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { playNotificationSound } from "@/lib/notification-sound";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type Notification = Tables<"notifications">;
@@ -37,7 +38,10 @@ export function useNotifications(userId: string | null | undefined) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
-        () => void load(),
+        (payload) => {
+          if (payload.eventType === "INSERT") playNotificationSound();
+          void load();
+        },
       )
       .subscribe();
     return () => {

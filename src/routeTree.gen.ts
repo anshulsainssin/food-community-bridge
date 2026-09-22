@@ -10,17 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as DonationsRouteImport } from './routes/donations'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as DistributionRouteImport } from './routes/distribution'
 import { Route as ImpactRouteImport } from './routes/impact'
-import { Route as PickupRouteImport } from './routes/pickup'
+import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as DonationDonationIdRouteImport } from './routes/donation.$donationId'
+import { Route as SponsorRouteImport } from './routes/sponsor'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -33,9 +40,14 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DonationsRoute = DonationsRouteImport.update({
-  id: '/donations',
-  path: '/donations',
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DistributionRoute = DistributionRouteImport.update({
+  id: '/distribution',
+  path: '/distribution',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImpactRoute = ImpactRouteImport.update({
@@ -43,9 +55,9 @@ const ImpactRoute = ImpactRouteImport.update({
   path: '/impact',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PickupRoute = PickupRouteImport.update({
-  id: '/pickup',
-  path: '/pickup',
+const InventoryRoute = InventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -53,85 +65,99 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DonationDonationIdRoute = DonationDonationIdRouteImport.update({
-  id: '/donation/$donationId',
-  path: '/donation/$donationId',
+const SponsorRoute = SponsorRouteImport.update({
+  id: '/sponsor',
+  path: '/sponsor',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
-  '/donations': typeof DonationsRoute
+  '/contact': typeof ContactRoute
+  '/distribution': typeof DistributionRoute
   '/impact': typeof ImpactRoute
-  '/pickup': typeof PickupRoute
+  '/inventory': typeof InventoryRoute
   '/profile': typeof ProfileRoute
-  '/donation/$donationId': typeof DonationDonationIdRoute
+  '/sponsor': typeof SponsorRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
-  '/donations': typeof DonationsRoute
+  '/contact': typeof ContactRoute
+  '/distribution': typeof DistributionRoute
   '/impact': typeof ImpactRoute
-  '/pickup': typeof PickupRoute
+  '/inventory': typeof InventoryRoute
   '/profile': typeof ProfileRoute
-  '/donation/$donationId': typeof DonationDonationIdRoute
+  '/sponsor': typeof SponsorRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
-  '/donations': typeof DonationsRoute
+  '/contact': typeof ContactRoute
+  '/distribution': typeof DistributionRoute
   '/impact': typeof ImpactRoute
-  '/pickup': typeof PickupRoute
+  '/inventory': typeof InventoryRoute
   '/profile': typeof ProfileRoute
-  '/donation/$donationId': typeof DonationDonationIdRoute
+  '/sponsor': typeof SponsorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/admin'
     | '/auth'
-    | '/donations'
+    | '/contact'
+    | '/distribution'
     | '/impact'
-    | '/pickup'
+    | '/inventory'
     | '/profile'
-    | '/donation/$donationId'
+    | '/sponsor'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/admin'
     | '/auth'
-    | '/donations'
+    | '/contact'
+    | '/distribution'
     | '/impact'
-    | '/pickup'
+    | '/inventory'
     | '/profile'
-    | '/donation/$donationId'
+    | '/sponsor'
   id:
     | '__root__'
     | '/'
+    | '/about'
     | '/admin'
     | '/auth'
-    | '/donations'
+    | '/contact'
+    | '/distribution'
     | '/impact'
-    | '/pickup'
+    | '/inventory'
     | '/profile'
-    | '/donation/$donationId'
+    | '/sponsor'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
-  DonationsRoute: typeof DonationsRoute
+  ContactRoute: typeof ContactRoute
+  DistributionRoute: typeof DistributionRoute
   ImpactRoute: typeof ImpactRoute
-  PickupRoute: typeof PickupRoute
+  InventoryRoute: typeof InventoryRoute
   ProfileRoute: typeof ProfileRoute
-  DonationDonationIdRoute: typeof DonationDonationIdRoute
+  SponsorRoute: typeof SponsorRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -141,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -157,11 +190,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/donations': {
-      id: '/donations'
-      path: '/donations'
-      fullPath: '/donations'
-      preLoaderRoute: typeof DonationsRouteImport
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/distribution': {
+      id: '/distribution'
+      path: '/distribution'
+      fullPath: '/distribution'
+      preLoaderRoute: typeof DistributionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/impact': {
@@ -171,11 +211,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImpactRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pickup': {
-      id: '/pickup'
-      path: '/pickup'
-      fullPath: '/pickup'
-      preLoaderRoute: typeof PickupRouteImport
+    '/inventory': {
+      id: '/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof InventoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -185,11 +225,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/donation/$donationId': {
-      id: '/donation/$donationId'
-      path: '/donation/$donationId'
-      fullPath: '/donation/$donationId'
-      preLoaderRoute: typeof DonationDonationIdRouteImport
+    '/sponsor': {
+      id: '/sponsor'
+      path: '/sponsor'
+      fullPath: '/sponsor'
+      preLoaderRoute: typeof SponsorRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -197,13 +237,15 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
-  DonationsRoute: DonationsRoute,
+  ContactRoute: ContactRoute,
+  DistributionRoute: DistributionRoute,
   ImpactRoute: ImpactRoute,
-  PickupRoute: PickupRoute,
+  InventoryRoute: InventoryRoute,
   ProfileRoute: ProfileRoute,
-  DonationDonationIdRoute: DonationDonationIdRoute,
+  SponsorRoute: SponsorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
