@@ -82,6 +82,42 @@ export type Database = {
         }
         Relationships: []
       }
+      distribution_centers: {
+        Row: {
+          active: boolean
+          address: string | null
+          center_type: string
+          created_at: string
+          daily_meal_target: number
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          center_type?: string
+          created_at?: string
+          daily_meal_target?: number
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          center_type?: string
+          created_at?: string
+          daily_meal_target?: number
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+        }
+        Relationships: []
+      }
       donations: {
         Row: {
           claimed_at: string | null
@@ -153,6 +189,77 @@ export type Database = {
           weight_kg?: number | null
         }
         Relationships: []
+      }
+      kitchen_inventory: {
+        Row: {
+          category: string
+          current_stock: number
+          id: string
+          item_name: string
+          reorder_threshold: number
+          unit: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          current_stock?: number
+          id?: string
+          item_name: string
+          reorder_threshold?: number
+          unit?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          current_stock?: number
+          id?: string
+          item_name?: string
+          reorder_threshold?: number
+          unit?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      meal_logs: {
+        Row: {
+          center_id: string
+          children_served: number
+          created_at: string
+          id: string
+          log_date: string
+          logged_by: string | null
+          meals_cooked: number
+        }
+        Insert: {
+          center_id: string
+          children_served?: number
+          created_at?: string
+          id?: string
+          log_date?: string
+          logged_by?: string | null
+          meals_cooked?: number
+        }
+        Update: {
+          center_id?: string
+          children_served?: number
+          created_at?: string
+          id?: string
+          log_date?: string
+          logged_by?: string | null
+          meals_cooked?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_logs_center_id_fkey"
+            columns: ["center_id"]
+            isOneToOne: false
+            referencedRelation: "distribution_centers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -263,6 +370,39 @@ export type Database = {
           phone?: string | null
           role?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sponsorships: {
+        Row: {
+          amount_inr: number
+          created_at: string
+          id: string
+          meals_sponsored: number
+          message: string | null
+          sponsor_email: string | null
+          sponsor_id: string | null
+          sponsor_name: string
+        }
+        Insert: {
+          amount_inr: number
+          created_at?: string
+          id?: string
+          meals_sponsored: number
+          message?: string | null
+          sponsor_email?: string | null
+          sponsor_id?: string | null
+          sponsor_name: string
+        }
+        Update: {
+          amount_inr?: number
+          created_at?: string
+          id?: string
+          meals_sponsored?: number
+          message?: string | null
+          sponsor_email?: string | null
+          sponsor_id?: string | null
+          sponsor_name?: string
         }
         Relationships: []
       }
@@ -478,6 +618,18 @@ export type Database = {
         }[]
       }
       expire_old_donations: { Args: never; Returns: number }
+      kitchen_dashboard_stats: {
+        Args: never
+        Returns: {
+          active_kitchen_centers: number
+          children_served_today: number
+          low_stock_items: number
+          meals_cooked_this_month: number
+          meals_cooked_today: number
+          total_meals_sponsored: number
+          total_sponsorships_amount: number
+        }[]
+      }
       my_dashboard_stats: {
         Args: never
         Returns: {

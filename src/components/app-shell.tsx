@@ -1,12 +1,13 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, Bell, BellOff, HandHeart, Home, Info, LogOut, Mail, Menu, ShieldCheck, Truck, UserRound, X } from "lucide-react";
+import { BarChart3, Bell, BellOff, Building2, HeartHandshake, Home, Info, LogOut, Mail, Menu, PackageOpen, ShieldCheck, UserRound, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { useKitchenStats } from "@/hooks/use-kitchen";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useProfile } from "@/hooks/use-profile";
-import { formatCount, useNetworkStats } from "@/hooks/use-stats";
+import { formatCount } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/lib/i18n";
 import { isNotificationSoundEnabled, primeNotificationAudio, setNotificationSoundEnabled } from "@/lib/notification-sound";
@@ -14,15 +15,16 @@ import { isNotificationSoundEnabled, primeNotificationAudio, setNotificationSoun
 // The primary five stay on the mobile bottom bar exactly as before.
 const navItems = [
   { labelKey: "nav.overview", to: "/", icon: Home },
-  { labelKey: "nav.findFood", to: "/donations", icon: HandHeart },
-  { labelKey: "nav.pickup", to: "/pickup", icon: Truck },
-  { labelKey: "nav.impact", to: "/impact", icon: BarChart3 },
+  { labelKey: "nav.sponsor", to: "/sponsor", icon: HeartHandshake },
+  { labelKey: "nav.inventory", to: "/inventory", icon: PackageOpen },
+  { labelKey: "nav.distribution", to: "/distribution", icon: Building2 },
   { labelKey: "nav.profile", to: "/profile", icon: UserRound },
 ] as const;
 
-// About/Contact (and Admin, once granted) only appear in the sidebar and mobile drawer —
-// the bottom tab bar stays at its existing five slots.
+// About/Contact/Impact (and Admin, once granted) only appear in the sidebar and mobile
+// drawer — the bottom tab bar stays at its existing five slots.
 const secondaryNavItems = [
+  { labelKey: "nav.impact", to: "/impact", icon: BarChart3 },
   { labelKey: "nav.about", to: "/about", icon: Info },
   { labelKey: "nav.contact", to: "/contact", icon: Mail },
 ] as const;
@@ -35,7 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { user, profile } = useProfile();
   const { items: notifications, unread, markAllRead } = useNotifications(user?.id);
-  const { stats: network } = useNetworkStats(Boolean(user));
+  const { stats: kitchen } = useKitchenStats();
   const { isAdmin } = useIsAdmin(user?.id);
   const { language, setLanguage, t } = useLanguage();
 
@@ -86,7 +88,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 grid h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur sm:px-4 md:px-7">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button variant="ghost" size="icon" className="shrink-0 md:hidden" aria-label="Open menu" onClick={() => setMobileMenu(true)}><Menu className="size-5" /></Button>
-          <Link to="/" className="min-w-0"><p className="truncate font-display text-xl italic leading-none sm:text-2xl">Food Waste Connect</p><p className="label-caps mt-1 truncate text-muted-foreground">Community network</p></Link>
+          <Link to="/" className="min-w-0"><p className="truncate font-display text-xl italic leading-none sm:text-2xl">Ratna Nidhi Central Kitchen</p><p className="label-caps mt-1 truncate text-muted-foreground">Daily Meal Project</p></Link>
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -134,11 +136,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                         className="block w-full px-4 py-3 text-left hover:bg-muted/40"
                         onClick={() => {
                           setShowNotifications(false);
-                          if (item.donation_id) {
-                            void navigate({ to: "/donation/$donationId", params: { donationId: item.donation_id } });
-                          } else {
-                            void navigate({ to: "/pickup" });
-                          }
+                          void navigate({ to: "/" });
                         }}
                       >
                         <p className="text-sm font-medium">{item.title}</p>
@@ -176,16 +174,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {mobileMenu && <div className="fixed inset-0 z-50 bg-background p-5 md:hidden"><div className="flex items-center justify-between"><p className="font-display text-2xl italic">Food Waste Connect</p><Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setMobileMenu(false)}><X className="size-5" /></Button></div><nav className="mt-10 space-y-2">{navigation(true)}</nav></div>}
+      {mobileMenu && <div className="fixed inset-0 z-50 bg-background p-5 md:hidden"><div className="flex items-center justify-between"><p className="font-display text-2xl italic">Ratna Nidhi Central Kitchen</p><Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setMobileMenu(false)}><X className="size-5" /></Button></div><nav className="mt-10 space-y-2">{navigation(true)}</nav></div>}
 
       <div className="mx-auto flex max-w-[1600px]">
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 border-r border-border bg-sidebar p-4 md:flex md:flex-col">
           <nav className="space-y-1">{navigation()}</nav>
           <div className="mt-auto border-t border-sidebar-border pt-5">
             <p className="label-caps text-muted-foreground">{t("networkImpact")}</p>
-            <p className="mt-2 font-display text-3xl">{formatCount(network.people_fed)} people</p>
+            <p className="mt-2 font-display text-3xl">{formatCount(kitchen.meals_cooked_today)} meals</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              {network.people_fed > 0 ? "Fed through completed community pickups." : "No completed pickups recorded yet."}
+              {kitchen.meals_cooked_today > 0 ? "Cooked today across all kitchen centers." : "No meals logged yet today."}
             </p>
           </div>
         </aside>
@@ -201,7 +199,3 @@ export function PageIntro({ eyebrow, title, description, action }: { eyebrow: st
   return <section className="reveal border-b border-border px-4 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-14"><p className="label-caps text-accent">{eyebrow}</p><div className="mt-4 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between"><div className="min-w-0"><h1 className="font-display text-4xl leading-[0.98] break-words sm:text-5xl lg:text-6xl">{title}</h1><p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:mt-5 sm:text-base">{description}</p></div>{action}</div></section>;
 }
 
-export function StatusBadge({ value }: { value: string }) {
-  const style = value === "Urgent" || value === "Posted" ? "bg-accent/15 text-accent" : value === "Delivered" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary";
-  return <span className={`label-caps inline-flex rounded-sm px-2 py-1 ${style}`}>{value}</span>;
-}

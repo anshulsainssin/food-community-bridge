@@ -1,25 +1,8 @@
 import "leaflet/dist/leaflet.css";
 
-import { Link } from "@tanstack/react-router";
 import L from "leaflet";
 import { useEffect } from "react";
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
-
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-
-// Leaflet's default marker icon paths break under bundlers (they resolve relative to the
-// page, not the package); point them at the actual bundled asset URLs instead.
-const defaultIcon = L.icon({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 
 export type MapPoint = {
   id: string;
@@ -27,8 +10,7 @@ export type MapPoint = {
   lon: number;
   title: string;
   detail: string;
-  kind: "donation" | "ngo";
-  donationId?: string;
+  kind: "ngo" | "center";
 };
 
 function FitToPoints({ center, points }: { center: { lat: number; lon: number } | null; points: MapPoint[] }) {
@@ -78,33 +60,23 @@ export function MapPanel({ center, points }: { center: { lat: number; lon: numbe
           <Popup>You are here</Popup>
         </CircleMarker>
       )}
-      {points.map((point) =>
-        point.kind === "ngo" ? (
-          <CircleMarker
-            key={point.id}
-            center={[point.lat, point.lon]}
-            radius={8}
-            pathOptions={{ color: "#c2410c", fillColor: "#f97316", fillOpacity: 0.9, weight: 2 }}
-          >
-            <Popup>
-              <p className="font-medium">{point.title}</p>
-              <p className="text-xs text-muted-foreground">{point.detail}</p>
-            </Popup>
-          </CircleMarker>
-        ) : (
-          <Marker key={point.id} position={[point.lat, point.lon]} icon={defaultIcon}>
-            <Popup>
-              <p className="font-medium">{point.title}</p>
-              <p className="text-xs text-muted-foreground">{point.detail}</p>
-              {point.donationId && (
-                <Link to="/donation/$donationId" params={{ donationId: point.donationId }} className="text-xs underline">
-                  View donation
-                </Link>
-              )}
-            </Popup>
-          </Marker>
-        ),
-      )}
+      {points.map((point) => (
+        <CircleMarker
+          key={point.id}
+          center={[point.lat, point.lon]}
+          radius={point.kind === "center" ? 9 : 8}
+          pathOptions={
+            point.kind === "center"
+              ? { color: "#15803d", fillColor: "#22c55e", fillOpacity: 0.9, weight: 2 }
+              : { color: "#c2410c", fillColor: "#f97316", fillOpacity: 0.9, weight: 2 }
+          }
+        >
+          <Popup>
+            <p className="font-medium">{point.title}</p>
+            <p className="text-xs text-muted-foreground">{point.detail}</p>
+          </Popup>
+        </CircleMarker>
+      ))}
     </MapContainer>
   );
 }

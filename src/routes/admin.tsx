@@ -1,23 +1,24 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, Mail, PackageOpen, Search, ShieldAlert, UsersRound, UtensilsCrossed } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { AlertTriangle, Award, Building2, Check, Mail, PackageOpen, ShieldAlert, UsersRound, UtensilsCrossed } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
-import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
+import { AppShell, PageIntro } from "@/components/app-shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { useKitchenStats } from "@/hooks/use-kitchen";
 import { useProfile } from "@/hooks/use-profile";
-import { formatCount, formatWeight } from "@/hooks/use-stats";
-import { displayStatus, PICKUP_STEPS } from "@/lib/donation-status";
+import { formatCount } from "@/hooks/use-stats";
+import { formatInr } from "@/lib/kitchen";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables as TablesType } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin Dashboard | Food Waste Connect" },
-      { name: "description", content: "Live network metrics, user and pickup management for Food Waste Connect administrators." },
-      { property: "og:title", content: "Admin Dashboard | Food Waste Connect" },
+      { title: "Admin Dashboard | Ratna Nidhi Central Kitchen" },
+      { name: "description", content: "Live kitchen metrics, sponsorships, users, and incoming messages for Ratna Nidhi Central Kitchen administrators." },
+      { property: "og:title", content: "Admin Dashboard | Ratna Nidhi Central Kitchen" },
       { property: "og:type", content: "website" },
       { name: "robots", content: "noindex" },
     ],
@@ -26,27 +27,17 @@ export const Route = createFileRoute("/admin")({
 });
 
 type Profile = TablesType<"profiles">;
-type Donation = TablesType<"donations">;
+type Sponsorship = TablesType<"sponsorships">;
 type ContactMessage = TablesType<"contact_messages">;
 type VolunteerSignup = TablesType<"volunteer_signups">;
 type AdminStats = {
   total_users: number;
-  total_donations: number;
-  active_requests: number;
-  meals_delivered: number;
-  food_saved_kg: number;
-  expired_donations: number;
   pending_contact_messages: number;
   pending_volunteer_signups: number;
 };
 
 const EMPTY_STATS: AdminStats = {
   total_users: 0,
-  total_donations: 0,
-  active_requests: 0,
-  meals_delivered: 0,
-  food_saved_kg: 0,
-  expired_donations: 0,
   pending_contact_messages: 0,
   pending_volunteer_signups: 0,
 };
@@ -64,22 +55,21 @@ function formatStamp(iso: string | null) {
 function AdminPage() {
   const { user, loading: authLoading } = useProfile();
   const { isAdmin, loading: adminLoading } = useIsAdmin(user?.id);
+  const { stats: kitchen } = useKitchenStats();
 
   const [stats, setStats] = useState<AdminStats>(EMPTY_STATS);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [donations, setDonations] = useState<Donation[]>([]);
+  const [sponsorships, setSponsorships] = useState<Sponsorship[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [signups, setSignups] = useState<VolunteerSignup[]>([]);
   const [loadingData, setLoadingData] = useState(true);
-  const [donationQuery, setDonationQuery] = useState("");
-  const [donationStatusFilter, setDonationStatusFilter] = useState("All");
 
   const load = useCallback(async () => {
     setLoadingData(true);
-    const [statsResult, profilesResult, donationsResult, messagesResult, signupsResult] = await Promise.all([
+    const [statsResult, profilesResult, sponsorshipsResult, messagesResult, signupsResult] = await Promise.all([
       supabase.rpc("admin_dashboard_stats"),
       supabase.rpc("admin_list_profiles"),
-      supabase.rpc("admin_list_donations"),
+      supabase.from("sponsorships").select("*").order("created_at", { ascending: false }).limit(500),
       supabase.rpc("admin_list_contact_messages"),
       supabase.rpc("admin_list_volunteer_signups"),
     ]);
@@ -88,18 +78,13 @@ function AdminPage() {
       statsRow
         ? {
             total_users: num(statsRow.total_users),
-            total_donations: num(statsRow.total_donations),
-            active_requests: num(statsRow.active_requests),
-            meals_delivered: num(statsRow.meals_delivered),
-            food_saved_kg: num(statsRow.food_saved_kg),
-            expired_donations: num(statsRow.expired_donations),
             pending_contact_messages: num(statsRow.pending_contact_messages),
             pending_volunteer_signups: num(statsRow.pending_volunteer_signups),
           }
         : EMPTY_STATS,
     );
     setProfiles((profilesResult.data as Profile[] | null) ?? []);
-    setDonations((donationsResult.data as Donation[] | null) ?? []);
+    setSponsorships((sponsorshipsResult.data as Sponsorship[] | null) ?? []);
     setMessages((messagesResult.data as ContactMessage[] | null) ?? []);
     setSignups((signupsResult.data as VolunteerSignup[] | null) ?? []);
     setLoadingData(false);
@@ -108,30 +93,6 @@ function AdminPage() {
   useEffect(() => {
     if (isAdmin) void load();
   }, [isAdmin, load]);
-
-  const statusCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const donation of donations) {
-      const status = displayStatus(donation);
-      counts.set(status, (counts.get(status) ?? 0) + 1);
-    }
-    return counts;
-  }, [donations]);
-
-  const donationStatusOptions = ["All", ...PICKUP_STEPS.map((step) => step.value), "Expired"];
-
-  const filteredDonations = useMemo(() => {
-    const query = donationQuery.trim().toLowerCase();
-    return donations.filter((donation) => {
-      if (donationStatusFilter !== "All" && displayStatus(donation) !== donationStatusFilter) return false;
-      if (!query) return true;
-      return (
-        donation.food_type.toLowerCase().includes(query) ||
-        (donation.pickup_address ?? "").toLowerCase().includes(query) ||
-        (donation.contact_info ?? "").toLowerCase().includes(query)
-      );
-    });
-  }, [donations, donationQuery, donationStatusFilter]);
 
   if (authLoading || adminLoading) {
     return (
@@ -163,22 +124,28 @@ function AdminPage() {
   }
 
   const tiles = [
+    { label: "Meals cooked today", value: formatCount(kitchen.meals_cooked_today), icon: UtensilsCrossed },
+    { label: "Active kitchen centers", value: formatCount(kitchen.active_kitchen_centers), icon: Building2 },
+    { label: "Low stock items", value: formatCount(kitchen.low_stock_items), icon: AlertTriangle },
+    { label: "Sponsorships raised", value: formatInr(kitchen.total_sponsorships_amount), icon: Award },
     { label: "Total users", value: formatCount(stats.total_users), icon: UsersRound },
-    { label: "Total donations", value: formatCount(stats.total_donations), icon: PackageOpen },
-    { label: "Active requests", value: formatCount(stats.active_requests), icon: PackageOpen },
-    { label: "Meals delivered", value: formatCount(stats.meals_delivered), icon: UtensilsCrossed },
-    { label: "Food saved (kg)", value: formatWeight(stats.food_saved_kg), icon: UtensilsCrossed },
-    { label: "Expired donations", value: formatCount(stats.expired_donations), icon: PackageOpen },
     { label: "New contact messages", value: formatCount(stats.pending_contact_messages), icon: Mail },
     { label: "Volunteer sign-ups", value: formatCount(stats.pending_volunteer_signups), icon: Check },
+    { label: "Meals sponsored (all time)", value: formatCount(kitchen.total_meals_sponsored), icon: PackageOpen },
   ];
 
   return (
     <AppShell>
       <PageIntro
         eyebrow="Admin / Dashboard"
-        title={<>Network <span className="italic">overview.</span></>}
-        description="Live metrics and management for users, donations, and incoming messages across the network."
+        title={<>Kitchen <span className="italic">overview.</span></>}
+        description="Live metrics for the central kitchen, sponsorships, users, and incoming messages. Manage stock and distribution centers directly on their live pages."
+        action={
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link to="/inventory" className="label-caps border border-border-strong px-4 py-2.5 text-center hover:border-foreground">Manage inventory</Link>
+            <Link to="/distribution" className="label-caps border border-border-strong px-4 py-2.5 text-center hover:border-foreground">Manage centers</Link>
+          </div>
+        }
       />
 
       <section className="grid grid-cols-2 border-b border-border sm:grid-cols-4">
@@ -194,70 +161,38 @@ function AdminPage() {
       </section>
 
       <section className="p-4 sm:p-8 lg:p-12">
-        <Tabs defaultValue="donations">
+        <Tabs defaultValue="sponsorships">
           <TabsList>
-            <TabsTrigger value="donations">Donations ({donations.length})</TabsTrigger>
+            <TabsTrigger value="sponsorships">Sponsorships ({sponsorships.length})</TabsTrigger>
             <TabsTrigger value="users">Users ({profiles.length})</TabsTrigger>
             <TabsTrigger value="messages">Messages ({messages.length})</TabsTrigger>
             <TabsTrigger value="volunteers">Volunteers ({signups.length})</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="donations" className="mt-6">
-            {!loadingData && donations.length > 0 && (
-              <div className="mb-6 flex flex-wrap gap-2">
-                {donationStatusOptions.slice(1).map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={() => setDonationStatusFilter(donationStatusFilter === status ? "All" : status)}
-                    className={`border px-3 py-1.5 text-xs ${
-                      donationStatusFilter === status
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border-strong text-muted-foreground hover:border-foreground"
-                    }`}
-                  >
-                    {status} · {statusCounts.get(status) ?? 0}
-                  </button>
-                ))}
-              </div>
-            )}
-            {!loadingData && donations.length > 0 && (
-              <div className="mb-4 flex items-center gap-2 border-b border-input pb-2">
-                <Search className="size-4 shrink-0 text-muted-foreground" />
-                <input
-                  value={donationQuery}
-                  onChange={(event) => setDonationQuery(event.target.value)}
-                  placeholder="Search by food type, address, or contact"
-                  aria-label="Search donations"
-                  className="h-9 w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-                />
-              </div>
-            )}
+          <TabsContent value="sponsorships" className="mt-6">
             {loadingData ? (
-              <p className="text-sm text-muted-foreground">Loading donations…</p>
-            ) : donations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No donations yet.</p>
-            ) : filteredDonations.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No donations match this search/filter.</p>
+              <p className="text-sm text-muted-foreground">Loading sponsorships…</p>
+            ) : sponsorships.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No sponsorships recorded yet.</p>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Food</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Pickup address</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead>Sponsor</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Meals</TableHead>
+                    <TableHead>Recorded</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredDonations.map((donation) => (
-                    <TableRow key={donation.id}>
-                      <TableCell className="max-w-40 truncate">{donation.food_type}</TableCell>
-                      <TableCell><StatusBadge value={displayStatus(donation)} /></TableCell>
-                      <TableCell className="max-w-56 truncate text-muted-foreground">{donation.pickup_address || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{donation.contact_info || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatStamp(donation.created_at)}</TableCell>
+                  {sponsorships.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="max-w-40 truncate">{item.sponsor_name}</TableCell>
+                      <TableCell className="text-muted-foreground">{item.sponsor_email || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatInr(item.amount_inr)}</TableCell>
+                      <TableCell className="text-muted-foreground">{item.meals_sponsored}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatStamp(item.created_at)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

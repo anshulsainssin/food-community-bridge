@@ -11,8 +11,9 @@ const LANGUAGE_KEY = "fwc-language";
 const TRANSLATIONS: Record<Language, Record<string, string>> = {
   en: {
     "nav.overview": "Overview",
-    "nav.findFood": "Find food",
-    "nav.pickup": "Pickup",
+    "nav.sponsor": "Sponsor a Meal",
+    "nav.inventory": "Live Kitchen Inventory",
+    "nav.distribution": "Distribution Tracker",
     "nav.impact": "Impact",
     "nav.profile": "Profile",
     "nav.about": "About",
@@ -33,12 +34,13 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "notifications.soundOff": "Turn notification sound on",
     "auth.signIn": "Sign in",
     "auth.signOut": "Sign out",
-    "networkImpact": "Network impact",
+    "networkImpact": "Today's impact",
   },
   hi: {
     "nav.overview": "डैशबोर्ड",
-    "nav.findFood": "खाना खोजें",
-    "nav.pickup": "पिकअप",
+    "nav.sponsor": "भोजन प्रायोजित करें",
+    "nav.inventory": "रसोई भंडार",
+    "nav.distribution": "वितरण ट्रैकर",
     "nav.impact": "प्रभाव",
     "nav.profile": "प्रोफ़ाइल",
     "nav.about": "हमारे बारे में",
@@ -59,7 +61,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "notifications.soundOff": "सूचना ध्वनि चालू करें",
     "auth.signIn": "साइन इन करें",
     "auth.signOut": "साइन आउट करें",
-    "networkImpact": "नेटवर्क प्रभाव",
+    "networkImpact": "आज का प्रभाव",
   },
 };
 

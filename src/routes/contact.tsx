@@ -9,9 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact Us | Food Waste Connect" },
-      { name: "description", content: "Get in touch with Food Waste Connect or sign up to volunteer with a nearby NGO." },
-      { property: "og:title", content: "Contact Us | Food Waste Connect" },
+      { title: "Contact Us | Ratna Nidhi Central Kitchen" },
+      { name: "description", content: "Get in touch with the Ratna Nidhi Central Kitchen or sign up to volunteer." },
+      { property: "og:title", content: "Contact Us | Ratna Nidhi Central Kitchen" },
       { property: "og:description", content: "Reach out or join as a volunteer." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -76,7 +76,7 @@ function ContactPage() {
       <PageIntro
         eyebrow="Contact / Get in touch"
         title={<>We would love <span className="italic">to hear from you.</span></>}
-        description="Questions about the network, a partnership idea, or ready to volunteer with a nearby NGO — send us a message below."
+        description="Questions about the Central Kitchen, a partnership idea, or ready to volunteer — send us a message below."
       />
 
       <section className="grid lg:grid-cols-2">
@@ -121,7 +121,7 @@ function ContactPage() {
             </p>
             <p className="flex items-center gap-2">
               <MapPin className="size-4 shrink-0 text-accent" />
-              Serving communities network-wide, wherever donors and NGOs sign up.
+              Serving children at partner schools and distribution centers.
             </p>
           </div>
         </div>
@@ -129,7 +129,7 @@ function ContactPage() {
         <div className="bg-muted/25 px-4 py-8 sm:px-8 lg:px-10">
           <h2 className="label-caps">Volunteer sign-up</h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Tell us about yourself and we will connect you with an NGO or pickup coordinator near you.
+            Tell us about yourself and a kitchen coordinator will connect with you.
           </p>
           {volunteerSent ? (
             <div className="mt-6 border border-border-strong bg-card p-6">
