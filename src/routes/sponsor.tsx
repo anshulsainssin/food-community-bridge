@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { formatInr, mealsForAmount, SPONSOR_QUICK_AMOUNTS } from "@/lib/kitchen";
+import { useLanguage } from "@/lib/i18n";
 import { playNotificationSound } from "@/lib/notification-sound";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -32,6 +33,7 @@ function formatMoment(iso: string) {
 
 function SponsorPage() {
   const { user, profile } = useProfile();
+  const { t } = useLanguage();
   const [amount, setAmount] = useState<number>(500);
   const [customAmount, setCustomAmount] = useState("");
   const [message, setMessage] = useState("");
@@ -108,18 +110,18 @@ function SponsorPage() {
   return (
     <AppShell>
       <PageIntro
-        eyebrow="Sponsor a Meal"
-        title={<>₹500 feeds <span className="italic">50 children.</span></>}
-        description="Every sponsorship goes directly toward raw rations for the Ratna Nidhi Central Kitchen, which prepares 2,200+ fresh cooked meals a day for children at partner schools and centers."
+        eyebrow={t("sponsor.eyebrow")}
+        title={<>{t("sponsor.titleMain")} <span className="italic">{t("sponsor.titleEmphasis")}</span></>}
+        description={t("sponsor.description")}
       />
 
       <div className="grid lg:grid-cols-[1fr_1fr]">
         <section className="border-b border-border p-4 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
-          <h2 className="font-display text-2xl italic sm:text-3xl">Choose an amount</h2>
+          <h2 className="font-display text-2xl italic sm:text-3xl">{t("sponsor.chooseAmount")}</h2>
           {!user ? (
             <div className="mt-6 border border-border-strong bg-card p-6">
-              <p className="text-sm text-muted-foreground">Sign in to sponsor a meal and track your impact.</p>
-              <Button asChild className="mt-4"><Link to="/auth">Sign in</Link></Button>
+              <p className="text-sm text-muted-foreground">{t("sponsor.signInPrompt")}</p>
+              <Button asChild className="mt-4"><Link to="/auth">{t("sponsor.signIn")}</Link></Button>
             </div>
           ) : (
             <form onSubmit={submitPledge} className="mt-6 space-y-6">
@@ -139,7 +141,7 @@ function SponsorPage() {
                 ))}
               </div>
               <label className="block">
-                <span className="label-caps text-muted-foreground">Or enter a custom amount (₹)</span>
+                <span className="label-caps text-muted-foreground">{t("sponsor.customAmount")}</span>
                 <input
                   type="number"
                   min="10"
@@ -154,29 +156,27 @@ function SponsorPage() {
               <div className="flex items-center gap-3 border border-border-strong bg-muted/25 p-4">
                 <UtensilsCrossed className="size-5 shrink-0 text-accent" />
                 <p className="text-sm">
-                  <span className="font-display text-2xl">{meals}</span> meal{meals === 1 ? "" : "s"} sponsored at {formatInr(effectiveAmount)}
+                  <span className="font-display text-2xl">{meals}</span> {t("home.tile.mealsUnit")}{meals === 1 ? "" : ""} {t("sponsor.submitBtn")} {formatInr(effectiveAmount)}
                 </p>
               </div>
 
               <label className="block">
-                <span className="label-caps text-muted-foreground">Sponsor name</span>
+                <span className="label-caps text-muted-foreground">{t("sponsor.sponsorName")}</span>
                 <input name="sponsor_name" defaultValue={profile?.full_name ?? ""} required className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
               </label>
               <label className="block">
-                <span className="label-caps text-muted-foreground">Email</span>
+                <span className="label-caps text-muted-foreground">{t("sponsor.email")}</span>
                 <input name="sponsor_email" type="email" defaultValue={profile?.email ?? user.email ?? ""} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
               </label>
               <label className="block">
-                <span className="label-caps text-muted-foreground">Message (optional)</span>
+                <span className="label-caps text-muted-foreground">{t("sponsor.messageOpt")}</span>
                 <textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={3} placeholder="In memory of… / On behalf of…" className="mt-2 w-full resize-none border-b border-input bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 focus:border-foreground" />
               </label>
 
               {error && <p className="text-sm text-accent">{error}</p>}
-              <p className="text-xs text-muted-foreground">
-                This records your sponsorship pledge. Payment is coordinated separately (bank transfer / UPI) — no online payment is processed on this page.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("sponsor.paymentNote")}</p>
               <Button type="submit" size="wide" className="w-full" disabled={saving || effectiveAmount <= 0}>
-                {saving ? "Recording…" : "Sponsor a meal"}
+                {saving ? t("sponsor.saving") : t("sponsor.submitBtn")}
               </Button>
             </form>
           )}
@@ -185,15 +185,15 @@ function SponsorPage() {
         <section className="bg-muted/25 p-4 sm:p-8 lg:p-10">
           <div className="flex items-center gap-2">
             <HeartHandshake className="size-4 text-accent" />
-            <h2 className="label-caps text-foreground">My sponsorships</h2>
+            <h2 className="label-caps text-foreground">{t("sponsor.mySponsorships")}</h2>
           </div>
           {!user ? (
-            <p className="mt-6 text-sm text-muted-foreground">Sign in to see your sponsorship history and impact certificates.</p>
+            <p className="mt-6 text-sm text-muted-foreground">{t("sponsor.signInHistory")}</p>
           ) : loadingMine ? (
-            <p className="mt-6 text-sm text-muted-foreground">Loading…</p>
+            <p className="mt-6 text-sm text-muted-foreground">{t("sponsor.loading")}</p>
           ) : sponsorships.length === 0 ? (
             <p className="mt-6 text-sm text-muted-foreground">
-              {success ? "Your sponsorship was recorded." : "No sponsorships yet — every meal counts."}
+              {success ? t("sponsor.recorded") : t("sponsor.noSponsorships")}
             </p>
           ) : (
             <div className="mt-6 space-y-5">
@@ -201,7 +201,7 @@ function SponsorPage() {
                 <article key={item.id} className="border border-border-strong bg-card p-6">
                   <div className="flex items-center gap-2 text-accent">
                     <Award className="size-4" />
-                    <p className="label-caps">Certificate of impact</p>
+                    <p className="label-caps">{t("sponsor.certTitle")}</p>
                   </div>
                   <p className="mt-4 font-display text-2xl italic">{item.sponsor_name}</p>
                   <p className="mt-1 text-sm text-muted-foreground">sponsored {item.meals_sponsored} meal{item.meals_sponsored === 1 ? "" : "s"} ({formatInr(item.amount_inr)}) for children at the Ratna Nidhi Central Kitchen.</p>

@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/lib/i18n";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/contact")({
 });
 
 function ContactPage() {
+  const { t } = useLanguage();
   const [contactSent, setContactSent] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
   const [contactSaving, setContactSaving] = useState(false);
@@ -74,42 +76,42 @@ function ContactPage() {
   return (
     <AppShell>
       <PageIntro
-        eyebrow="Contact / Get in touch"
-        title={<>We would love <span className="italic">to hear from you.</span></>}
-        description="Questions about the Central Kitchen, a partnership idea, or ready to volunteer — send us a message below."
+        eyebrow={t("contact.eyebrow")}
+        title={<>{t("contact.titleMain")} <span className="italic">{t("contact.titleEmphasis")}</span></>}
+        description={t("contact.description")}
       />
 
       <section className="grid lg:grid-cols-2">
         <div className="border-b border-border px-4 py-8 sm:px-8 lg:border-b-0 lg:border-r lg:px-10">
-          <h2 className="label-caps">Contact us</h2>
+          <h2 className="label-caps">{t("contact.us")}</h2>
           {contactSent ? (
             <div className="mt-6 border border-border-strong bg-card p-6">
               <div className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Check className="size-5" />
               </div>
-              <h3 className="mt-5 font-display text-2xl">Message received</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Thanks for reaching out — your message has been saved and our team will follow up.</p>
+              <h3 className="mt-5 font-display text-2xl">{t("contact.sent.title")}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{t("contact.sent.body")}</p>
               <Button className="mt-6" variant="outline" onClick={() => setContactSent(false)}>
-                Send another message
+                {t("contact.sent.again")}
               </Button>
             </div>
           ) : (
             <form className="mt-6 space-y-6" onSubmit={submitContact}>
               <label className="block">
-                <span className="label-caps text-muted-foreground">Name</span>
+                <span className="label-caps text-muted-foreground">{t("contact.name")}</span>
                 <input required name="name" className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
               </label>
               <label className="block">
-                <span className="label-caps text-muted-foreground">Email</span>
+                <span className="label-caps text-muted-foreground">{t("contact.email")}</span>
                 <input required type="email" name="email" className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
               </label>
               <label className="block">
-                <span className="label-caps text-muted-foreground">Message</span>
+                <span className="label-caps text-muted-foreground">{t("contact.message")}</span>
                 <textarea required name="message" rows={4} className="mt-2 w-full resize-none border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
               </label>
               {contactError && <p className="text-sm text-accent">{contactError}</p>}
               <Button type="submit" size="wide" className="w-full" disabled={contactSaving}>
-                {contactSaving ? "Sending…" : "Send message"}
+                {contactSaving ? t("contact.sending") : t("contact.send")}
               </Button>
             </form>
           )}
@@ -117,67 +119,65 @@ function ContactPage() {
           <div className="mt-10 space-y-3 text-sm text-muted-foreground">
             <p className="flex items-center gap-2">
               <Mail className="size-4 shrink-0 text-accent" />
-              Messages go straight to the team through this form.
+              {t("contact.info.form")}
             </p>
             <p className="flex items-center gap-2">
               <MapPin className="size-4 shrink-0 text-accent" />
-              Serving children at partner schools and distribution centers.
+              {t("contact.info.serving")}
             </p>
           </div>
         </div>
 
         <div className="bg-muted/25 px-4 py-8 sm:px-8 lg:px-10">
-          <h2 className="label-caps">Volunteer sign-up</h2>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Tell us about yourself and a kitchen coordinator will connect with you.
-          </p>
+          <h2 className="label-caps">{t("contact.volunteer.title")}</h2>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">{t("contact.volunteer.desc")}</p>
           {volunteerSent ? (
             <div className="mt-6 border border-border-strong bg-card p-6">
               <div className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Check className="size-5" />
               </div>
-              <h3 className="mt-5 font-display text-2xl">You&apos;re on the list</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Your volunteer sign-up has been saved. We will reach out with next steps.</p>
+              <h3 className="mt-5 font-display text-2xl">{t("contact.volunteer.list.title")}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{t("contact.volunteer.list.body")}</p>
               <Button className="mt-6" variant="outline" onClick={() => setVolunteerSent(false)}>
-                Sign up someone else
+                {t("contact.volunteer.again")}
               </Button>
             </div>
           ) : (
             <form className="mt-6 space-y-6" onSubmit={submitVolunteer}>
               <div className="grid gap-6 sm:grid-cols-2">
                 <label className="block">
-                  <span className="label-caps text-muted-foreground">Name</span>
+                  <span className="label-caps text-muted-foreground">{t("contact.name")}</span>
                   <input required name="name" className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
                 </label>
                 <label className="block">
-                  <span className="label-caps text-muted-foreground">Phone</span>
+                  <span className="label-caps text-muted-foreground">{t("contact.phone")}</span>
                   <input name="phone" type="tel" className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
                 </label>
               </div>
               <div className="grid gap-6 sm:grid-cols-2">
                 <label className="block">
-                  <span className="label-caps text-muted-foreground">Email</span>
+                  <span className="label-caps text-muted-foreground">{t("contact.email")}</span>
                   <input required type="email" name="email" className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
                 </label>
                 <label className="block">
-                  <span className="label-caps text-muted-foreground">City / area</span>
+                  <span className="label-caps text-muted-foreground">{t("contact.city")}</span>
                   <input name="location" className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
                 </label>
               </div>
               <label className="block">
-                <span className="label-caps text-muted-foreground">Availability / notes (optional)</span>
+                <span className="label-caps text-muted-foreground">{t("contact.availability")}</span>
                 <textarea name="message" rows={3} className="mt-2 w-full resize-none border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
               </label>
               {volunteerError && <p className="text-sm text-accent">{volunteerError}</p>}
               <Button type="submit" size="wide" className="w-full" disabled={volunteerSaving}>
-                {volunteerSaving ? "Submitting…" : "Sign up to volunteer"}
+                {volunteerSaving ? t("contact.submitting") : t("contact.submitVolunteer")}
               </Button>
             </form>
           )}
 
           <p className="mt-8 flex items-center gap-2 text-xs text-muted-foreground">
             <Phone className="size-3.5 shrink-0 text-accent" />
-            A coordinator will contact you using the details you provide above.
+            {t("contact.coordinator")}
           </p>
         </div>
       </section>

@@ -187,9 +187,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="space-y-1">{navigation()}</nav>
           <div className="mt-auto border-t border-sidebar-border pt-5">
             <p className="label-caps text-muted-foreground">{t("networkImpact")}</p>
-            <p className="mt-2 font-display text-3xl">{formatCount(kitchen.meals_cooked_today)} meals</p>
+            <p className="mt-2 font-display text-3xl">{formatCount(kitchen.meals_cooked_today)} {t("appShell.mealsSidebar")}</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              {kitchen.meals_cooked_today > 0 ? "Cooked today across all kitchen centers." : "No meals logged yet today."}
+              {kitchen.meals_cooked_today > 0 ? t("appShell.cookedToday") : t("appShell.noMealsToday")}
             </p>
           </div>
         </aside>
