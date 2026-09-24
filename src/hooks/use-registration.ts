@@ -15,12 +15,7 @@ export type RegistrationInput = {
   pincode: string;
 };
 
-/**
- * The signed-in user's distribution-partner registration: organization name, 80G tax
- * certificate, contact info, and a pincode-verified location. Once an admin approves a
- * verified registration, it links to a real distribution_centers row (see use-kitchen
- * consumers in admin.tsx) — this hook only owns the applicant's own submission and status.
- */
+/** The signed-in user's own partner registration; admin approval (admin.tsx) links it to a distribution_centers row. */
 export function useNgoRegistration(userId: string | null | undefined) {
   const [registration, setRegistration] = useState<NgoRegistration | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +40,7 @@ export function useNgoRegistration(userId: string | null | undefined) {
 
   const save = useCallback(
     async (input: RegistrationInput) => {
-      if (!userId) return;
+      if (!userId) return false;
       setSaving(true);
       setError(null);
 
@@ -75,9 +70,10 @@ export function useNgoRegistration(userId: string | null | undefined) {
       setSaving(false);
       if (saveError) {
         setError(saveError.message);
-        return;
+        return false;
       }
       await load();
+      return true;
     },
     [userId, load],
   );
