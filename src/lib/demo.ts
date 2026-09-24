@@ -3,14 +3,14 @@ import type { Profile } from "@/hooks/use-profile";
 
 export type DemoRole = "user" | "admin";
 
-const STORAGE_KEY = "rn_demo_session";
+const STORAGE_KEY = "fwc_demo_session";
 
 export const DEMO_USER = {
   id: "demo-0000-0000-0000-000000000001",
   aud: "authenticated",
   app_metadata: {},
   user_metadata: { full_name: "Demo Visitor" },
-  email: "demo@ratnanidhikitchen.org",
+  email: "demo@example.org",
   created_at: "2026-01-01T00:00:00.000Z",
 } as User;
 
@@ -19,7 +19,7 @@ export const DEMO_ADMIN = {
   aud: "authenticated",
   app_metadata: {},
   user_metadata: { full_name: "Demo Admin" },
-  email: "admin@ratnanidhikitchen.org",
+  email: "admin@example.org",
   created_at: "2026-01-01T00:00:00.000Z",
 } as User;
 
@@ -29,7 +29,7 @@ export const DEMO_PROFILE: Profile = {
   role: "Sponsor",
   organization: null,
   phone: null,
-  email: "demo@ratnanidhikitchen.org",
+  email: "demo@example.org",
   location_label: null,
   latitude: null,
   longitude: null,
@@ -39,9 +39,9 @@ export const DEMO_ADMIN_PROFILE: Profile = {
   id: DEMO_ADMIN.id,
   full_name: "Demo Admin",
   role: "Admin",
-  organization: "Ratna Nidhi Central Kitchen",
+  organization: "Neighborhood Community Kitchen",
   phone: null,
-  email: "admin@ratnanidhikitchen.org",
+  email: "admin@example.org",
   location_label: "Mumbai, Maharashtra",
   latitude: 19.076,
   longitude: 72.8777,

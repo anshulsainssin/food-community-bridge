@@ -10,14 +10,15 @@ import { formatInr, mealsForAmount, SPONSOR_QUICK_AMOUNTS } from "@/lib/kitchen"
 import { useLanguage } from "@/lib/i18n";
 import { playNotificationSound } from "@/lib/notification-sound";
 import type { Tables } from "@/integrations/supabase/types";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/sponsor")({
   head: () => ({
     meta: [
-      { title: "Sponsor a Meal | Ratna Nidhi Central Kitchen" },
-      { name: "description", content: "Sponsor fresh cooked meals for children through the Ratna Nidhi Central Kitchen & Daily Meal Project. ₹500 sponsors 50 meals." },
-      { property: "og:title", content: "Sponsor a Meal | Ratna Nidhi Central Kitchen" },
-      { property: "og:description", content: "₹500 feeds 50 children. Sponsor a meal today." },
+      { title: pageTitle("Sponsor a Meal") },
+      { name: "description", content: "Sponsor fresh meals cooked by local community kitchens from donated and surplus food. ₹500 sponsors 50 meals." },
+      { property: "og:title", content: pageTitle("Sponsor a Meal") },
+      { property: "og:description", content: "₹500 shares 50 meals in your community. Sponsor a meal today." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -204,7 +205,7 @@ function SponsorPage() {
                     <p className="label-caps">{t("sponsor.certTitle")}</p>
                   </div>
                   <p className="mt-4 font-display text-2xl italic">{item.sponsor_name}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">sponsored {item.meals_sponsored} meal{item.meals_sponsored === 1 ? "" : "s"} ({formatInr(item.amount_inr)}) for children at the Ratna Nidhi Central Kitchen.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">sponsored {item.meals_sponsored} meal{item.meals_sponsored === 1 ? "" : "s"} ({formatInr(item.amount_inr)}) through local community kitchens.</p>
                   {item.message && <p className="mt-3 text-sm italic text-muted-foreground">"{item.message}"</p>}
                   <p className="mt-4 text-xs text-muted-foreground">{formatMoment(item.created_at)}</p>
                 </article>

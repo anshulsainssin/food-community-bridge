@@ -39,7 +39,7 @@ function normalize(row: Record<string, unknown>): KitchenStats {
   };
 }
 
-/** Live Central Kitchen totals — public data, no sign-in required. */
+/** Live community kitchen totals — public data, no sign-in required. */
 export function useKitchenStats() {
   const [stats, setStats] = useState<KitchenStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);

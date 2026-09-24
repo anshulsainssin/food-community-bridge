@@ -6,13 +6,14 @@ import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/lib/i18n";
+import { APP_NAME, pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact Us | Ratna Nidhi Central Kitchen" },
-      { name: "description", content: "Get in touch with the Ratna Nidhi Central Kitchen or sign up to volunteer." },
-      { property: "og:title", content: "Contact Us | Ratna Nidhi Central Kitchen" },
+      { title: pageTitle("Contact Us") },
+      { name: "description", content: `Get in touch with the ${APP_NAME} team or sign up for a volunteer drive.` },
+      { property: "og:title", content: pageTitle("Contact Us") },
       { property: "og:description", content: "Reach out or join as a volunteer." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

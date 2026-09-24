@@ -12,14 +12,15 @@ import { formatCount } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/lib/i18n";
 import type { Tables } from "@/integrations/supabase/types";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/distribution")({
   head: () => ({
     meta: [
-      { title: "Live Beneficiary & Distribution Tracker | Ratna Nidhi Central Kitchen" },
-      { name: "description", content: "Live map of distribution centers and schools receiving daily fresh cooked meals from the Ratna Nidhi Central Kitchen." },
-      { property: "og:title", content: "Live Beneficiary & Distribution Tracker" },
-      { property: "og:description", content: "Meals cooked today, children served, and active kitchen centers." },
+      { title: pageTitle("Live Distribution Tracker") },
+      { name: "description", content: "Live map of community kitchens, food banks, and drop-off points receiving surplus food and fresh meals." },
+      { property: "og:title", content: pageTitle("Live Distribution Tracker") },
+      { property: "og:description", content: "Meals cooked today, people served, and active community kitchens." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -101,7 +102,7 @@ function DistributionPage() {
     const lon = form.get("longitude");
     const { error: insertError } = await supabase.from("distribution_centers").insert({
       name: String(form.get("name") ?? "").trim(),
-      center_type: String(form.get("center_type") ?? "School").trim() || "School",
+      center_type: String(form.get("center_type") ?? "Community kitchen").trim() || "Community kitchen",
       address: String(form.get("address") ?? "").trim() || null,
       latitude: lat ? Number(lat) : null,
       longitude: lon ? Number(lon) : null,
@@ -193,11 +194,11 @@ function DistributionPage() {
           <form onSubmit={addCenter} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <label className="block">
               <span className="label-caps text-muted-foreground">Center name</span>
-              <input name="name" required placeholder="e.g. Municipal School 12" className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
+              <input name="name" required placeholder="e.g. Riverside Community Kitchen" className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
             <label className="block">
               <span className="label-caps text-muted-foreground">Type</span>
-              <input name="center_type" defaultValue="School" className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
+              <input name="center_type" defaultValue="Community kitchen" className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
             <label className="block">
               <span className="label-caps text-muted-foreground">Daily meal target</span>
@@ -239,7 +240,7 @@ function DistributionPage() {
               <input name="meals_cooked" type="number" min="0" required className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
             <label className="block">
-              <span className="label-caps text-muted-foreground">Children served</span>
+              <span className="label-caps text-muted-foreground">People served</span>
               <input name="children_served" type="number" min="0" required className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
             <div className="sm:col-span-2 lg:col-span-4">

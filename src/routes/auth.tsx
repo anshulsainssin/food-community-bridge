@@ -5,15 +5,16 @@ import { Button } from "@/components/ui/button";
 import { setDemoRole } from "@/lib/demo";
 import { DONOR_ROLE, NGO_ROLE } from "@/lib/roles";
 import { useState } from "react";
+import { APP_NAME, APP_TAGLINE, pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in | Ratna Nidhi Central Kitchen" },
-      { name: "description", content: "Sign in to sponsor a meal and track your impact with the Ratna Nidhi Central Kitchen & Daily Meal Project." },
-      { property: "og:title", content: "Sign in | Ratna Nidhi Central Kitchen" },
-      { property: "og:description", content: "Access your Ratna Nidhi Central Kitchen account." },
+      { title: pageTitle("Sign in") },
+      { name: "description", content: `Sign in to ${APP_NAME} to share surplus food, sponsor a meal, and track your impact.` },
+      { property: "og:title", content: pageTitle("Sign in") },
+      { property: "og:description", content: `Access your ${APP_NAME} account.` },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -38,8 +39,8 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-5 py-12">
       <div className="w-full max-w-md">
-        <p className="font-display text-3xl italic leading-none">Ratna Nidhi Central Kitchen</p>
-        <p className="label-caps mt-2 text-muted-foreground">Daily Meal Project</p>
+        <p className="font-display text-3xl italic leading-none">{APP_NAME}</p>
+        <p className="label-caps mt-2 text-muted-foreground">{APP_TAGLINE}</p>
         <h1 className="mt-8 font-display text-4xl">{mode === "signin" ? "Sign in" : "Create account"}</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">Use your account to sponsor meals and track your impact.</p>
 

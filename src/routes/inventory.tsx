@@ -10,14 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { INVENTORY_CATEGORIES, stockStatus, type StockStatus } from "@/lib/kitchen";
 import { useLanguage } from "@/lib/i18n";
 import type { Tables } from "@/integrations/supabase/types";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/inventory")({
   head: () => ({
     meta: [
-      { title: "Live Kitchen Inventory | Ratna Nidhi Central Kitchen" },
-      { name: "description", content: "Daily raw ration stock for the Ratna Nidhi Central Kitchen: grains, pulses, vegetables, and cooking oil, with re-order alerts." },
-      { property: "og:title", content: "Live Kitchen Inventory | Ratna Nidhi Central Kitchen" },
-      { property: "og:description", content: "Track daily raw ration stock and re-order alerts." },
+      { title: pageTitle("Live Kitchen Inventory") },
+      { name: "description", content: "Surplus and donated food stock across community kitchens: grains, pulses, produce, and cooking essentials, with re-order alerts." },
+      { property: "og:title", content: pageTitle("Live Kitchen Inventory") },
+      { property: "og:description", content: "Track surplus food stock and re-order alerts." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

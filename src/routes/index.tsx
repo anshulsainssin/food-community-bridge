@@ -6,14 +6,15 @@ import { Button } from "@/components/ui/button";
 import { useKitchenStats } from "@/hooks/use-kitchen";
 import { formatCount } from "@/hooks/use-stats";
 import { useLanguage } from "@/lib/i18n";
+import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ratna Nidhi Central Kitchen & Daily Meal Project" },
-      { name: "description", content: "The Ratna Nidhi Central Kitchen prepares 2,200+ fresh cooked meals every day for children at partner schools and distribution centers. Sponsor a meal or track live kitchen operations." },
-      { property: "og:title", content: "Ratna Nidhi Central Kitchen & Daily Meal Project" },
-      { property: "og:description", content: "2,200+ fresh meals cooked daily for children. Sponsor a meal or view live kitchen inventory." },
+      { title: `${APP_NAME} — ${APP_TAGLINE}` },
+      { name: "description", content: `${APP_DESCRIPTION} Sponsor a meal, track surplus stock, or follow live distribution.` },
+      { property: "og:title", content: `${APP_NAME} — ${APP_TAGLINE}` },
+      { property: "og:description", content: APP_DESCRIPTION },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

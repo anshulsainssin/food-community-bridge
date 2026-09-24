@@ -12,13 +12,14 @@ import { formatCount } from "@/hooks/use-stats";
 import { formatInr } from "@/lib/kitchen";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables as TablesType } from "@/integrations/supabase/types";
+import { APP_NAME, pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin Dashboard | Ratna Nidhi Central Kitchen" },
-      { name: "description", content: "Live kitchen metrics, sponsorships, users, and incoming messages for Ratna Nidhi Central Kitchen administrators." },
-      { property: "og:title", content: "Admin Dashboard | Ratna Nidhi Central Kitchen" },
+      { title: pageTitle("Admin Dashboard") },
+      { name: "description", content: `Live kitchen metrics, sponsorships, users, and incoming messages for ${APP_NAME} administrators.` },
+      { property: "og:title", content: pageTitle("Admin Dashboard") },
       { property: "og:type", content: "website" },
       { name: "robots", content: "noindex" },
     ],
@@ -139,7 +140,7 @@ function AdminPage() {
       <PageIntro
         eyebrow="Admin / Dashboard"
         title={<>Kitchen <span className="italic">overview.</span></>}
-        description="Live metrics for the central kitchen, sponsorships, users, and incoming messages. Manage stock and distribution centers directly on their live pages."
+        description="Live metrics for community kitchens, sponsorships, users, and incoming messages. Manage stock and distribution centers directly on their live pages."
         action={
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link to="/inventory" className="label-caps border border-border-strong px-4 py-2.5 text-center hover:border-foreground">Manage inventory</Link>
