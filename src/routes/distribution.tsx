@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Building2, MapPin, PackageCheck, Plus, UtensilsCrossed, Users } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Building2, MapPin, PackageCheck, Plus, ShieldCheck, UtensilsCrossed, Users } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { AppShell, PageIntro } from "@/components/app-shell";
@@ -8,6 +8,7 @@ import { DonationMap, type MapPoint } from "@/components/donation-map";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { LIVE_REFRESH_MS, useKitchenStats } from "@/hooks/use-kitchen";
 import { useProfile } from "@/hooks/use-profile";
+import { useNgoRegistration } from "@/hooks/use-registration";
 import { formatCount } from "@/hooks/use-stats";
 import type { DistributionCenter as Center } from "@/integrations/mongodb/types";
 import { addDistributionCenter, listDistributionCenters, logMeals } from "@/lib/kitchen.functions";
@@ -30,10 +31,12 @@ export const Route = createFileRoute("/distribution")({
 });
 
 function DistributionPage() {
-  const { user } = useProfile();
+  const { user, profile } = useProfile();
   const { isAdmin } = useIsAdmin(user?.id);
   const { stats, reload: reloadStats } = useKitchenStats();
   const { t } = useLanguage();
+  const { registration, loading: loadingRegistration, saving: savingRegistration, error: registrationError, save: saveRegistration } = useNgoRegistration(user?.id);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [centers, setCenters] = useState<Center[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddCenter, setShowAddCenter] = useState(false);
@@ -132,6 +135,20 @@ function DistributionPage() {
     (event.target as HTMLFormElement).reset();
     setShowLogMeal(false);
     void reloadStats();
+  }
+
+  async function submitRegistration(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const saved = await saveRegistration({
+      organization_name: String(form.get("organization_name") ?? "").trim(),
+      registration_80g: String(form.get("registration_80g") ?? "").trim(),
+      contact_person: String(form.get("contact_person") ?? "").trim(),
+      contact_phone: String(form.get("contact_phone") ?? "").trim(),
+      contact_email: String(form.get("contact_email") ?? "").trim(),
+      pincode: String(form.get("pincode") ?? "").trim(),
+    });
+    if (saved) setShowRegistrationForm(false);
   }
 
   const mapPoints: MapPoint[] = centers
@@ -291,6 +308,82 @@ function DistributionPage() {
               </article>
             ))}
           </div>
+        )}
+      </section>
+
+      <section className="border-t border-border px-4 py-6 sm:px-8 lg:px-12">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+          <h2 className="label-caps text-foreground">{t("registration.title")}</h2>
+          {!isAdmin && registration && (
+            <Button variant="outline" className="h-9 shrink-0 px-3 text-xs" onClick={() => setShowRegistrationForm((v) => !v)}>
+              {showRegistrationForm ? t("registration.cancel") : t("registration.edit")}
+            </Button>
+          )}
+        </div>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("registration.intro")}</p>
+
+        {!user ? (
+          <div className="mt-6 border border-border-strong bg-card p-6">
+            <p className="text-sm text-muted-foreground">{t("registration.signInPrompt")}</p>
+            <Button asChild className="mt-4"><Link to="/auth">{t("registration.signIn")}</Link></Button>
+          </div>
+        ) : loadingRegistration ? (
+          <p className="mt-6 text-sm text-muted-foreground">{t("registration.loading")}</p>
+        ) : (
+          <>
+            {registration && (
+              <div className="mt-6 grid gap-4 border border-border-strong bg-card p-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                <div className="min-w-0">
+                  <p className="truncate font-display text-2xl">{registration.organization_name}</p>
+                  <div className="mt-3 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                    <p className="break-words">{t("registration.summary.regId")} · {registration.registration_80g}</p>
+                    <p className="break-words">{t("registration.summary.contact")} · {registration.contact_person} · {registration.contact_phone}</p>
+                    <p className="break-words">{t("registration.summary.pincode")} · {registration.pincode}</p>
+                    <p className="break-words">
+                      {registration.area_label ? `${t("registration.summary.area")} · ${registration.area_label}` : t("registration.areaUnverified")}
+                    </p>
+                  </div>
+                </div>
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ShieldCheck className="size-4 shrink-0 text-accent" />
+                  {registration.distribution_center_id
+                    ? t("registration.status.approved")
+                    : registration.status === "Verified"
+                      ? t("registration.status.verified")
+                      : t("registration.status.pending")}
+                </p>
+              </div>
+            )}
+
+            {(showRegistrationForm || !registration) && (
+              <form onSubmit={submitRegistration} className="mt-6 grid gap-4 sm:grid-cols-2">
+                {[
+                  { name: "organization_name", labelKey: "registration.field.orgName", value: registration?.organization_name ?? profile?.organization ?? "", required: true },
+                  { name: "registration_80g", labelKey: "registration.field.regId", value: registration?.registration_80g ?? "", required: true },
+                  { name: "contact_person", labelKey: "registration.field.contactPerson", value: registration?.contact_person ?? profile?.full_name ?? "", required: true },
+                  { name: "contact_phone", labelKey: "registration.field.contactPhone", value: registration?.contact_phone ?? profile?.phone ?? "", required: true },
+                  { name: "contact_email", labelKey: "registration.field.contactEmail", value: registration?.contact_email ?? profile?.email ?? "", required: false },
+                  { name: "pincode", labelKey: "registration.field.pincode", value: registration?.pincode ?? "", required: true },
+                ].map((field) => (
+                  <label key={field.name} className="block min-w-0">
+                    <span className="label-caps text-muted-foreground">{t(field.labelKey)}</span>
+                    <input
+                      name={field.name}
+                      defaultValue={field.value}
+                      required={field.required}
+                      className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground"
+                    />
+                  </label>
+                ))}
+                <div className="sm:col-span-2">
+                  <Button type="submit" disabled={savingRegistration}>
+                    {savingRegistration ? t("registration.verifying") : registration ? t("registration.save") : t("registration.submit")}
+                  </Button>
+                  {registrationError && <p className="mt-3 text-xs text-accent">{registrationError}</p>}
+                </div>
+              </form>
+            )}
+          </>
         )}
       </section>
     </AppShell>

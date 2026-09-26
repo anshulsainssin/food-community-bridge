@@ -1,14 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { signIn, signUp } from "@/lib/account.functions";
+import { setDemoRole } from "@/lib/demo";
+import { DONOR_ROLE, NGO_ROLE } from "@/lib/roles";
 import { APP_NAME, APP_TAGLINE, pageTitle } from "@/lib/brand";
-import { clearDemoRole, setDemoRole } from "@/lib/demo";
-import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: z.object({ error: z.string().optional() }),
   head: () => ({
     meta: [
       { title: pageTitle("Sign in") },
@@ -25,115 +26,60 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-/** Server-side zod failures arrive as a JSON list of issues; show the first one's message. */
-function readableError(error: unknown) {
-  const message = errorMessage(error);
-  try {
-    const issues = JSON.parse(message) as { message?: string }[];
-    if (Array.isArray(issues) && issues[0]?.message) return issues[0].message;
-  } catch {
-    // Not JSON — already a plain message.
-  }
-  return message;
-}
-
-const inputClass =
-  "mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground";
-
 function AuthPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { error } = Route.useSearch();
+  const [role, setRole] = useState<string>(DONOR_ROLE);
 
   function demoLogin(target: "/" | "/admin" = "/") {
     setDemoRole(target === "/admin" ? "admin" : "user");
     window.location.href = target;
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "");
-    const password = String(form.get("password") ?? "");
-    setError(null);
-    setSubmitting(true);
-    try {
-      if (mode === "signup") {
-        await signUp({ data: { email, password, full_name: String(form.get("full_name") ?? "") } });
-      } else {
-        await signIn({ data: { email, password } });
-      }
-      clearDemoRole();
-      // Full reload so every component picks up the new session cookie.
-      window.location.href = "/";
-    } catch (submitError) {
-      setError(readableError(submitError));
-      setSubmitting(false);
-    }
+  function googleLogin() {
+    // Full-page navigation: the server route redirects on to Google's consent screen.
+    window.location.href = `/api/auth/google?${new URLSearchParams({ role }).toString()}`;
   }
-
-  const isSignup = mode === "signup";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-5 py-12">
       <div className="w-full max-w-md">
         <p className="font-display text-3xl italic leading-none">{APP_NAME}</p>
         <p className="label-caps mt-2 text-muted-foreground">{APP_TAGLINE}</p>
-        <h1 className="mt-8 font-display text-4xl">{isSignup ? "Create account" : "Sign in"}</h1>
+        <h1 className="mt-8 font-display text-4xl">Sign in</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Use your email and password to sponsor meals and track your impact.
+          Use your Google account to sponsor meals and track your impact.
         </p>
 
-        <form className="mt-8 space-y-5" onSubmit={submit}>
-          {isSignup && (
-            <label className="block">
-              <span className="label-caps text-muted-foreground">Full name</span>
-              <input name="full_name" required autoComplete="name" className={inputClass} />
-            </label>
-          )}
-          <label className="block">
-            <span className="label-caps text-muted-foreground">Email</span>
-            <input name="email" type="email" required autoComplete="email" className={inputClass} />
-          </label>
-          <label className="block">
-            <span className="label-caps text-muted-foreground">Password</span>
-            <input
-              name="password"
-              type="password"
-              required
-              minLength={isSignup ? 8 : undefined}
-              autoComplete={isSignup ? "new-password" : "current-password"}
-              className={inputClass}
-            />
-            {isSignup && (
-              <span className="mt-1 block text-xs text-muted-foreground">
-                At least 8 characters.
-              </span>
-            )}
-          </label>
+        <fieldset className="mt-8">
+          <legend className="label-caps text-muted-foreground">I am a</legend>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant={role === DONOR_ROLE ? "primary" : "outline"}
+              onClick={() => setRole(DONOR_ROLE)}
+            >
+              Sponsor
+            </Button>
+            <Button
+              type="button"
+              variant={role === NGO_ROLE ? "primary" : "outline"}
+              onClick={() => setRole(NGO_ROLE)}
+            >
+              NGO / Volunteer
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Applies to new accounts. You can change it later on your profile.
+          </p>
+        </fieldset>
 
-          {error && <p className="text-sm text-accent">{error}</p>}
+        {error && <p className="mt-6 text-sm text-accent">{error}</p>}
 
-          <Button type="submit" size="wide" className="w-full" disabled={submitting}>
-            {submitting ? "Please wait…" : isSignup ? "Create account" : "Sign in"}
-          </Button>
-        </form>
+        <Button size="wide" className="mt-6 w-full" onClick={googleLogin}>
+          Continue with Google
+        </Button>
 
-        <p className="mt-6 text-sm text-muted-foreground">
-          {isSignup ? "Already have an account?" : "New here?"}{" "}
-          <button
-            type="button"
-            className="underline"
-            onClick={() => {
-              setMode(isSignup ? "signin" : "signup");
-              setError(null);
-            }}
-          >
-            {isSignup ? "Sign in" : "Create an account"}
-          </button>
-        </p>
-
-        <div className="mt-6 flex justify-between border-t border-border pt-4 text-xs text-muted-foreground">
+        <div className="mt-6 flex justify-between text-xs text-muted-foreground">
           <button type="button" className="underline" onClick={() => demoLogin("/")}>
             Explore the demo
           </button>

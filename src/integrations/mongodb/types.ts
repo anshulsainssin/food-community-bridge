@@ -5,6 +5,7 @@
 export type Profile = {
   id: string;
   full_name: string | null;
+  role: string | null;
   organization: string | null;
   phone: string | null;
   email: string | null;
@@ -40,6 +41,25 @@ export type VolunteerSignup = {
   location_label: string | null;
   message: string | null;
   created_at: string;
+};
+
+export type NgoRegistration = {
+  id: string;
+  user_id: string;
+  organization_name: string;
+  registration_80g: string;
+  contact_person: string;
+  contact_phone: string;
+  contact_email: string | null;
+  pincode: string;
+  area_label: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  status: string;
+  verified_at: string | null;
+  distribution_center_id: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type KitchenInventoryItem = {
@@ -104,6 +124,6 @@ export type Doc<Row extends { id: string }> = {
     : Row[K];
 };
 
-/** Profiles double as the user record. `login_email` is the fixed sign-in identifier; `email` is an editable contact address. */
-export type ProfileDoc = Doc<Profile> & { login_email?: string; password_hash?: string };
+/** Profiles double as the user record, keyed by our own UUID and linked to Google by `google_sub`. */
+export type ProfileDoc = Doc<Profile> & { google_sub: string };
 export type AdminDoc = { _id: string; created_at: Date };

@@ -170,7 +170,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {user ? (
             <>
               <div className="hidden min-w-0 items-center gap-3 border-l border-border pl-4 sm:flex">
-                <div className="min-w-0 max-w-[9rem] lg:max-w-[14rem]"><p className="truncate text-sm font-medium">{profile?.full_name ?? user.email}</p><p className="truncate text-xs text-muted-foreground">{profile?.organization || "Member"}</p></div>
+                <div className="min-w-0 max-w-[9rem] lg:max-w-[14rem]"><p className="truncate text-sm font-medium">{profile?.full_name ?? user.email}</p><p className="truncate text-xs text-muted-foreground">{profile?.role ?? profile?.organization ?? "Member"}</p></div>
                 <Button variant="ghost" size="icon" aria-label={t("auth.signOut")} onClick={signOut}><LogOut className="size-4" /></Button>
               </div>
               <Button variant="ghost" size="icon" className="sm:hidden" aria-label={t("auth.signOut")} onClick={signOut}><LogOut className="size-4" /></Button>

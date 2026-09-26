@@ -18,6 +18,7 @@ export const DEMO_ADMIN: AuthUser = {
 export const DEMO_PROFILE: Profile = {
   id: DEMO_USER.id,
   full_name: "Demo Visitor",
+  role: "Sponsor",
   organization: null,
   phone: null,
   email: "demo@example.org",
@@ -31,6 +32,7 @@ export const DEMO_PROFILE: Profile = {
 export const DEMO_ADMIN_PROFILE: Profile = {
   id: DEMO_ADMIN.id,
   full_name: "Demo Admin",
+  role: "Admin",
   organization: "Neighborhood Community Kitchen",
   phone: null,
   email: "admin@example.org",

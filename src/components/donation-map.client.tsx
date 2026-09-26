@@ -10,7 +10,7 @@ export type MapPoint = {
   lon: number;
   title: string;
   detail: string;
-  kind: "donation" | "center";
+  kind: "ngo" | "center";
 };
 
 function FitToPoints({ center, points }: { center: { lat: number; lon: number } | null; points: MapPoint[] }) {
@@ -18,7 +18,7 @@ function FitToPoints({ center, points }: { center: { lat: number; lon: number } 
 
   useEffect(() => {
     // A known center (from search or "Use my location") always wins: fly smoothly straight
-    // to it at a fixed, legible zoom, regardless of how far scattered the donation/center pins
+    // to it at a fixed, legible zoom, regardless of how far scattered the donation/NGO pins
     // are — that's what "search this pincode" or "use my location" means. Only fall back to
     // fitting the pins' bounding box when no center has been resolved yet at all.
     if (center) {
