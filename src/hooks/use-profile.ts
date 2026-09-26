@@ -23,7 +23,7 @@ export function useAccount() {
 
 export function useProfile() {
   // Read once on mount — demo login/logout always does window.location.href so every mount
-  // re-reads localStorage fresh, the same as a real OAuth redirect.
+  // re-reads localStorage fresh, the same as a real sign-in.
   const [demoRole] = useState<DemoRole | null>(() =>
     typeof window !== "undefined" ? getDemoRole() : null,
   );

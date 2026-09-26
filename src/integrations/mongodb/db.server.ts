@@ -10,7 +10,6 @@ import type {
   DistributionCenter,
   KitchenInventoryItem,
   MealLog,
-  NgoRegistration,
   NotificationRow,
   ProfileDoc,
   Sponsorship,
@@ -50,12 +49,21 @@ export function getDb(): Promise<Db> {
 }
 
 async function ensureIndexes(db: Db) {
+  // Legacy unique index from the removed Google sign-in; password accounts have no google_sub,
+  // so it would reject every signup after the first.
+  await db
+    .collection("profiles")
+    .dropIndex("google_sub_1")
+    .catch(() => {});
   await Promise.all([
-    db.collection("profiles").createIndex({ google_sub: 1 }, { unique: true }),
+    db
+      .collection("profiles")
+      .createIndex(
+        { login_email: 1 },
+        { unique: true, partialFilterExpression: { login_email: { $type: "string" } } },
+      ),
     db.collection("profiles").createIndex({ created_at: -1 }),
     db.collection("notifications").createIndex({ user_id: 1, created_at: -1 }),
-    db.collection("ngo_registrations").createIndex({ user_id: 1 }, { unique: true }),
-    db.collection("ngo_registrations").createIndex({ created_at: -1 }),
     db.collection("kitchen_inventory").createIndex({ category: 1, item_name: 1 }),
     db.collection("distribution_centers").createIndex({ name: 1 }),
     db.collection("meal_logs").createIndex({ log_date: 1 }),
@@ -74,7 +82,6 @@ export async function collections() {
     notifications: db.collection<Doc<NotificationRow>>("notifications"),
     contactMessages: db.collection<Doc<ContactMessage>>("contact_messages"),
     volunteerSignups: db.collection<Doc<VolunteerSignup>>("volunteer_signups"),
-    ngoRegistrations: db.collection<Doc<NgoRegistration>>("ngo_registrations"),
     kitchenInventory: db.collection<Doc<KitchenInventoryItem>>("kitchen_inventory"),
     distributionCenters: db.collection<Doc<DistributionCenter>>("distribution_centers"),
     mealLogs: db.collection<Doc<MealLog>>("meal_logs"),
@@ -83,6 +90,19 @@ export async function collections() {
 }
 
 export type Collections = Awaited<ReturnType<typeof collections>>;
+
+/** Whitelist of profile fields that may leave the server (never the password hash). */
+export const PROFILE_PROJECTION = {
+  full_name: 1,
+  organization: 1,
+  phone: 1,
+  email: 1,
+  location_label: 1,
+  latitude: 1,
+  longitude: 1,
+  created_at: 1,
+  updated_at: 1,
+} as const;
 
 /** Maps a stored document to the row shape the browser expects (`_id` → `id`, Date → ISO string). */
 export function toRow<Row extends { id: string }>(doc: Doc<Row>): Row {

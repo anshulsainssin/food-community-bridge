@@ -1,10 +1,9 @@
 // Signed, httpOnly session cookie. The payload is readable base64url JSON; the HMAC-SHA256
 // suffix (keyed by SESSION_SECRET) is what stops a client from forging or editing it.
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { deleteCookie, getCookie } from "@tanstack/react-start/server";
+import { deleteCookie, getCookie, getRequestUrl, setCookie } from "@tanstack/react-start/server";
 
 export const SESSION_COOKIE = "fwc_session";
-export const OAUTH_STATE_COOKIE = "fwc_oauth";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 function secret() {
@@ -46,30 +45,15 @@ export function unseal<T extends Record<string, unknown>>(token: string | undefi
   }
 }
 
-/** A raw Set-Cookie header value, for server routes that build their own Response. */
-export function setCookieHeader(
-  name: string,
-  value: string,
-  maxAgeSeconds: number,
-  request: Request,
-) {
-  return [
-    `${name}=${value}`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    `Max-Age=${maxAgeSeconds}`,
-    ...(new URL(request.url).protocol === "https:" ? ["Secure"] : []),
-  ].join("; ");
-}
-
-export function sessionCookieHeader(userId: string, request: Request) {
-  return setCookieHeader(
-    SESSION_COOKIE,
-    seal({ uid: userId }, SESSION_MAX_AGE_SECONDS),
-    SESSION_MAX_AGE_SECONDS,
-    request,
-  );
+/** Signs the user in by setting the session cookie. Only valid inside a server function. */
+export function startSession(userId: string) {
+  setCookie(SESSION_COOKIE, seal({ uid: userId }, SESSION_MAX_AGE_SECONDS), {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: getRequestUrl().protocol === "https:",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  });
 }
 
 /** The signed-in user's id, or null. Only valid inside a server function / server route. */

@@ -1,10 +1,34 @@
-# Food Connect Now
+# Food Waste Connect
 
-Recreate the "Food Waste Connect" app from the public GitHub repository https://github.com/anshulsainssin/food-connect-gleam (live site: https://food-connect-gleam.lovable.app). Fetch and inspect the repo source and replicate it faithfully: keep all existing routes, pages, components, and the UI/design exactly as they are.
+A community food-waste reduction platform: people sponsor meals, community kitchens track
+surplus food stock, and distribution points are shown live on a map. English and Hindi.
 
-Use Lovable Cloud (Supabase) as the real backend with authentication. Then audit the entire codebase and remove ALL hardcoded, fake, demo, sample, and placeholder data — no fake fallback data anywhere. Every page and component must read/write real database data for the logged-in user: user profile/name/contact, donor details, NGO/volunteer details, food type and quantity, donation date/time, food expiry/pickup time, pickup location, donation status, claim information, pickup tracking timeline, notifications, dashboard statistics, impact statistics, donation history, and pickup history.
+## Architecture
 
-Where no real data exists, show proper empty states (e.g. "No donations yet", "No notifications", "0 kg saved") instead of sample values. Also replace any hardcoded phone numbers, names, addresses, quantities, dates, statistics, and status values anywhere in the project with real database-driven values. Do not invent fake data to make the UI look populated. Keep routes, UI, and design unchanged.
+- **App:** TanStack Start (React, file-based routes in `src/routes`), server functions in
+  `src/lib/*.functions.ts`.
+- **Database:** MongoDB, accessed only on the server (`src/integrations/mongodb/db.server.ts`).
+- **Sign-in:** email + password, stored in MongoDB (scrypt-hashed) with a signed, httpOnly
+  session cookie (`src/lib/auth`). No third-party sign-in provider.
+
+| Page | What it does |
+| --- | --- |
+| `/` | Live totals: meals cooked, people served, active kitchens, meals sponsored |
+| `/sponsor` | Record a meal sponsorship (₹500 = 50 meals) and see your impact certificates |
+| `/inventory` | Kitchen stock with low-stock / re-order alerts (admins can edit) |
+| `/distribution` | Map and list of distribution points; admins add points and log deliveries |
+| `/impact`, `/about`, `/contact` | Impact totals, mission, contact form and volunteer sign-up |
+| `/profile` | Your contact details and location |
+| `/admin` | Sponsorships, users, messages and volunteer sign-ups (admins only) |
+| `/auth` | Sign in / create account, or explore the demo without an account |
+
+## Setup
+
+1. Copy `.env.example` to `.env` and set `MONGODB_URI` (e.g. MongoDB Atlas) and `SESSION_SECRET`.
+   Set the same variables on your hosting provider for production.
+2. `npm i && npm run dev`
+3. To make someone an admin, have them create an account, then run the `db.admins.insertOne(...)`
+   command shown at the bottom of `.env.example`.
 
 This project was built with [Lovable](https://lovable.dev).
 

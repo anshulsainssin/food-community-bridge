@@ -6,7 +6,6 @@ import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLocationSync, useProfile } from "@/hooks/use-profile";
 import { useLanguage } from "@/lib/i18n";
-import { DONOR_ROLE, NGO_ROLE } from "@/lib/roles";
 
 export const Route = createFileRoute("/profile")({ ssr: false, head: () => ({ meta: [{ title: "Community Profile | Food Waste Connect" }, { name: "description", content: "View and edit your Food Waste Connect community profile." }, { property: "og:title", content: "Community Profile | Food Waste Connect" }, { property: "og:description", content: "Community member and organization profile details." }, { property: "og:type", content: "profile" }, { name: "twitter:card", content: "summary_large_image" }] }), component: ProfilePage });
 
@@ -15,7 +14,6 @@ function ProfilePage() {
   const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [roleDraft, setRoleDraft] = useState(DONOR_ROLE);
 
   const { status: locationStatus, request: requestLocation } = useLocationSync(
     Boolean(user),
@@ -29,7 +27,6 @@ function ProfilePage() {
 
   const details = [
     { key: "full_name", labelKey: "profile.field.name", value: profile?.full_name ?? "", icon: UserRound, editable: true },
-    { key: "role", labelKey: "profile.field.role", value: profile?.role ?? "", icon: UserRound, editable: true },
     { key: "organization", labelKey: "profile.field.org", value: profile?.organization ?? "", icon: Building2, editable: true },
     { key: "phone", labelKey: "profile.field.phone", value: profile?.phone ?? "", icon: Phone, editable: true },
     { key: "email", labelKey: "profile.field.email", value: profile?.email ?? user?.email ?? "", icon: Mail, editable: true },
@@ -42,7 +39,6 @@ function ProfilePage() {
     const form = new FormData(event.currentTarget);
     await updateProfile({
       full_name: String(form.get("full_name") ?? ""),
-      role: roleDraft,
       organization: String(form.get("organization") ?? ""),
       phone: String(form.get("phone") ?? ""),
       email: String(form.get("email") ?? ""),
@@ -61,7 +57,7 @@ function ProfilePage() {
         eyebrow={t("profile.eyebrow")}
         title={<>{first} <span className="italic">{rest.join(" ")}</span></>}
         description={t("profile.description")}
-        action={!editing ? <Button size="wide" onClick={() => { setRoleDraft(profile?.role || DONOR_ROLE); setEditing(true); setSaved(false); }}>{t("profile.editBtn")}</Button> : undefined}
+        action={!editing ? <Button size="wide" onClick={() => { setEditing(true); setSaved(false); }}>{t("profile.editBtn")}</Button> : undefined}
       />
       <section className="grid lg:grid-cols-[0.7fr_1.3fr]">
         <div className="border-b border-border p-4 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
@@ -74,14 +70,7 @@ function ProfilePage() {
         <div className="bg-muted/25 p-4 sm:p-8 lg:p-10">
           {editing ? (
             <form className="grid gap-6 sm:grid-cols-2" onSubmit={submit}>
-              <fieldset className="sm:col-span-2">
-                <legend className="label-caps text-muted-foreground">{t("profile.role.label")}</legend>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <Button type="button" variant={roleDraft === DONOR_ROLE ? "primary" : "outline"} onClick={() => setRoleDraft(DONOR_ROLE)}>{t("profile.role.donor")}</Button>
-                  <Button type="button" variant={roleDraft === NGO_ROLE ? "primary" : "outline"} onClick={() => setRoleDraft(NGO_ROLE)}>{t("profile.role.ngo")}</Button>
-                </div>
-              </fieldset>
-              {details.filter((item) => item.editable && item.key !== "role").map(({ key, labelKey, value }) => (
+              {details.filter((item) => item.editable).map(({ key, labelKey, value }) => (
                 <label key={key} className="block">
                   <span className="label-caps text-muted-foreground">{t(labelKey)}</span>
                   <input name={key} defaultValue={value} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />

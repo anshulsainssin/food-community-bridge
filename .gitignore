@@ -31,7 +31,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Local secrets (MongoDB URI, Google OAuth secret, session secret)
+# Local secrets (MongoDB URI, session secret)
 .env
 .env.*
 !.env.example
