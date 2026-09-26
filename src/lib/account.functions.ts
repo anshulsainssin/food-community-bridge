@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import type {
   AuthUser,
-  NgoRegistration,
+  PartnerRegistration,
   NotificationRow,
   Profile,
 } from "@/integrations/mongodb/types";
@@ -88,13 +88,13 @@ export const markNotificationsRead = createServerFn({ method: "POST" }).handler(
 });
 
 export const getMyRegistration = createServerFn({ method: "GET" }).handler(
-  async (): Promise<NgoRegistration | null> => {
+  async (): Promise<PartnerRegistration | null> => {
     const { optionalUser } = await access();
     const { toRow } = await mongo();
     const { userId, db } = await optionalUser();
     if (!userId) return null;
-    const doc = await db.ngoRegistrations.findOne({ user_id: userId });
-    return doc ? toRow<NgoRegistration>(doc) : null;
+    const doc = await db.partnerRegistrations.findOne({ user_id: userId });
+    return doc ? toRow<PartnerRegistration>(doc) : null;
   },
 );
 
@@ -128,7 +128,7 @@ export const saveMyRegistration = createServerFn({ method: "POST" })
     }
 
     const now = new Date();
-    await db.ngoRegistrations.updateOne(
+    await db.partnerRegistrations.updateOne(
       { user_id: userId },
       {
         $set: {

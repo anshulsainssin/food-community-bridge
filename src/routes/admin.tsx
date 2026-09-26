@@ -11,7 +11,7 @@ import { useKitchenStats } from "@/hooks/use-kitchen";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount } from "@/hooks/use-stats";
 import { formatInr } from "@/lib/kitchen";
-import type { ContactMessage, NgoRegistration, Profile, Sponsorship, VolunteerSignup } from "@/integrations/mongodb/types";
+import type { ContactMessage, PartnerRegistration, Profile, Sponsorship, VolunteerSignup } from "@/integrations/mongodb/types";
 import { approveRegistration as approveRegistrationFn, getAdminDashboard, type AdminDashboard } from "@/lib/admin.functions";
 import { APP_NAME, pageTitle } from "@/lib/brand";
 import { errorMessage } from "@/lib/utils";
@@ -52,7 +52,7 @@ function AdminPage() {
   const [sponsorships, setSponsorships] = useState<Sponsorship[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [signups, setSignups] = useState<VolunteerSignup[]>([]);
-  const [registrations, setRegistrations] = useState<NgoRegistration[]>([]);
+  const [registrations, setRegistrations] = useState<PartnerRegistration[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [approving, setApproving] = useState<string | null>(null);
   const [approveError, setApproveError] = useState<string | null>(null);
@@ -76,7 +76,7 @@ function AdminPage() {
     if (isAdmin) void load();
   }, [isAdmin, load]);
 
-  async function approveRegistration(registration: NgoRegistration) {
+  async function approveRegistration(registration: PartnerRegistration) {
     setApproveError(null);
     setApproving(registration.id);
     const error = await approveRegistrationFn({ data: { id: registration.id } }).then(() => null, errorMessage);

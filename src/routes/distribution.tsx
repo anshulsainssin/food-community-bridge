@@ -8,7 +8,7 @@ import { DonationMap, type MapPoint } from "@/components/donation-map";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { LIVE_REFRESH_MS, useKitchenStats } from "@/hooks/use-kitchen";
 import { useProfile } from "@/hooks/use-profile";
-import { useNgoRegistration } from "@/hooks/use-registration";
+import { usePartnerRegistration } from "@/hooks/use-registration";
 import { formatCount } from "@/hooks/use-stats";
 import type { DistributionCenter as Center } from "@/integrations/mongodb/types";
 import { addDistributionCenter, listDistributionCenters, logMeals } from "@/lib/kitchen.functions";
@@ -35,7 +35,7 @@ function DistributionPage() {
   const { isAdmin } = useIsAdmin(user?.id);
   const { stats, reload: reloadStats } = useKitchenStats();
   const { t } = useLanguage();
-  const { registration, loading: loadingRegistration, saving: savingRegistration, error: registrationError, save: saveRegistration } = useNgoRegistration(user?.id);
+  const { registration, loading: loadingRegistration, saving: savingRegistration, error: registrationError, save: saveRegistration } = usePartnerRegistration(user?.id);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [centers, setCenters] = useState<Center[]>([]);
   const [loading, setLoading] = useState(true);

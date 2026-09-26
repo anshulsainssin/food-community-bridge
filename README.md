@@ -1,10 +1,31 @@
-# Food Connect Now
+# Food Waste Connect
 
-Recreate the "Food Waste Connect" app from the public GitHub repository https://github.com/anshulsainssin/food-connect-gleam (live site: https://food-connect-gleam.lovable.app). Fetch and inspect the repo source and replicate it faithfully: keep all existing routes, pages, components, and the UI/design exactly as they are.
+A community food-waste reduction platform: people sponsor meals, community kitchens track
+surplus food stock, and distribution points are shown live on a map. English and Hindi.
 
-Use Lovable Cloud (Supabase) as the real backend with authentication. Then audit the entire codebase and remove ALL hardcoded, fake, demo, sample, and placeholder data — no fake fallback data anywhere. Every page and component must read/write real database data for the logged-in user: user profile/name/contact, donor details, NGO/volunteer details, food type and quantity, donation date/time, food expiry/pickup time, pickup location, donation status, claim information, pickup tracking timeline, notifications, dashboard statistics, impact statistics, donation history, and pickup history.
+## Architecture
 
-Where no real data exists, show proper empty states (e.g. "No donations yet", "No notifications", "0 kg saved") instead of sample values. Also replace any hardcoded phone numbers, names, addresses, quantities, dates, statistics, and status values anywhere in the project with real database-driven values. Do not invent fake data to make the UI look populated. Keep routes, UI, and design unchanged.
+- **App:** TanStack Start (React, file-based routes in `src/routes`), server functions in
+  `src/lib/*.functions.ts`.
+- **Database:** MongoDB, accessed only on the server (`src/integrations/mongodb/db.server.ts`).
+- **Sign-in:** Google OAuth (`/api/auth/google` → `/api/auth/callback/google`) with a signed,
+  httpOnly session cookie (`src/lib/auth`).
+
+| Page | What it does |
+| --- | --- |
+| `/` | Live totals: meals cooked, people served, active kitchens, meals sponsored |
+| `/sponsor` | Record a meal sponsorship and see your impact certificates |
+| `/inventory` | Kitchen stock with low-stock / re-order alerts (admins can edit) |
+| `/distribution` | Map of distribution points, delivery logging, partner registration |
+| `/impact`, `/about`, `/contact` | Impact totals, mission, contact form and volunteer sign-up |
+| `/profile` | Your contact details and location |
+| `/admin` | Sponsorships, partner registrations, users, messages, volunteers (admins only) |
+
+## Setup
+
+Copy `.env.example` to `.env` and fill in `MONGODB_URI`, `GOOGLE_CLIENT_ID`,
+`GOOGLE_CLIENT_SECRET`, `SESSION_SECRET` and `ADMIN_EMAILS` (set the same variables on Vercel),
+then `npm i && npm run dev`.
 
 This project was built with [Lovable](https://lovable.dev).
 

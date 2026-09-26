@@ -93,8 +93,8 @@ export async function exchangeCode(request: Request, code: string): Promise<Goog
 }
 
 /**
- * Finds or creates the profile for a Google account and returns its id. `role` (Sponsor vs
- * NGO / Volunteer, chosen on the sign-in page) only applies when the profile is first created.
+ * Finds or creates the profile for a Google account and returns its id. `role` (Donor vs
+ * Volunteer, chosen on the sign-in page) only applies when the profile is first created.
  */
 export async function upsertProfile(identity: GoogleIdentity, role: string | null) {
   const { profiles, admins } = await collections();

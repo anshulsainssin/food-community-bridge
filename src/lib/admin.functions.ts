@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import type {
   ContactMessage,
-  NgoRegistration,
+  PartnerRegistration,
   Profile,
   Sponsorship,
   VolunteerSignup,
@@ -23,7 +23,7 @@ export type AdminDashboard = {
   sponsorships: Sponsorship[];
   messages: ContactMessage[];
   signups: VolunteerSignup[];
-  registrations: NgoRegistration[];
+  registrations: PartnerRegistration[];
 };
 
 const LIST_LIMIT = 500;
@@ -56,7 +56,7 @@ export const getAdminDashboard = createServerFn({ method: "GET" }).handler(
       db.sponsorships.find().sort(newestFirst).limit(LIST_LIMIT).toArray(),
       db.contactMessages.find().sort(newestFirst).limit(LIST_LIMIT).toArray(),
       db.volunteerSignups.find().sort(newestFirst).limit(LIST_LIMIT).toArray(),
-      db.ngoRegistrations.find().sort(newestFirst).limit(LIST_LIMIT).toArray(),
+      db.partnerRegistrations.find().sort(newestFirst).limit(LIST_LIMIT).toArray(),
     ]);
 
     return {
@@ -69,7 +69,7 @@ export const getAdminDashboard = createServerFn({ method: "GET" }).handler(
       sponsorships: sponsorships.map((doc) => toRow<Sponsorship>(doc)),
       messages: messages.map((doc) => toRow<ContactMessage>(doc)),
       signups: signups.map((doc) => toRow<VolunteerSignup>(doc)),
-      registrations: registrations.map((doc) => toRow<NgoRegistration>(doc)),
+      registrations: registrations.map((doc) => toRow<PartnerRegistration>(doc)),
     };
   },
 );
@@ -82,7 +82,7 @@ export const approveRegistration = createServerFn({ method: "POST" })
     const { newId } = await mongo();
     const { db } = await requireAdmin();
 
-    const registration = await db.ngoRegistrations.findOne({ _id: data.id });
+    const registration = await db.partnerRegistrations.findOne({ _id: data.id });
     if (!registration) throw new Error("Registration not found.");
     if (registration.distribution_center_id)
       throw new Error("This registration is already approved.");
@@ -102,7 +102,7 @@ export const approveRegistration = createServerFn({ method: "POST" })
       active: true,
       created_at: new Date(),
     });
-    await db.ngoRegistrations.updateOne(
+    await db.partnerRegistrations.updateOne(
       { _id: registration._id },
       { $set: { distribution_center_id: centerId, updated_at: new Date() } },
     );

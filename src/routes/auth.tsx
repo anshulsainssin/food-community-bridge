@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { setDemoRole } from "@/lib/demo";
-import { DONOR_ROLE, NGO_ROLE } from "@/lib/roles";
+import { DONOR_ROLE, VOLUNTEER_ROLE } from "@/lib/roles";
 import { APP_NAME, APP_TAGLINE, pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/auth")({
@@ -62,10 +62,10 @@ function AuthPage() {
             </Button>
             <Button
               type="button"
-              variant={role === NGO_ROLE ? "primary" : "outline"}
-              onClick={() => setRole(NGO_ROLE)}
+              variant={role === VOLUNTEER_ROLE ? "primary" : "outline"}
+              onClick={() => setRole(VOLUNTEER_ROLE)}
             >
-              NGO / Volunteer
+              Volunteer
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">

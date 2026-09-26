@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 
-import type { NgoRegistration } from "@/integrations/mongodb/types";
+import type { PartnerRegistration } from "@/integrations/mongodb/types";
 import { getMyRegistration, saveMyRegistration } from "@/lib/account.functions";
 import { errorMessage } from "@/lib/utils";
 
-export type { NgoRegistration };
+export type { PartnerRegistration };
 
 export type RegistrationInput = {
   organization_name: string;
@@ -16,8 +16,8 @@ export type RegistrationInput = {
 };
 
 /** The signed-in user's own partner registration; admin approval (admin.tsx) links it to a distribution center. */
-export function useNgoRegistration(userId: string | null | undefined) {
-  const [registration, setRegistration] = useState<NgoRegistration | null>(null);
+export function usePartnerRegistration(userId: string | null | undefined) {
+  const [registration, setRegistration] = useState<PartnerRegistration | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

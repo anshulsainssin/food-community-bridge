@@ -43,7 +43,7 @@ export type VolunteerSignup = {
   created_at: string;
 };
 
-export type NgoRegistration = {
+export type PartnerRegistration = {
   id: string;
   user_id: string;
   organization_name: string;

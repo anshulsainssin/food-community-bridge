@@ -6,7 +6,7 @@ import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLocationSync, useProfile } from "@/hooks/use-profile";
 import { useLanguage } from "@/lib/i18n";
-import { DONOR_ROLE, NGO_ROLE } from "@/lib/roles";
+import { DONOR_ROLE, VOLUNTEER_ROLE } from "@/lib/roles";
 
 export const Route = createFileRoute("/profile")({ ssr: false, head: () => ({ meta: [{ title: "Community Profile | Food Waste Connect" }, { name: "description", content: "View and edit your Food Waste Connect community profile." }, { property: "og:title", content: "Community Profile | Food Waste Connect" }, { property: "og:description", content: "Community member and organization profile details." }, { property: "og:type", content: "profile" }, { name: "twitter:card", content: "summary_large_image" }] }), component: ProfilePage });
 
@@ -78,7 +78,7 @@ function ProfilePage() {
                 <legend className="label-caps text-muted-foreground">{t("profile.role.label")}</legend>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <Button type="button" variant={roleDraft === DONOR_ROLE ? "primary" : "outline"} onClick={() => setRoleDraft(DONOR_ROLE)}>{t("profile.role.donor")}</Button>
-                  <Button type="button" variant={roleDraft === NGO_ROLE ? "primary" : "outline"} onClick={() => setRoleDraft(NGO_ROLE)}>{t("profile.role.ngo")}</Button>
+                  <Button type="button" variant={roleDraft === VOLUNTEER_ROLE ? "primary" : "outline"} onClick={() => setRoleDraft(VOLUNTEER_ROLE)}>{t("profile.role.volunteer")}</Button>
                 </div>
               </fieldset>
               {details.filter((item) => item.editable && item.key !== "role").map(({ key, labelKey, value }) => (
