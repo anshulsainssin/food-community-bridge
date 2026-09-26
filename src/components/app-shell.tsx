@@ -8,7 +8,8 @@ import { useKitchenStats } from "@/hooks/use-kitchen";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount } from "@/hooks/use-stats";
-import { supabase } from "@/integrations/supabase/client";
+import { signOut as signOutFn } from "@/lib/account.functions";
+import { APP_NAME } from "@/lib/brand";
 import { clearDemoRole, isDemoActive } from "@/lib/demo";
 import { useLanguage } from "@/lib/i18n";
 import { isNotificationSoundEnabled, primeNotificationAudio, setNotificationSoundEnabled } from "@/lib/notification-sound";
@@ -73,8 +74,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       window.location.href = "/auth";
       return;
     }
-    await supabase.auth.signOut();
-    void navigate({ to: "/auth", replace: true });
+    await signOutFn();
+    // Full reload so every cached query (account, notifications, admin data) is dropped.
+    window.location.href = "/auth";
   }
 
   const fullNavItems = [
@@ -94,7 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 grid h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur sm:px-4 md:px-7">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button variant="ghost" size="icon" className="shrink-0 md:hidden" aria-label="Open menu" onClick={() => setMobileMenu(true)}><Menu className="size-5" /></Button>
-          <Link to="/" className="min-w-0"><p className="truncate font-display text-xl italic leading-none sm:text-2xl">Ratna Nidhi Central Kitchen</p><p className="label-caps mt-1 truncate text-muted-foreground">Daily Meal Project</p></Link>
+          <Link to="/" className="min-w-0"><p className="truncate font-display text-xl italic leading-none sm:text-2xl">{APP_NAME}</p><p className="label-caps mt-1 truncate text-muted-foreground">{t("brand.tagline")}</p></Link>
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -180,7 +182,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {mobileMenu && <div className="fixed inset-0 z-50 bg-background p-5 md:hidden"><div className="flex items-center justify-between"><p className="font-display text-2xl italic">Ratna Nidhi Central Kitchen</p><Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setMobileMenu(false)}><X className="size-5" /></Button></div><nav className="mt-10 space-y-2">{navigation(true)}</nav></div>}
+      {mobileMenu && <div className="fixed inset-0 z-50 bg-background p-5 md:hidden"><div className="flex items-center justify-between"><p className="font-display text-2xl italic">{APP_NAME}</p><Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setMobileMenu(false)}><X className="size-5" /></Button></div><nav className="mt-10 space-y-2">{navigation(true)}</nav></div>}
 
       <div className="mx-auto flex max-w-[1600px]">
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 border-r border-border bg-sidebar p-4 md:flex md:flex-col">

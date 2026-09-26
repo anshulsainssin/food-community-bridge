@@ -1,25 +1,28 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Building2, MapPin, PackageCheck, Plus, UtensilsCrossed, Users } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Building2, MapPin, PackageCheck, Plus, ShieldCheck, UtensilsCrossed, Users } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { DonationMap, type MapPoint } from "@/components/donation-map";
 import { useIsAdmin } from "@/hooks/use-admin";
-import { useKitchenStats } from "@/hooks/use-kitchen";
+import { LIVE_REFRESH_MS, useKitchenStats } from "@/hooks/use-kitchen";
 import { useProfile } from "@/hooks/use-profile";
+import { useNgoRegistration } from "@/hooks/use-registration";
 import { formatCount } from "@/hooks/use-stats";
-import { supabase } from "@/integrations/supabase/client";
+import type { DistributionCenter as Center } from "@/integrations/mongodb/types";
+import { addDistributionCenter, listDistributionCenters, logMeals } from "@/lib/kitchen.functions";
 import { useLanguage } from "@/lib/i18n";
-import type { Tables } from "@/integrations/supabase/types";
+import { pageTitle } from "@/lib/brand";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/distribution")({
   head: () => ({
     meta: [
-      { title: "Live Beneficiary & Distribution Tracker | Ratna Nidhi Central Kitchen" },
-      { name: "description", content: "Live map of distribution centers and schools receiving daily fresh cooked meals from the Ratna Nidhi Central Kitchen." },
-      { property: "og:title", content: "Live Beneficiary & Distribution Tracker" },
-      { property: "og:description", content: "Meals cooked today, children served, and active kitchen centers." },
+      { title: pageTitle("Live Distribution Tracker") },
+      { name: "description", content: "Live map of community kitchens, food banks, and drop-off points receiving surplus food and fresh meals." },
+      { property: "og:title", content: pageTitle("Live Distribution Tracker") },
+      { property: "og:description", content: "Meals cooked today, people served, and active community kitchens." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -27,13 +30,13 @@ export const Route = createFileRoute("/distribution")({
   component: DistributionPage,
 });
 
-type Center = Tables<"distribution_centers">;
-
 function DistributionPage() {
-  const { user } = useProfile();
+  const { user, profile } = useProfile();
   const { isAdmin } = useIsAdmin(user?.id);
-  const { stats } = useKitchenStats();
+  const { stats, reload: reloadStats } = useKitchenStats();
   const { t } = useLanguage();
+  const { registration, loading: loadingRegistration, saving: savingRegistration, error: registrationError, save: saveRegistration } = useNgoRegistration(user?.id);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [centers, setCenters] = useState<Center[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddCenter, setShowAddCenter] = useState(false);
@@ -73,23 +76,15 @@ function DistributionPage() {
   }
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from("distribution_centers").select("*").order("name");
-    setCenters((data as Center[] | null) ?? []);
+    const data = await listDistributionCenters().catch(() => null);
+    if (data) setCenters(data);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     void load();
-  }, [load]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("distribution-centers")
-      .on("postgres_changes", { event: "*", schema: "public", table: "distribution_centers" }, () => void load())
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    const timer = setInterval(() => void load(), LIVE_REFRESH_MS);
+    return () => clearInterval(timer);
   }, [load]);
 
   async function addCenter(event: FormEvent<HTMLFormElement>) {
@@ -99,21 +94,24 @@ function DistributionPage() {
     const form = new FormData(event.currentTarget);
     const lat = form.get("latitude");
     const lon = form.get("longitude");
-    const { error: insertError } = await supabase.from("distribution_centers").insert({
-      name: String(form.get("name") ?? "").trim(),
-      center_type: String(form.get("center_type") ?? "School").trim() || "School",
-      address: String(form.get("address") ?? "").trim() || null,
-      latitude: lat ? Number(lat) : null,
-      longitude: lon ? Number(lon) : null,
-      daily_meal_target: Number(form.get("daily_meal_target") ?? 0),
-    });
+    const insertError = await addDistributionCenter({
+      data: {
+        name: String(form.get("name") ?? "").trim(),
+        center_type: String(form.get("center_type") ?? "Community kitchen").trim() || "Community kitchen",
+        address: String(form.get("address") ?? "").trim() || null,
+        latitude: lat ? Number(lat) : null,
+        longitude: lon ? Number(lon) : null,
+        daily_meal_target: Number(form.get("daily_meal_target") ?? 0),
+      },
+    }).then(() => null, errorMessage);
     setSaving(false);
     if (insertError) {
-      setError(insertError.message);
+      setError(insertError);
       return;
     }
     (event.target as HTMLFormElement).reset();
     setShowAddCenter(false);
+    void reloadStats();
     await load();
   }
 
@@ -122,19 +120,35 @@ function DistributionPage() {
     setError(null);
     setSaving(true);
     const form = new FormData(event.currentTarget);
-    const { error: insertError } = await supabase.from("meal_logs").insert({
-      center_id: String(form.get("center_id") ?? ""),
-      meals_cooked: Number(form.get("meals_cooked") ?? 0),
-      children_served: Number(form.get("children_served") ?? 0),
-      logged_by: user?.id ?? null,
-    });
+    const insertError = await logMeals({
+      data: {
+        center_id: String(form.get("center_id") ?? ""),
+        meals_cooked: Number(form.get("meals_cooked") ?? 0),
+        children_served: Number(form.get("children_served") ?? 0),
+      },
+    }).then(() => null, errorMessage);
     setSaving(false);
     if (insertError) {
-      setError(insertError.message);
+      setError(insertError);
       return;
     }
     (event.target as HTMLFormElement).reset();
     setShowLogMeal(false);
+    void reloadStats();
+  }
+
+  async function submitRegistration(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const saved = await saveRegistration({
+      organization_name: String(form.get("organization_name") ?? "").trim(),
+      registration_80g: String(form.get("registration_80g") ?? "").trim(),
+      contact_person: String(form.get("contact_person") ?? "").trim(),
+      contact_phone: String(form.get("contact_phone") ?? "").trim(),
+      contact_email: String(form.get("contact_email") ?? "").trim(),
+      pincode: String(form.get("pincode") ?? "").trim(),
+    });
+    if (saved) setShowRegistrationForm(false);
   }
 
   const mapPoints: MapPoint[] = centers
@@ -193,11 +207,11 @@ function DistributionPage() {
           <form onSubmit={addCenter} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <label className="block">
               <span className="label-caps text-muted-foreground">Center name</span>
-              <input name="name" required placeholder="e.g. Municipal School 12" className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
+              <input name="name" required placeholder="e.g. Riverside Community Kitchen" className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
             <label className="block">
               <span className="label-caps text-muted-foreground">Type</span>
-              <input name="center_type" defaultValue="School" className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
+              <input name="center_type" defaultValue="Community kitchen" className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
             <label className="block">
               <span className="label-caps text-muted-foreground">Daily meal target</span>
@@ -239,7 +253,7 @@ function DistributionPage() {
               <input name="meals_cooked" type="number" min="0" required className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
             <label className="block">
-              <span className="label-caps text-muted-foreground">Children served</span>
+              <span className="label-caps text-muted-foreground">People served</span>
               <input name="children_served" type="number" min="0" required className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
             <div className="sm:col-span-2 lg:col-span-4">
@@ -294,6 +308,82 @@ function DistributionPage() {
               </article>
             ))}
           </div>
+        )}
+      </section>
+
+      <section className="border-t border-border px-4 py-6 sm:px-8 lg:px-12">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+          <h2 className="label-caps text-foreground">{t("registration.title")}</h2>
+          {!isAdmin && registration && (
+            <Button variant="outline" className="h-9 shrink-0 px-3 text-xs" onClick={() => setShowRegistrationForm((v) => !v)}>
+              {showRegistrationForm ? t("registration.cancel") : t("registration.edit")}
+            </Button>
+          )}
+        </div>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("registration.intro")}</p>
+
+        {!user ? (
+          <div className="mt-6 border border-border-strong bg-card p-6">
+            <p className="text-sm text-muted-foreground">{t("registration.signInPrompt")}</p>
+            <Button asChild className="mt-4"><Link to="/auth">{t("registration.signIn")}</Link></Button>
+          </div>
+        ) : loadingRegistration ? (
+          <p className="mt-6 text-sm text-muted-foreground">{t("registration.loading")}</p>
+        ) : (
+          <>
+            {registration && (
+              <div className="mt-6 grid gap-4 border border-border-strong bg-card p-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                <div className="min-w-0">
+                  <p className="truncate font-display text-2xl">{registration.organization_name}</p>
+                  <div className="mt-3 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                    <p className="break-words">{t("registration.summary.regId")} · {registration.registration_80g}</p>
+                    <p className="break-words">{t("registration.summary.contact")} · {registration.contact_person} · {registration.contact_phone}</p>
+                    <p className="break-words">{t("registration.summary.pincode")} · {registration.pincode}</p>
+                    <p className="break-words">
+                      {registration.area_label ? `${t("registration.summary.area")} · ${registration.area_label}` : t("registration.areaUnverified")}
+                    </p>
+                  </div>
+                </div>
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ShieldCheck className="size-4 shrink-0 text-accent" />
+                  {registration.distribution_center_id
+                    ? t("registration.status.approved")
+                    : registration.status === "Verified"
+                      ? t("registration.status.verified")
+                      : t("registration.status.pending")}
+                </p>
+              </div>
+            )}
+
+            {(showRegistrationForm || !registration) && (
+              <form onSubmit={submitRegistration} className="mt-6 grid gap-4 sm:grid-cols-2">
+                {[
+                  { name: "organization_name", labelKey: "registration.field.orgName", value: registration?.organization_name ?? profile?.organization ?? "", required: true },
+                  { name: "registration_80g", labelKey: "registration.field.regId", value: registration?.registration_80g ?? "", required: true },
+                  { name: "contact_person", labelKey: "registration.field.contactPerson", value: registration?.contact_person ?? profile?.full_name ?? "", required: true },
+                  { name: "contact_phone", labelKey: "registration.field.contactPhone", value: registration?.contact_phone ?? profile?.phone ?? "", required: true },
+                  { name: "contact_email", labelKey: "registration.field.contactEmail", value: registration?.contact_email ?? profile?.email ?? "", required: false },
+                  { name: "pincode", labelKey: "registration.field.pincode", value: registration?.pincode ?? "", required: true },
+                ].map((field) => (
+                  <label key={field.name} className="block min-w-0">
+                    <span className="label-caps text-muted-foreground">{t(field.labelKey)}</span>
+                    <input
+                      name={field.name}
+                      defaultValue={field.value}
+                      required={field.required}
+                      className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground"
+                    />
+                  </label>
+                ))}
+                <div className="sm:col-span-2">
+                  <Button type="submit" disabled={savingRegistration}>
+                    {savingRegistration ? t("registration.verifying") : registration ? t("registration.save") : t("registration.submit")}
+                  </Button>
+                  {registrationError && <p className="mt-3 text-xs text-accent">{registrationError}</p>}
+                </div>
+              </form>
+            )}
+          </>
         )}
       </section>
     </AppShell>

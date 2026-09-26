@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 function NotFoundComponent() {
   return (
@@ -77,11 +78,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Ratna Nidhi Central Kitchen & Daily Meal Project" },
-      { name: "description", content: "Ratna Nidhi Central Kitchen & Daily Meal Project — 2,200+ fresh meals cooked daily for children." },
-      { name: "author", content: "Ratna Nidhi Central Kitchen" },
-      { property: "og:title", content: "Ratna Nidhi Central Kitchen & Daily Meal Project" },
-      { property: "og:description", content: "2,200+ fresh meals cooked daily for children." },
+      { title: `${APP_NAME} — ${APP_TAGLINE}` },
+      { name: "description", content: APP_DESCRIPTION },
+      { name: "author", content: APP_NAME },
+      { property: "og:title", content: `${APP_NAME} — ${APP_TAGLINE}` },
+      { property: "og:description", content: APP_DESCRIPTION },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },

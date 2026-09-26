@@ -1,27 +1,19 @@
-import type { User } from "@supabase/supabase-js";
-import type { Profile } from "@/hooks/use-profile";
+import type { AuthUser, Profile } from "@/integrations/mongodb/types";
 
 export type DemoRole = "user" | "admin";
 
-const STORAGE_KEY = "rn_demo_session";
+const STORAGE_KEY = "fwc_demo_session";
+const DEMO_CREATED_AT = "2026-01-01T00:00:00.000Z";
 
-export const DEMO_USER = {
+export const DEMO_USER: AuthUser = {
   id: "demo-0000-0000-0000-000000000001",
-  aud: "authenticated",
-  app_metadata: {},
-  user_metadata: { full_name: "Demo Visitor" },
-  email: "demo@ratnanidhikitchen.org",
-  created_at: "2026-01-01T00:00:00.000Z",
-} as User;
+  email: "demo@example.org",
+};
 
-export const DEMO_ADMIN = {
+export const DEMO_ADMIN: AuthUser = {
   id: "demo-0000-0000-0000-000000000002",
-  aud: "authenticated",
-  app_metadata: {},
-  user_metadata: { full_name: "Demo Admin" },
-  email: "admin@ratnanidhikitchen.org",
-  created_at: "2026-01-01T00:00:00.000Z",
-} as User;
+  email: "admin@example.org",
+};
 
 export const DEMO_PROFILE: Profile = {
   id: DEMO_USER.id,
@@ -29,22 +21,26 @@ export const DEMO_PROFILE: Profile = {
   role: "Sponsor",
   organization: null,
   phone: null,
-  email: "demo@ratnanidhikitchen.org",
+  email: "demo@example.org",
   location_label: null,
   latitude: null,
   longitude: null,
+  created_at: DEMO_CREATED_AT,
+  updated_at: DEMO_CREATED_AT,
 };
 
 export const DEMO_ADMIN_PROFILE: Profile = {
   id: DEMO_ADMIN.id,
   full_name: "Demo Admin",
   role: "Admin",
-  organization: "Ratna Nidhi Central Kitchen",
+  organization: "Neighborhood Community Kitchen",
   phone: null,
-  email: "admin@ratnanidhikitchen.org",
+  email: "admin@example.org",
   location_label: "Mumbai, Maharashtra",
   latitude: 19.076,
   longitude: 72.8777,
+  created_at: DEMO_CREATED_AT,
+  updated_at: DEMO_CREATED_AT,
 };
 
 export function getDemoRole(): DemoRole | null {

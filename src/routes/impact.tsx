@@ -5,14 +5,15 @@ import { AppShell, PageIntro } from "@/components/app-shell";
 import { useKitchenStats } from "@/hooks/use-kitchen";
 import { formatCount } from "@/hooks/use-stats";
 import { formatInr } from "@/lib/kitchen";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/impact")({
   head: () => ({
     meta: [
-      { title: "Impact | Ratna Nidhi Central Kitchen" },
-      { name: "description", content: "Meals cooked, children served, and sponsorships raised through the Ratna Nidhi Central Kitchen & Daily Meal Project." },
-      { property: "og:title", content: "Impact | Ratna Nidhi Central Kitchen" },
-      { property: "og:description", content: "Track meals cooked, children served, and sponsorship totals." },
+      { title: pageTitle("Impact") },
+      { name: "description", content: "Meals cooked, people served, and sponsorships raised across local community kitchens." },
+      { property: "og:title", content: pageTitle("Impact") },
+      { property: "og:description", content: "Track meals cooked, people served, and sponsorship totals." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -25,7 +26,7 @@ function ImpactPage() {
 
   const tiles = [
     { label: "Meals cooked today", value: formatCount(stats.meals_cooked_today), unit: "meals", icon: UtensilsCrossed },
-    { label: "Children served today", value: formatCount(stats.children_served_today), unit: "children", icon: Users },
+    { label: "People served today", value: formatCount(stats.children_served_today), unit: "people", icon: Users },
     { label: "Active kitchen centers", value: formatCount(stats.active_kitchen_centers), unit: "centers", icon: Building2 },
     { label: "Meals cooked this month", value: formatCount(stats.meals_cooked_this_month), unit: "meals", icon: HeartHandshake },
   ];
@@ -35,7 +36,7 @@ function ImpactPage() {
       <PageIntro
         eyebrow="Impact / Kitchen totals"
         title={<>Every meal, <span className="italic">measured and tracked.</span></>}
-        description="A live view of the meals cooked, children served, and sponsorships raised through the Ratna Nidhi Central Kitchen & Daily Meal Project."
+        description="A live view of the meals cooked, people served, and sponsorships raised across local community kitchens and volunteer drives."
       />
       <section className="grid grid-cols-2 border-b border-border xl:grid-cols-4">
         {tiles.map(({ label, value, unit, icon: Icon }, index) => (

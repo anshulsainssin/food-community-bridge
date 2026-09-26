@@ -5,13 +5,14 @@ import { AppShell, PageIntro } from "@/components/app-shell";
 import { useKitchenStats } from "@/hooks/use-kitchen";
 import { formatCount } from "@/hooks/use-stats";
 import { useLanguage } from "@/lib/i18n";
+import { pageTitle } from "@/lib/brand";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About Us | Ratna Nidhi Central Kitchen" },
-      { name: "description", content: "How the Ratna Nidhi Central Kitchen prepares and delivers 2,200+ fresh cooked meals daily for children, and the impact so far." },
-      { property: "og:title", content: "About Us | Ratna Nidhi Central Kitchen" },
+      { title: pageTitle("About Us") },
+      { name: "description", content: "How surplus food reaches local community kitchens, food banks, and volunteer drives — and the community impact so far." },
+      { property: "og:title", content: pageTitle("About Us") },
       { property: "og:description", content: "Our mission and the community impact so far." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

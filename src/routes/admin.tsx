@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, Award, Building2, Check, Mail, PackageOpen, ShieldAlert, UsersRound, UtensilsCrossed } from "lucide-react";
+import { AlertTriangle, Award, Building2, Check, Mail, PackageOpen, ShieldAlert, ShieldCheck, UsersRound, UtensilsCrossed } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, PageIntro } from "@/components/app-shell";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useIsAdmin } from "@/hooks/use-admin";
@@ -10,15 +11,17 @@ import { useKitchenStats } from "@/hooks/use-kitchen";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount } from "@/hooks/use-stats";
 import { formatInr } from "@/lib/kitchen";
-import { supabase } from "@/integrations/supabase/client";
-import type { Tables as TablesType } from "@/integrations/supabase/types";
+import type { ContactMessage, NgoRegistration, Profile, Sponsorship, VolunteerSignup } from "@/integrations/mongodb/types";
+import { approveRegistration as approveRegistrationFn, getAdminDashboard, type AdminDashboard } from "@/lib/admin.functions";
+import { APP_NAME, pageTitle } from "@/lib/brand";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin Dashboard | Ratna Nidhi Central Kitchen" },
-      { name: "description", content: "Live kitchen metrics, sponsorships, users, and incoming messages for Ratna Nidhi Central Kitchen administrators." },
-      { property: "og:title", content: "Admin Dashboard | Ratna Nidhi Central Kitchen" },
+      { title: pageTitle("Admin Dashboard") },
+      { name: "description", content: `Live kitchen metrics, sponsorships, users, and incoming messages for ${APP_NAME} administrators.` },
+      { property: "og:title", content: pageTitle("Admin Dashboard") },
       { property: "og:type", content: "website" },
       { name: "robots", content: "noindex" },
     ],
@@ -26,26 +29,13 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type Profile = TablesType<"profiles">;
-type Sponsorship = TablesType<"sponsorships">;
-type ContactMessage = TablesType<"contact_messages">;
-type VolunteerSignup = TablesType<"volunteer_signups">;
-type AdminStats = {
-  total_users: number;
-  pending_contact_messages: number;
-  pending_volunteer_signups: number;
-};
+type AdminStats = AdminDashboard["stats"];
 
 const EMPTY_STATS: AdminStats = {
   total_users: 0,
   pending_contact_messages: 0,
   pending_volunteer_signups: 0,
 };
-
-function num(value: unknown) {
-  const parsed = typeof value === "string" ? Number.parseFloat(value) : Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function formatStamp(iso: string | null) {
   if (!iso) return "—";
@@ -55,44 +45,49 @@ function formatStamp(iso: string | null) {
 function AdminPage() {
   const { user, loading: authLoading } = useProfile();
   const { isAdmin, loading: adminLoading } = useIsAdmin(user?.id);
-  const { stats: kitchen } = useKitchenStats();
+  const { stats: kitchen, reload: reloadStats } = useKitchenStats();
 
   const [stats, setStats] = useState<AdminStats>(EMPTY_STATS);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [sponsorships, setSponsorships] = useState<Sponsorship[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [signups, setSignups] = useState<VolunteerSignup[]>([]);
+  const [registrations, setRegistrations] = useState<NgoRegistration[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [approving, setApproving] = useState<string | null>(null);
+  const [approveError, setApproveError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoadingData(true);
-    const [statsResult, profilesResult, sponsorshipsResult, messagesResult, signupsResult] = await Promise.all([
-      supabase.rpc("admin_dashboard_stats"),
-      supabase.rpc("admin_list_profiles"),
-      supabase.from("sponsorships").select("*").order("created_at", { ascending: false }).limit(500),
-      supabase.rpc("admin_list_contact_messages"),
-      supabase.rpc("admin_list_volunteer_signups"),
-    ]);
-    const statsRow = Array.isArray(statsResult.data) ? statsResult.data[0] : null;
-    setStats(
-      statsRow
-        ? {
-            total_users: num(statsRow.total_users),
-            pending_contact_messages: num(statsRow.pending_contact_messages),
-            pending_volunteer_signups: num(statsRow.pending_volunteer_signups),
-          }
-        : EMPTY_STATS,
-    );
-    setProfiles((profilesResult.data as Profile[] | null) ?? []);
-    setSponsorships((sponsorshipsResult.data as Sponsorship[] | null) ?? []);
-    setMessages((messagesResult.data as ContactMessage[] | null) ?? []);
-    setSignups((signupsResult.data as VolunteerSignup[] | null) ?? []);
+    const dashboard = await getAdminDashboard().catch((error: unknown) => {
+      console.error(error);
+      return null;
+    });
+    setStats(dashboard?.stats ?? EMPTY_STATS);
+    setProfiles(dashboard?.profiles ?? []);
+    setSponsorships(dashboard?.sponsorships ?? []);
+    setMessages(dashboard?.messages ?? []);
+    setSignups(dashboard?.signups ?? []);
+    setRegistrations(dashboard?.registrations ?? []);
     setLoadingData(false);
   }, []);
 
   useEffect(() => {
     if (isAdmin) void load();
   }, [isAdmin, load]);
+
+  async function approveRegistration(registration: NgoRegistration) {
+    setApproveError(null);
+    setApproving(registration.id);
+    const error = await approveRegistrationFn({ data: { id: registration.id } }).then(() => null, errorMessage);
+    setApproving(null);
+    if (error) {
+      setApproveError(error);
+      return;
+    }
+    void reloadStats();
+    await load();
+  }
 
   if (authLoading || adminLoading) {
     return (
@@ -139,7 +134,7 @@ function AdminPage() {
       <PageIntro
         eyebrow="Admin / Dashboard"
         title={<>Kitchen <span className="italic">overview.</span></>}
-        description="Live metrics for the central kitchen, sponsorships, users, and incoming messages. Manage stock and distribution centers directly on their live pages."
+        description="Live metrics for community kitchens, sponsorships, partner registrations, users, and incoming messages. Manage stock and distribution centers directly on their live pages."
         action={
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link to="/inventory" className="label-caps border border-border-strong px-4 py-2.5 text-center hover:border-foreground">Manage inventory</Link>
@@ -164,6 +159,7 @@ function AdminPage() {
         <Tabs defaultValue="sponsorships">
           <TabsList>
             <TabsTrigger value="sponsorships">Sponsorships ({sponsorships.length})</TabsTrigger>
+            <TabsTrigger value="registrations">Partner registrations ({registrations.length})</TabsTrigger>
             <TabsTrigger value="users">Users ({profiles.length})</TabsTrigger>
             <TabsTrigger value="messages">Messages ({messages.length})</TabsTrigger>
             <TabsTrigger value="volunteers">Volunteers ({signups.length})</TabsTrigger>
@@ -197,6 +193,46 @@ function AdminPage() {
                   ))}
                 </TableBody>
               </Table>
+            )}
+          </TabsContent>
+
+          <TabsContent value="registrations" className="mt-6">
+            {approveError && <p className="mb-4 text-sm text-accent">{approveError}</p>}
+            {loadingData ? (
+              <p className="text-sm text-muted-foreground">Loading registrations…</p>
+            ) : registrations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No distribution-partner registrations yet.</p>
+            ) : (
+              <div className="divide-y divide-border">
+                {registrations.map((registration) => (
+                  <article key={registration.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-4 first:pt-0">
+                    <div className="min-w-0">
+                      <p className="font-medium">{registration.organization_name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Reg. ID {registration.registration_80g} · {registration.contact_person} · {registration.contact_phone}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {registration.area_label ? `Verified area: ${registration.area_label}` : `PIN code ${registration.pincode} (not verified)`}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      {registration.distribution_center_id ? (
+                        <span className="label-caps flex items-center gap-1 rounded-sm bg-primary/10 px-2 py-1 text-primary">
+                          <ShieldCheck className="size-3.5" /> Approved
+                        </span>
+                      ) : (
+                        <Button
+                          className="h-8 px-3 text-xs"
+                          disabled={approving === registration.id || !registration.latitude || !registration.longitude}
+                          onClick={() => void approveRegistration(registration)}
+                        >
+                          {approving === registration.id ? "Approving…" : "Approve & create center"}
+                        </Button>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
             )}
           </TabsContent>
 
