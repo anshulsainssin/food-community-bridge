@@ -5,12 +5,14 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/hooks/use-admin";
+import { LIVE_REFRESH_MS, useKitchenStats } from "@/hooks/use-kitchen";
 import { useProfile } from "@/hooks/use-profile";
-import { supabase } from "@/integrations/supabase/client";
-import { INVENTORY_CATEGORIES, stockStatus, type StockStatus } from "@/lib/kitchen";
+import type { KitchenInventoryItem as InventoryItem } from "@/integrations/mongodb/types";
+import { INVENTORY_CATEGORIES, stockStatus, type InventoryCategory, type StockStatus } from "@/lib/kitchen";
+import { addInventoryItem, listInventory, updateInventoryStock } from "@/lib/kitchen.functions";
 import { useLanguage } from "@/lib/i18n";
-import type { Tables } from "@/integrations/supabase/types";
 import { pageTitle } from "@/lib/brand";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/inventory")({
   head: () => ({
@@ -26,8 +28,6 @@ export const Route = createFileRoute("/inventory")({
   component: InventoryPage,
 });
 
-type InventoryItem = Tables<"kitchen_inventory">;
-
 const STATUS_STYLE: Record<StockStatus, string> = {
   "Reorder Now": "bg-accent/15 text-accent",
   "Low Stock": "bg-amber-500/15 text-amber-700",
@@ -37,6 +37,7 @@ const STATUS_STYLE: Record<StockStatus, string> = {
 function InventoryPage() {
   const { user } = useProfile();
   const { isAdmin } = useIsAdmin(user?.id);
+  const { reload: reloadStats } = useKitchenStats();
   const { t } = useLanguage();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,23 +53,15 @@ function InventoryPage() {
   };
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from("kitchen_inventory").select("*").order("category").order("item_name");
-    setItems((data as InventoryItem[] | null) ?? []);
+    const data = await listInventory().catch(() => null);
+    if (data) setItems(data);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     void load();
-  }, [load]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("kitchen-inventory")
-      .on("postgres_changes", { event: "*", schema: "public", table: "kitchen_inventory" }, () => void load())
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    const timer = setInterval(() => void load(), LIVE_REFRESH_MS);
+    return () => clearInterval(timer);
   }, [load]);
 
   async function addItem(event: FormEvent<HTMLFormElement>) {
@@ -76,21 +69,23 @@ function InventoryPage() {
     setError(null);
     setSaving(true);
     const form = new FormData(event.currentTarget);
-    const { error: insertError } = await supabase.from("kitchen_inventory").insert({
-      category: String(form.get("category") ?? ""),
-      item_name: String(form.get("item_name") ?? "").trim(),
-      unit: String(form.get("unit") ?? "kg").trim() || "kg",
-      current_stock: Number(form.get("current_stock") ?? 0),
-      reorder_threshold: Number(form.get("reorder_threshold") ?? 0),
-      updated_by: user?.id ?? null,
-    });
+    const insertError = await addInventoryItem({
+      data: {
+        category: String(form.get("category") ?? "") as InventoryCategory,
+        item_name: String(form.get("item_name") ?? "").trim(),
+        unit: String(form.get("unit") ?? "kg").trim() || "kg",
+        current_stock: Number(form.get("current_stock") ?? 0),
+        reorder_threshold: Number(form.get("reorder_threshold") ?? 0),
+      },
+    }).then(() => null, errorMessage);
     setSaving(false);
     if (insertError) {
-      setError(insertError.message);
+      setError(insertError);
       return;
     }
     (event.target as HTMLFormElement).reset();
     setShowAdd(false);
+    void reloadStats();
     await load();
   }
 
@@ -100,14 +95,12 @@ function InventoryPage() {
     const value = Number(draft);
     if (!Number.isFinite(value) || value < 0) return;
     setError(null);
-    const { error: updateError } = await supabase
-      .from("kitchen_inventory")
-      .update({ current_stock: value, updated_at: new Date().toISOString(), updated_by: user?.id ?? null })
-      .eq("id", item.id);
+    const updateError = await updateInventoryStock({ data: { id: item.id, current_stock: value } }).then(() => null, errorMessage);
     if (updateError) {
-      setError(updateError.message);
+      setError(updateError);
       return;
     }
+    void reloadStats();
     setStockDrafts((prev) => {
       const next = { ...prev };
       delete next[item.id];

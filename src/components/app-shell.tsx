@@ -8,7 +8,7 @@ import { useKitchenStats } from "@/hooks/use-kitchen";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount } from "@/hooks/use-stats";
-import { supabase } from "@/integrations/supabase/client";
+import { signOut as signOutFn } from "@/lib/account.functions";
 import { APP_NAME } from "@/lib/brand";
 import { clearDemoRole, isDemoActive } from "@/lib/demo";
 import { useLanguage } from "@/lib/i18n";
@@ -74,8 +74,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       window.location.href = "/auth";
       return;
     }
-    await supabase.auth.signOut();
-    void navigate({ to: "/auth", replace: true });
+    await signOutFn();
+    // Full reload so every cached query (account, notifications, admin data) is dropped.
+    window.location.href = "/auth";
   }
 
   const fullNavItems = [

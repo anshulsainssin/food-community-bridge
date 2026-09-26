@@ -11,9 +11,10 @@ import { useKitchenStats } from "@/hooks/use-kitchen";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount } from "@/hooks/use-stats";
 import { formatInr } from "@/lib/kitchen";
-import { supabase } from "@/integrations/supabase/client";
-import type { Tables as TablesType } from "@/integrations/supabase/types";
+import type { ContactMessage, NgoRegistration, Profile, Sponsorship, VolunteerSignup } from "@/integrations/mongodb/types";
+import { approveRegistration as approveRegistrationFn, getAdminDashboard, type AdminDashboard } from "@/lib/admin.functions";
 import { APP_NAME, pageTitle } from "@/lib/brand";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -28,27 +29,13 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type Profile = TablesType<"profiles">;
-type Sponsorship = TablesType<"sponsorships">;
-type ContactMessage = TablesType<"contact_messages">;
-type VolunteerSignup = TablesType<"volunteer_signups">;
-type NgoRegistration = TablesType<"ngo_registrations">;
-type AdminStats = {
-  total_users: number;
-  pending_contact_messages: number;
-  pending_volunteer_signups: number;
-};
+type AdminStats = AdminDashboard["stats"];
 
 const EMPTY_STATS: AdminStats = {
   total_users: 0,
   pending_contact_messages: 0,
   pending_volunteer_signups: 0,
 };
-
-function num(value: unknown) {
-  const parsed = typeof value === "string" ? Number.parseFloat(value) : Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function formatStamp(iso: string | null) {
   if (!iso) return "—";
@@ -58,7 +45,7 @@ function formatStamp(iso: string | null) {
 function AdminPage() {
   const { user, loading: authLoading } = useProfile();
   const { isAdmin, loading: adminLoading } = useIsAdmin(user?.id);
-  const { stats: kitchen } = useKitchenStats();
+  const { stats: kitchen, reload: reloadStats } = useKitchenStats();
 
   const [stats, setStats] = useState<AdminStats>(EMPTY_STATS);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -72,29 +59,16 @@ function AdminPage() {
 
   const load = useCallback(async () => {
     setLoadingData(true);
-    const [statsResult, profilesResult, sponsorshipsResult, messagesResult, signupsResult, registrationsResult] = await Promise.all([
-      supabase.rpc("admin_dashboard_stats"),
-      supabase.rpc("admin_list_profiles"),
-      supabase.from("sponsorships").select("*").order("created_at", { ascending: false }).limit(500),
-      supabase.rpc("admin_list_contact_messages"),
-      supabase.rpc("admin_list_volunteer_signups"),
-      supabase.from("ngo_registrations").select("*").order("created_at", { ascending: false }).limit(500),
-    ]);
-    const statsRow = Array.isArray(statsResult.data) ? statsResult.data[0] : null;
-    setStats(
-      statsRow
-        ? {
-            total_users: num(statsRow.total_users),
-            pending_contact_messages: num(statsRow.pending_contact_messages),
-            pending_volunteer_signups: num(statsRow.pending_volunteer_signups),
-          }
-        : EMPTY_STATS,
-    );
-    setProfiles((profilesResult.data as Profile[] | null) ?? []);
-    setSponsorships((sponsorshipsResult.data as Sponsorship[] | null) ?? []);
-    setMessages((messagesResult.data as ContactMessage[] | null) ?? []);
-    setSignups((signupsResult.data as VolunteerSignup[] | null) ?? []);
-    setRegistrations((registrationsResult.data as NgoRegistration[] | null) ?? []);
+    const dashboard = await getAdminDashboard().catch((error: unknown) => {
+      console.error(error);
+      return null;
+    });
+    setStats(dashboard?.stats ?? EMPTY_STATS);
+    setProfiles(dashboard?.profiles ?? []);
+    setSponsorships(dashboard?.sponsorships ?? []);
+    setMessages(dashboard?.messages ?? []);
+    setSignups(dashboard?.signups ?? []);
+    setRegistrations(dashboard?.registrations ?? []);
     setLoadingData(false);
   }, []);
 
@@ -105,32 +79,13 @@ function AdminPage() {
   async function approveRegistration(registration: NgoRegistration) {
     setApproveError(null);
     setApproving(registration.id);
-    const { data: center, error: centerError } = await supabase
-      .from("distribution_centers")
-      .insert({
-        name: registration.organization_name,
-        center_type: "Partner organization",
-        address: registration.area_label,
-        latitude: registration.latitude,
-        longitude: registration.longitude,
-        daily_meal_target: 0,
-      })
-      .select("id")
-      .single();
-    if (centerError || !center) {
-      setApproving(null);
-      setApproveError(centerError?.message ?? "Could not create the distribution center.");
-      return;
-    }
-    const { error: linkError } = await supabase
-      .from("ngo_registrations")
-      .update({ distribution_center_id: center.id })
-      .eq("id", registration.id);
+    const error = await approveRegistrationFn({ data: { id: registration.id } }).then(() => null, errorMessage);
     setApproving(null);
-    if (linkError) {
-      setApproveError(linkError.message);
+    if (error) {
+      setApproveError(error);
       return;
     }
+    void reloadStats();
     await load();
   }
 

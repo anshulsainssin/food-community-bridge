@@ -1,16 +1,14 @@
-import { useCallback, useEffect, useId, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 
-import { supabase } from "@/integrations/supabase/client";
+import { getKitchenStats, type KitchenStats } from "@/lib/kitchen.functions";
 
-export type KitchenStats = {
-  meals_cooked_today: number;
-  children_served_today: number;
-  active_kitchen_centers: number;
-  meals_cooked_this_month: number;
-  total_sponsorships_amount: number;
-  total_meals_sponsored: number;
-  low_stock_items: number;
-};
+export type { KitchenStats };
+
+export const KITCHEN_STATS_QUERY_KEY = ["kitchen-stats"] as const;
+
+/** How often "live" pages re-poll the server now that there's no Supabase realtime channel. */
+export const LIVE_REFRESH_MS = 30_000;
 
 const EMPTY_STATS: KitchenStats = {
   meals_cooked_today: 0,
@@ -22,56 +20,18 @@ const EMPTY_STATS: KitchenStats = {
   low_stock_items: 0,
 };
 
-function num(value: unknown) {
-  const parsed = typeof value === "string" ? Number.parseFloat(value) : Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function normalize(row: Record<string, unknown>): KitchenStats {
-  return {
-    meals_cooked_today: num(row["meals_cooked_today"]),
-    children_served_today: num(row["children_served_today"]),
-    active_kitchen_centers: num(row["active_kitchen_centers"]),
-    meals_cooked_this_month: num(row["meals_cooked_this_month"]),
-    total_sponsorships_amount: num(row["total_sponsorships_amount"]),
-    total_meals_sponsored: num(row["total_meals_sponsored"]),
-    low_stock_items: num(row["low_stock_items"]),
-  };
-}
-
 /** Live community kitchen totals — public data, no sign-in required. */
 export function useKitchenStats() {
-  const [stats, setStats] = useState<KitchenStats>(EMPTY_STATS);
-  const [loading, setLoading] = useState(true);
-  // Multiple call sites mount this hook at once (AppShell's sidebar plus the page itself), so
-  // each instance needs its own realtime channel name — Supabase's client dedupes channels by
-  // name, and a second `.on()` after another instance already `.subscribe()`d on the same name
-  // throws.
-  const instanceId = useId();
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: KITCHEN_STATS_QUERY_KEY,
+    queryFn: () => getKitchenStats(),
+    refetchInterval: LIVE_REFRESH_MS,
+  });
+  const reload = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: KITCHEN_STATS_QUERY_KEY }),
+    [queryClient],
+  );
 
-  const load = useCallback(async () => {
-    const { data } = await supabase.rpc("kitchen_dashboard_stats");
-    const row = Array.isArray(data) ? data[0] : null;
-    setStats(row ? normalize(row) : EMPTY_STATS);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    setLoading(true);
-    void load();
-  }, [load]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel(`kitchen-stats-${instanceId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "meal_logs" }, () => void load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "sponsorships" }, () => void load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "distribution_centers" }, () => void load())
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [load, instanceId]);
-
-  return { stats, loading, reload: load };
+  return { stats: query.data ?? EMPTY_STATS, loading: query.isPending, reload };
 }

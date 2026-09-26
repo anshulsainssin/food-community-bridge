@@ -4,9 +4,10 @@ import { useState, type FormEvent } from "react";
 
 import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { submitContactMessage, submitVolunteerSignup } from "@/lib/kitchen.functions";
 import { useLanguage } from "@/lib/i18n";
 import { APP_NAME, pageTitle } from "@/lib/brand";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -38,14 +39,16 @@ function ContactPage() {
     setContactSaving(true);
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
-    const { error } = await supabase.from("contact_messages").insert({
-      name: String(form.get("name") ?? "").trim(),
-      email: String(form.get("email") ?? "").trim(),
-      message: String(form.get("message") ?? "").trim(),
-    });
+    const error = await submitContactMessage({
+      data: {
+        name: String(form.get("name") ?? "").trim(),
+        email: String(form.get("email") ?? "").trim(),
+        message: String(form.get("message") ?? "").trim(),
+      },
+    }).then(() => null, errorMessage);
     setContactSaving(false);
     if (error) {
-      setContactError(error.message);
+      setContactError(error);
       return;
     }
     formEl.reset();
@@ -58,16 +61,18 @@ function ContactPage() {
     setVolunteerSaving(true);
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
-    const { error } = await supabase.from("volunteer_signups").insert({
-      name: String(form.get("name") ?? "").trim(),
-      email: String(form.get("email") ?? "").trim(),
-      phone: String(form.get("phone") ?? "").trim() || null,
-      location_label: String(form.get("location") ?? "").trim() || null,
-      message: String(form.get("message") ?? "").trim() || null,
-    });
+    const error = await submitVolunteerSignup({
+      data: {
+        name: String(form.get("name") ?? "").trim(),
+        email: String(form.get("email") ?? "").trim(),
+        phone: String(form.get("phone") ?? "").trim() || null,
+        location_label: String(form.get("location") ?? "").trim() || null,
+        message: String(form.get("message") ?? "").trim() || null,
+      },
+    }).then(() => null, errorMessage);
     setVolunteerSaving(false);
     if (error) {
-      setVolunteerError(error.message);
+      setVolunteerError(error);
       return;
     }
     formEl.reset();

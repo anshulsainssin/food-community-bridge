@@ -6,14 +6,15 @@ import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { DonationMap, type MapPoint } from "@/components/donation-map";
 import { useIsAdmin } from "@/hooks/use-admin";
-import { useKitchenStats } from "@/hooks/use-kitchen";
+import { LIVE_REFRESH_MS, useKitchenStats } from "@/hooks/use-kitchen";
 import { useProfile } from "@/hooks/use-profile";
 import { useNgoRegistration } from "@/hooks/use-registration";
 import { formatCount } from "@/hooks/use-stats";
-import { supabase } from "@/integrations/supabase/client";
+import type { DistributionCenter as Center } from "@/integrations/mongodb/types";
+import { addDistributionCenter, listDistributionCenters, logMeals } from "@/lib/kitchen.functions";
 import { useLanguage } from "@/lib/i18n";
-import type { Tables } from "@/integrations/supabase/types";
 import { pageTitle } from "@/lib/brand";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/distribution")({
   head: () => ({
@@ -29,12 +30,10 @@ export const Route = createFileRoute("/distribution")({
   component: DistributionPage,
 });
 
-type Center = Tables<"distribution_centers">;
-
 function DistributionPage() {
   const { user, profile } = useProfile();
   const { isAdmin } = useIsAdmin(user?.id);
-  const { stats } = useKitchenStats();
+  const { stats, reload: reloadStats } = useKitchenStats();
   const { t } = useLanguage();
   const { registration, loading: loadingRegistration, saving: savingRegistration, error: registrationError, save: saveRegistration } = useNgoRegistration(user?.id);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
@@ -77,23 +76,15 @@ function DistributionPage() {
   }
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from("distribution_centers").select("*").order("name");
-    setCenters((data as Center[] | null) ?? []);
+    const data = await listDistributionCenters().catch(() => null);
+    if (data) setCenters(data);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     void load();
-  }, [load]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("distribution-centers")
-      .on("postgres_changes", { event: "*", schema: "public", table: "distribution_centers" }, () => void load())
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    const timer = setInterval(() => void load(), LIVE_REFRESH_MS);
+    return () => clearInterval(timer);
   }, [load]);
 
   async function addCenter(event: FormEvent<HTMLFormElement>) {
@@ -103,21 +94,24 @@ function DistributionPage() {
     const form = new FormData(event.currentTarget);
     const lat = form.get("latitude");
     const lon = form.get("longitude");
-    const { error: insertError } = await supabase.from("distribution_centers").insert({
-      name: String(form.get("name") ?? "").trim(),
-      center_type: String(form.get("center_type") ?? "Community kitchen").trim() || "Community kitchen",
-      address: String(form.get("address") ?? "").trim() || null,
-      latitude: lat ? Number(lat) : null,
-      longitude: lon ? Number(lon) : null,
-      daily_meal_target: Number(form.get("daily_meal_target") ?? 0),
-    });
+    const insertError = await addDistributionCenter({
+      data: {
+        name: String(form.get("name") ?? "").trim(),
+        center_type: String(form.get("center_type") ?? "Community kitchen").trim() || "Community kitchen",
+        address: String(form.get("address") ?? "").trim() || null,
+        latitude: lat ? Number(lat) : null,
+        longitude: lon ? Number(lon) : null,
+        daily_meal_target: Number(form.get("daily_meal_target") ?? 0),
+      },
+    }).then(() => null, errorMessage);
     setSaving(false);
     if (insertError) {
-      setError(insertError.message);
+      setError(insertError);
       return;
     }
     (event.target as HTMLFormElement).reset();
     setShowAddCenter(false);
+    void reloadStats();
     await load();
   }
 
@@ -126,19 +120,21 @@ function DistributionPage() {
     setError(null);
     setSaving(true);
     const form = new FormData(event.currentTarget);
-    const { error: insertError } = await supabase.from("meal_logs").insert({
-      center_id: String(form.get("center_id") ?? ""),
-      meals_cooked: Number(form.get("meals_cooked") ?? 0),
-      children_served: Number(form.get("children_served") ?? 0),
-      logged_by: user?.id ?? null,
-    });
+    const insertError = await logMeals({
+      data: {
+        center_id: String(form.get("center_id") ?? ""),
+        meals_cooked: Number(form.get("meals_cooked") ?? 0),
+        children_served: Number(form.get("children_served") ?? 0),
+      },
+    }).then(() => null, errorMessage);
     setSaving(false);
     if (insertError) {
-      setError(insertError.message);
+      setError(insertError);
       return;
     }
     (event.target as HTMLFormElement).reset();
     setShowLogMeal(false);
+    void reloadStats();
   }
 
   async function submitRegistration(event: FormEvent<HTMLFormElement>) {

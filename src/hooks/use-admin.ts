@@ -1,41 +1,15 @@
-import { useEffect, useState } from "react";
-
-import { supabase } from "@/integrations/supabase/client";
+import { useAccount } from "@/hooks/use-profile";
 import { DEMO_ADMIN } from "@/lib/demo";
 
-/** Whether the signed-in user is in the admins allowlist. Not self-service — see migrations. */
+/** Whether the signed-in user is in the admins allowlist. Not self-service — see ADMIN_EMAILS in .env.example. */
 export function useIsAdmin(userId: string | null | undefined) {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const account = useAccount();
 
-  useEffect(() => {
-    let active = true;
-    if (!userId) {
-      setIsAdmin(false);
-      setLoading(false);
-      return;
-    }
-    // Demo admin bypasses the real DB check.
-    if (userId === DEMO_ADMIN.id) {
-      setIsAdmin(true);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    void supabase
-      .from("admins")
-      .select("id")
-      .eq("id", userId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!active) return;
-        setIsAdmin(data != null);
-        setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [userId]);
-
-  return { isAdmin, loading };
+  // Demo admin bypasses the real DB check.
+  if (userId === DEMO_ADMIN.id) return { isAdmin: true, loading: false };
+  if (!userId) return { isAdmin: false, loading: false };
+  return {
+    isAdmin: account.data?.user.id === userId && account.data.isAdmin,
+    loading: account.isPending,
+  };
 }

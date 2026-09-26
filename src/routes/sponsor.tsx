@@ -4,13 +4,15 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { LIVE_REFRESH_MS, useKitchenStats } from "@/hooks/use-kitchen";
 import { useProfile } from "@/hooks/use-profile";
-import { supabase } from "@/integrations/supabase/client";
+import type { Sponsorship } from "@/integrations/mongodb/types";
 import { formatInr, mealsForAmount, SPONSOR_QUICK_AMOUNTS } from "@/lib/kitchen";
+import { listMySponsorships, recordSponsorship } from "@/lib/kitchen.functions";
 import { useLanguage } from "@/lib/i18n";
 import { playNotificationSound } from "@/lib/notification-sound";
-import type { Tables } from "@/integrations/supabase/types";
 import { pageTitle } from "@/lib/brand";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/sponsor")({
   head: () => ({
@@ -26,14 +28,13 @@ export const Route = createFileRoute("/sponsor")({
   component: SponsorPage,
 });
 
-type Sponsorship = Tables<"sponsorships">;
-
 function formatMoment(iso: string) {
   return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 function SponsorPage() {
   const { user, profile } = useProfile();
+  const { reload: reloadStats } = useKitchenStats();
   const { t } = useLanguage();
   const [amount, setAmount] = useState<number>(500);
   const [customAmount, setCustomAmount] = useState("");
@@ -53,12 +54,7 @@ function SponsorPage() {
       setLoadingMine(false);
       return;
     }
-    const { data } = await supabase
-      .from("sponsorships")
-      .select("*")
-      .eq("sponsor_id", user.id)
-      .order("created_at", { ascending: false });
-    setSponsorships((data as Sponsorship[] | null) ?? []);
+    setSponsorships(await listMySponsorships().catch(() => []));
     setLoadingMine(false);
   }, [user]);
 
@@ -69,13 +65,8 @@ function SponsorPage() {
 
   useEffect(() => {
     if (!user) return;
-    const channel = supabase
-      .channel(`sponsorships-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "sponsorships", filter: `sponsor_id=eq.${user.id}` }, () => void load())
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    const timer = setInterval(() => void load(), LIVE_REFRESH_MS);
+    return () => clearInterval(timer);
   }, [user?.id, load]);
 
   async function submitPledge(event: FormEvent<HTMLFormElement>) {
@@ -88,23 +79,25 @@ function SponsorPage() {
     }
     setSaving(true);
     const form = new FormData(event.currentTarget);
-    const { error: insertError } = await supabase.from("sponsorships").insert({
-      sponsor_id: user.id,
-      sponsor_name: String(form.get("sponsor_name") ?? profile?.full_name ?? "").trim() || "Anonymous sponsor",
-      sponsor_email: String(form.get("sponsor_email") ?? profile?.email ?? user.email ?? "").trim() || null,
-      amount_inr: effectiveAmount,
-      meals_sponsored: meals,
-      message: message.trim() || null,
-    });
+    const insertError = await recordSponsorship({
+      data: {
+        sponsor_name: String(form.get("sponsor_name") ?? profile?.full_name ?? "").trim() || "Anonymous sponsor",
+        sponsor_email: String(form.get("sponsor_email") ?? profile?.email ?? user.email ?? "").trim() || null,
+        amount_inr: effectiveAmount,
+        meals_sponsored: meals,
+        message: message.trim() || null,
+      },
+    }).then(() => null, errorMessage);
     setSaving(false);
     if (insertError) {
-      setError(insertError.message);
+      setError(insertError);
       return;
     }
     setSuccess(true);
     setMessage("");
     setCustomAmount("");
     playNotificationSound();
+    void reloadStats();
     await load();
   }
 
