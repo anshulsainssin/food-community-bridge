@@ -94,7 +94,7 @@ export const listInventory = createServerFn({ method: "GET" }).handler(
 const stockAmount = z.number().finite().min(0);
 
 export const addInventoryItem = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         category: z.enum(INVENTORY_CATEGORIES),
@@ -118,7 +118,7 @@ export const addInventoryItem = createServerFn({ method: "POST" })
   });
 
 export const updateInventoryStock = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z.object({ id: z.string().min(1), current_stock: stockAmount }).parse(data),
   )
   .handler(async ({ data }) => {
@@ -143,7 +143,7 @@ export const listDistributionCenters = createServerFn({ method: "GET" }).handler
 );
 
 export const addDistributionCenter = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         name: z.string().trim().min(1).max(200),
@@ -168,7 +168,7 @@ export const addDistributionCenter = createServerFn({ method: "POST" })
   });
 
 export const logMeals = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         center_id: z.string().min(1),
@@ -211,7 +211,7 @@ export const listMySponsorships = createServerFn({ method: "GET" }).handler(
 
 /** Records a pledge (no payment processing) against the signed-in sponsor's account. */
 export const recordSponsorship = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         sponsor_name: z.string().trim().min(1).max(200),
@@ -237,7 +237,7 @@ export const recordSponsorship = createServerFn({ method: "POST" })
 // ---------------------------------------------------------------- Contact & volunteer forms (open to visitors)
 
 export const submitContactMessage = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         name: z.string().trim().min(1).max(200),
@@ -253,7 +253,7 @@ export const submitContactMessage = createServerFn({ method: "POST" })
   });
 
 export const submitVolunteerSignup = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         name: z.string().trim().min(1).max(200),

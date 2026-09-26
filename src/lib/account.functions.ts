@@ -41,7 +41,7 @@ export const signOut = createServerFn({ method: "POST" }).handler(async () => {
 const nullableText = z.string().trim().max(200).nullable();
 
 export const updateProfile = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         full_name: nullableText,
@@ -103,7 +103,7 @@ export const getMyRegistration = createServerFn({ method: "GET" }).handler(
  * here on the server, so "Verified" status can't be claimed by the client.
  */
 export const saveMyRegistration = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         organization_name: z.string().trim().min(1).max(200),

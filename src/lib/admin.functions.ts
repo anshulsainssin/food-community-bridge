@@ -76,7 +76,7 @@ export const getAdminDashboard = createServerFn({ method: "GET" }).handler(
 
 /** Approves a partner registration by creating its distribution center and linking the two. */
 export const approveRegistration = createServerFn({ method: "POST" })
-  .inputValidator((data) => z.object({ id: z.string().min(1) }).parse(data))
+  .validator((data) => z.object({ id: z.string().min(1) }).parse(data))
   .handler(async ({ data }) => {
     const { requireAdmin } = await access();
     const { newId } = await mongo();

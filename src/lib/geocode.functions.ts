@@ -13,7 +13,7 @@ export type GeocodedPlace = {
  * public geocoder.
  */
 export const lookupLocation = createServerFn({ method: "GET" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z.object({ query: z.string().trim().min(2).max(120), country: z.string().trim().max(56).optional() }).parse(data),
   )
   .handler(async ({ data }): Promise<GeocodedPlace | null> => {
