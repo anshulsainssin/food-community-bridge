@@ -30,8 +30,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Local secrets (MongoDB URI, Google OAuth secret, session secret)
-.env
-.env.*
-!.env.example

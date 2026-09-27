@@ -1,48 +1,55 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { LIVE_REFRESH_MS } from "@/hooks/use-kitchen";
-import type { NotificationRow } from "@/integrations/mongodb/types";
-import { listNotifications, markNotificationsRead } from "@/lib/account.functions";
-import { playNotificationSound } from "@/lib/notification-sound";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
-export type Notification = NotificationRow;
+export type Notification = Tables<"notifications">;
 
 export function useNotifications(userId: string | null | undefined) {
-  const queryClient = useQueryClient();
-  const queryKey = ["notifications", userId ?? null] as const;
-  const query = useQuery({
-    queryKey,
-    queryFn: () => listNotifications(),
-    enabled: Boolean(userId),
-    refetchInterval: LIVE_REFRESH_MS,
-  });
-  const items = userId ? (query.data ?? []) : [];
+  const [items, setItems] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Chime when a poll brings in a notification newer than anything seen so far (not on first load).
-  const newestSeen = useRef<string | null>(null);
-  const newest = items[0]?.created_at ?? null;
+  const load = useCallback(async () => {
+    if (!userId) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    setItems((data as Notification[] | null) ?? []);
+    setLoading(false);
+  }, [userId]);
+
   useEffect(() => {
-    if (newest && newestSeen.current && newest > newestSeen.current) playNotificationSound();
-    if (newest) newestSeen.current = newest;
-  }, [newest]);
+    setLoading(true);
+    void load();
+  }, [load]);
 
-  const reload = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
-    [queryClient],
-  );
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`notifications-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        () => void load(),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, load]);
 
   const markAllRead = useCallback(async () => {
     if (!userId) return;
-    await markNotificationsRead();
-    await reload();
-  }, [userId, reload]);
+    await supabase.from("notifications").update({ read: true }).eq("user_id", userId).eq("read", false);
+    await load();
+  }, [userId, load]);
 
-  return {
-    items,
-    loading: Boolean(userId) && query.isPending,
-    unread: items.filter((item) => !item.read).length,
-    reload,
-    markAllRead,
-  };
+  return { items, loading, unread: items.filter((item) => !item.read).length, reload: load, markAllRead };
 }

@@ -11,7 +11,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 function NotFoundComponent() {
   return (
@@ -78,11 +77,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: `${APP_NAME} — ${APP_TAGLINE}` },
-      { name: "description", content: APP_DESCRIPTION },
-      { name: "author", content: APP_NAME },
-      { property: "og:title", content: `${APP_NAME} — ${APP_TAGLINE}` },
-      { property: "og:description", content: APP_DESCRIPTION },
+      { title: "Lovable App" },
+      { name: "description", content: "Food Waste Connect donor dashboard." },
+      { name: "author", content: "Food Waste Connect" },
+      { property: "og:title", content: "Food Waste Connect" },
+      { property: "og:description", content: "Food Waste Connect donor dashboard." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
