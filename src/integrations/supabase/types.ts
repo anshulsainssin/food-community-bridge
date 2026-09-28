@@ -357,6 +357,13 @@ export type Database = {
         }[]
       }
       expire_old_donations: { Args: never; Returns: number }
+      get_pickup_code: {
+        Args: { p_donation_id: string }
+        Returns: {
+          code: string
+          verified_at: string | null
+        }[]
+      }
       my_dashboard_stats: {
         Args: never
         Returns: {
@@ -406,6 +413,37 @@ export type Database = {
           people_served: number
           total_claims: number
         }[]
+      }
+      verify_pickup_code: {
+        Args: { p_code: string; p_donation_id: string }
+        Returns: {
+          claimed_at: string | null
+          claimed_by: string | null
+          completed_at: string | null
+          contact_info: string | null
+          created_at: string
+          diet: string
+          donor_id: string
+          food_type: string
+          id: string
+          notes: string | null
+          pickup_address: string
+          pickup_deadline: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          prepared_at: string | null
+          quantity: string
+          servings: number | null
+          status: string
+          updated_at: string
+          weight_kg: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "donations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {

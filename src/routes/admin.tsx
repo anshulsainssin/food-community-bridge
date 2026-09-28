@@ -3,6 +3,7 @@ import { BadgeCheck, Building2, ClipboardList, Package, Receipt, ShieldCheck, Tr
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
+import { PickupVerifier } from "@/components/pickup-qr";
 import { Button } from "@/components/ui/button";
 import { useDonationsRealtime, useNgoRegistration, useNgoStats } from "@/hooks/use-ngo";
 import { useProfile } from "@/hooks/use-profile";
@@ -265,6 +266,7 @@ function AdminPage() {
         working={working}
         onAccept={accept}
         onAdvance={advance}
+        onVerified={refresh}
         onReceipt={printReceipt}
       />
 
@@ -276,6 +278,7 @@ function AdminPage() {
         working={working}
         onAccept={accept}
         onAdvance={advance}
+        onVerified={refresh}
         onReceipt={printReceipt}
       />
     </AppShell>
@@ -292,6 +295,7 @@ function ManagementTable({
   working,
   onAccept,
   onAdvance,
+  onVerified,
   onReceipt,
 }: {
   title: string;
@@ -303,8 +307,10 @@ function ManagementTable({
   working: string | null;
   onAccept: (id: string) => void;
   onAdvance: (id: string, statuses: string[]) => void;
+  onVerified: () => void;
   onReceipt: (item: Donation) => void;
 }) {
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
   return (
     <section className="border-b border-border px-4 py-6 sm:px-8 lg:px-12">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
@@ -347,7 +353,13 @@ function ManagementTable({
                     <Button
                       variant="primary"
                       disabled={working === item.id}
-                      onClick={() => (action.kind === "claim" ? onAccept(item.id) : onAdvance(item.id, action.statuses))}
+                      onClick={() =>
+                        action.kind === "claim"
+                          ? onAccept(item.id)
+                          : action.kind === "verify"
+                            ? setVerifyingId((current) => (current === item.id ? null : item.id))
+                            : onAdvance(item.id, action.statuses)
+                      }
                     >
                       {working === item.id ? "Updating…" : action.label}
                     </Button>
@@ -359,6 +371,17 @@ function ManagementTable({
                     </Button>
                   )}
                 </div>
+                {action?.kind === "verify" && verifyingId === item.id && (
+                  <div className="lg:col-span-3">
+                    <PickupVerifier
+                      donationId={item.id}
+                      onVerified={() => {
+                        setVerifyingId(null);
+                        onVerified();
+                      }}
+                    />
+                  </div>
+                )}
               </article>
             );
           })}
