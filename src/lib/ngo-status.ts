@@ -22,6 +22,7 @@ export function adminStage(status: string): AdminStage {
 export type AdminAction =
   | { kind: "claim"; label: string }
   | { kind: "advance"; label: string; statuses: string[] }
+  | { kind: "verify"; label: string }
   | null;
 
 /** The single next step an NGO can take on a donation, or null when nothing is left to do. */
@@ -32,7 +33,8 @@ export function nextAdminAction(status: string): AdminAction {
     case "Claimed":
       return { kind: "advance", label: "Out for pickup", statuses: ["Pickup in Progress"] };
     case "Pickup in Progress":
-      return { kind: "advance", label: "Mark delivered", statuses: ["Picked Up", "Completed"] };
+      // "Picked Up" requires scanning the donor's one-time pickup QR code.
+      return { kind: "verify", label: "Verify pickup QR" };
     case "Picked Up":
       return { kind: "advance", label: "Mark delivered", statuses: ["Completed"] };
     default:

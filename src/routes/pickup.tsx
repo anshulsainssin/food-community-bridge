@@ -3,6 +3,7 @@ import { Check, Clock3, MapPin, Phone, Truck, UserRound } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
+import { PickupCodeCard, PickupVerifier } from "@/components/pickup-qr";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +55,7 @@ function PickupPage() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showVerifier, setShowVerifier] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) {
@@ -97,9 +99,18 @@ function PickupPage() {
   const expired = donation?.status === "Expired";
   const stage = Math.max(0, steps.indexOf(donation?.status ?? "Available"));
   const nextStatus = expired ? undefined : steps[stage + 1];
+  const isDonor = user != null && donation?.donor_id === user.id;
+  const isClaimer = user != null && donation?.claimed_by === user.id;
+  // "Picked Up" can only be reached by the claimer scanning the donor's one-time pickup QR code.
+  const needsQr = nextStatus === "Picked Up";
+  const showDonorCode = isDonor && (donation?.status === "Claimed" || donation?.status === "Pickup in Progress");
 
   async function advance() {
     if (!donation || !nextStatus) return;
+    if (needsQr) {
+      setShowVerifier((open) => !open);
+      return;
+    }
     setError(null);
     setWorking(true);
     const { error: rpcError } = await supabase.rpc("advance_donation_status", {
@@ -176,22 +187,36 @@ function PickupPage() {
               Donation expired
             </Button>
           ) : nextStatus ? (
-            <Button size="wide" className="mt-3 w-full" onClick={() => void advance()} disabled={working || stage === 0}>
-              {stage === 0
-                ? "Waiting to be claimed"
-                : working
-                  ? "Updating…"
-                  : nextStatus === "Pickup in Progress"
-                    ? "Start pickup"
-                    : nextStatus === "Picked Up"
-                      ? "Confirm pickup"
-                      : "Mark completed"}
-            </Button>
+            <>
+              <Button size="wide" className="mt-3 w-full" onClick={() => void advance()} disabled={working || stage === 0 || (needsQr && !isClaimer)}>
+                {stage === 0
+                  ? "Waiting to be claimed"
+                  : working
+                    ? "Updating…"
+                    : nextStatus === "Pickup in Progress"
+                      ? "Start pickup"
+                      : nextStatus === "Picked Up"
+                        ? isClaimer
+                          ? "Confirm pickup"
+                          : "Waiting for QR verification"
+                        : "Mark completed"}
+              </Button>
+              {needsQr && isClaimer && showVerifier && donation && (
+                <PickupVerifier
+                  donationId={donation.id}
+                  onVerified={() => {
+                    setShowVerifier(false);
+                    void load();
+                  }}
+                />
+              )}
+            </>
           ) : (
             <Button size="wide" className="mt-3 w-full" disabled>
               Pickup completed
             </Button>
           )}
+          {showDonorCode && donation && <PickupCodeCard donationId={donation.id} />}
         </section>
         <section className="bg-muted/25 p-4 sm:p-8 lg:p-10">
           <h2 className="font-display text-2xl italic sm:text-3xl">Pickup details</h2>
