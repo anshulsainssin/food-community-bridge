@@ -127,7 +127,9 @@ BEGIN
     INSERT INTO public.pickup_events (donation_id, status, actor_id) VALUES (p_donation_id, 'Pickup in Progress', v_uid);
   END IF;
   UPDATE public.donations SET status = 'Picked Up' WHERE id = p_donation_id RETURNING * INTO v_row;
-  INSERT INTO public.pickup_events (donation_id, status, actor_id) VALUES (p_donation_id, 'Picked Up', v_uid);
+  -- clock_timestamp() (not the transaction's now()) so 'Picked Up' sorts after the event above.
+  INSERT INTO public.pickup_events (donation_id, status, actor_id, occurred_at)
+  VALUES (p_donation_id, 'Picked Up', v_uid, clock_timestamp());
 
   SELECT COALESCE(NULLIF(organization, ''), NULLIF(full_name, ''), 'The assigned NGO/volunteer') INTO v_actor
   FROM public.profiles WHERE id = v_uid;

@@ -301,7 +301,7 @@ function ManagementTable({
   title: string;
   empty: string;
   rows: Donation[];
-  distances?: Map<string, number | null>;
+  distances?: Map<string, number | null> | undefined;
   originLabel?: string;
   loading: boolean;
   working: string | null;
