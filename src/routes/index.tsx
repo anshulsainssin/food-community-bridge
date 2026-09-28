@@ -6,7 +6,7 @@ import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLocationSync, useProfile } from "@/hooks/use-profile";
 import { formatCount, formatWeight, useMyStats } from "@/hooks/use-stats";
-import { displayStatus } from "@/lib/donation-status";
+import { displayStatus, donationUrgency } from "@/lib/donation-status";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -96,6 +96,24 @@ function Index() {
     const address = String(form.get("pickup_location") ?? "").trim();
     const servings = toNumber(form.get("quantity"));
     const weight = toNumber(form.get("weight_kg"));
+    const preparedAt = toTimestamp(form.get("prepared_at"));
+    const pickupDeadline = toTimestamp(form.get("pickup_deadline"));
+
+    const nowMs = Date.now();
+    // Small allowance for clock drift and minute-rounded datetime inputs.
+    if (preparedAt && Date.parse(preparedAt) > nowMs + 5 * 60_000) {
+      setError("Food prepared time can't be in the future.");
+      return;
+    }
+    if (preparedAt && pickupDeadline && Date.parse(pickupDeadline) <= Date.parse(preparedAt)) {
+      setError("Pickup deadline must be after the food prepared time.");
+      return;
+    }
+    const draft = { status: "Available", created_at: new Date(nowMs).toISOString(), prepared_at: preparedAt, pickup_deadline: pickupDeadline };
+    if (donationUrgency(draft, nowMs) === "Expired") {
+      setError("This food is already past its safe pickup window (the pickup deadline has passed, or it was prepared more than 24 hours ago), so it can't be published.");
+      return;
+    }
 
     setSaving(true);
     const coords = await currentCoords();
@@ -106,8 +124,8 @@ function Index() {
       quantity: servings != null ? `${servings} people served` : String(form.get("quantity") ?? ""),
       servings,
       weight_kg: weight,
-      prepared_at: toTimestamp(form.get("prepared_at")),
-      pickup_deadline: toTimestamp(form.get("pickup_deadline")),
+      prepared_at: preparedAt,
+      pickup_deadline: pickupDeadline,
       contact_info: String(form.get("contact") ?? ""),
       notes: String(form.get("notes") ?? ""),
       pickup_address: address,
@@ -159,6 +177,18 @@ function Index() {
             <div className="grid gap-6 sm:grid-cols-2"><Field name="prepared_at" label="Food prepared time" type="datetime-local" /><Field name="pickup_deadline" label="Pickup deadline" type="datetime-local" /></div>
             <div className="grid gap-6 sm:grid-cols-2"><Field name="contact" label="Contact information" type="tel" /><Field name="pickup_location" label="Pickup location" /></div>
             <label className="block"><span className="label-caps text-muted-foreground">Additional notes</span><textarea name="notes" rows={3} placeholder="Packaging details, allergens, or pickup instructions" className="mt-2 w-full resize-none border-b border-input bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 focus:border-foreground" /></label>
+            <fieldset>
+              <legend className="label-caps text-muted-foreground">Food-safety checklist</legend>
+              <div className="mt-3 space-y-3">
+                {["Food is freshly prepared", "Food was stored safely", "Food is suitable for donation"].map((item) => (
+                  <label key={item} className="flex items-start gap-3 text-sm">
+                    <input type="checkbox" required className="mt-0.5 size-4 shrink-0 accent-primary" />
+                    <span>{item}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">These are your own confirmations as the donor. They don't guarantee that the food is safe — receivers should still check the food before serving it.</p>
+            </fieldset>
             {error && <p className="text-sm text-accent">{error}</p>}
             <Button type="submit" size="wide" className="w-full" disabled={saving}>{saving ? "Saving…" : user ? "Publish donation" : "Sign in to donate"}</Button>
           </form>}

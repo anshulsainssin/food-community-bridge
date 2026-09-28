@@ -8,6 +8,7 @@ import { useDonationsRealtime, useNgoRegistration, useNgoStats } from "@/hooks/u
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { displayStatus, isExpiredDonation } from "@/lib/donation-status";
+import { byDistance, donationDistance, type LatLon } from "@/lib/geo";
 import { adminStage, nextAdminAction } from "@/lib/ngo-status";
 import { formatCount, formatWeight } from "@/hooks/use-stats";
 import type { Tables } from "@/integrations/supabase/types";
@@ -60,9 +61,22 @@ function AdminPage() {
 
   useDonationsRealtime(refresh);
 
+  // Where the NGO operates: its verified registration location, else its saved profile location.
+  const ngoLat = registration?.latitude ?? profile?.latitude ?? null;
+  const ngoLon = registration?.longitude ?? profile?.longitude ?? null;
+  const ngoOrigin: LatLon | null = ngoLat != null && ngoLon != null ? { lat: ngoLat, lon: ngoLon } : null;
+  const originLabel = registration?.latitude != null && registration?.longitude != null ? "your registered area" : "your saved location";
+
+  const distances = useMemo(
+    () => new Map(donations.map((item) => [item.id, donationDistance(ngoOrigin, item)])),
+    [donations, ngoLat, ngoLon],
+  );
   const incoming = useMemo(
-    () => donations.filter((item) => item.status === "Available" && !isExpiredDonation(item)),
-    [donations],
+    () =>
+      donations
+        .filter((item) => item.status === "Available" && !isExpiredDonation(item))
+        .sort((a, b) => byDistance(distances.get(a.id) ?? null, distances.get(b.id) ?? null)),
+    [donations, distances],
   );
   const mine = useMemo(() => donations.filter((item) => user != null && item.claimed_by === user.id), [donations, user]);
 
@@ -245,6 +259,8 @@ function AdminPage() {
         title="Incoming surplus food requests"
         empty="No open requests right now."
         rows={incoming}
+        distances={ngoOrigin ? distances : undefined}
+        originLabel={originLabel}
         loading={loading}
         working={working}
         onAccept={accept}
@@ -270,6 +286,8 @@ function ManagementTable({
   title,
   empty,
   rows,
+  distances,
+  originLabel,
   loading,
   working,
   onAccept,
@@ -279,6 +297,8 @@ function ManagementTable({
   title: string;
   empty: string;
   rows: Donation[];
+  distances?: Map<string, number | null>;
+  originLabel?: string;
   loading: boolean;
   working: string | null;
   onAccept: (id: string) => void;
@@ -309,6 +329,13 @@ function ManagementTable({
                   </Link>
                   <p className="mt-1 truncate text-xs text-muted-foreground">{item.quantity} · {item.diet}</p>
                   <p className="mt-1 break-words text-xs text-muted-foreground">{item.pickup_address || "Location not available"}</p>
+                  {distances && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {distances.get(item.id) != null
+                        ? `${distances.get(item.id)!.toFixed(1)} km from ${originLabel}`
+                        : "Distance not available"}
+                    </p>
+                  )}
                 </div>
                 <div className="min-w-0 text-xs text-muted-foreground">
                   <StatusBadge value={adminStage(status)} />

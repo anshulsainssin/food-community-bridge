@@ -1,11 +1,12 @@
 import { ClientOnly, createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { ArrowLeft, Clock3, MapPin, NotebookPen, Phone, Scale, Utensils, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Clock3, MapPin, NotebookPen, Phone, Scale, Utensils, Users } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { useNow } from "@/hooks/use-now";
 import { useProfile } from "@/hooks/use-profile";
-import { displayStatus } from "@/lib/donation-status";
+import { displayStatus, donationUrgency, formatTimeLeft, safeUntil } from "@/lib/donation-status";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -45,6 +46,22 @@ function formatStamp(iso: string | null) {
   return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+function UrgencyNote({ donation, now }: { donation: Donation; now: number }) {
+  const urgency = donationUrgency(donation, now);
+  const until = safeUntil(donation);
+  if (!urgency || until == null) return null;
+  const pressing = urgency === "Urgent" || urgency === "Critical";
+  const ends = formatStamp(new Date(until).toISOString());
+  return (
+    <span className={`flex items-center gap-1 text-xs ${pressing || urgency === "Expired" ? "text-accent" : "text-muted-foreground"}`}>
+      {(pressing || urgency === "Expired") && <AlertTriangle className="size-3.5 shrink-0" />}
+      {urgency === "Expired"
+        ? `Urgency: Expired · safe pickup window ended ${ends}`
+        : `Urgency: ${urgency} · ${formatTimeLeft(until - now)} (safe pickup window ends ${ends})`}
+    </span>
+  );
+}
+
 function DonationDetailsPage() {
   const { donationId } = useParams({ from: "/donation/$donationId" });
   const { user } = useProfile();
@@ -52,6 +69,7 @@ function DonationDetailsPage() {
   const [events, setEvents] = useState<PickupEvent[]>([]);
   const [parties, setParties] = useState<Parties | null>(null);
   const [loading, setLoading] = useState(true);
+  const now = useNow();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -120,10 +138,11 @@ function DonationDetailsPage() {
       {!loading && donation && (
         <>
           <section className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-5 sm:px-8 lg:px-12">
-            <StatusBadge value={displayStatus(donation)} />
+            <StatusBadge value={displayStatus(donation, now)} />
             <span className="text-xs text-muted-foreground">
               {donation.claimed_at ? `Claimed ${formatStamp(donation.claimed_at)}` : "Not claimed yet"}
             </span>
+            <UrgencyNote donation={donation} now={now} />
           </section>
 
           <section className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3">

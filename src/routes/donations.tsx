@@ -5,9 +5,11 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type FormEve
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useNearbyNgos, useSearchArea } from "@/hooks/use-nearby";
+import { useNow } from "@/hooks/use-now";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
-import { displayStatus, isExpiredDonation } from "@/lib/donation-status";
+import { displayStatus, donationUrgency, formatTimeLeft, isExpiredDonation, safeUntil } from "@/lib/donation-status";
+import { byDistance, donationDistance } from "@/lib/geo";
 import type { Tables } from "@/integrations/supabase/types";
 
 
@@ -42,21 +44,8 @@ function formatDeadline(iso: string | null) {
   return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-function isUrgent(iso: string | null) {
-  if (!iso) return false;
-  const deadline = new Date(iso).getTime();
-  const now = Date.now();
-  return deadline > now && deadline - now <= 4 * 60 * 60 * 1000;
-}
-
-function distanceKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
-  const toRad = (value: number) => (value * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(b.lat - a.lat);
-  const dLon = toRad(b.lon - a.lon);
-  const h =
-    Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
+function isClaimable(item: Donation, userId: string | undefined, now: number) {
+  return item.status === "Available" && item.claimed_by == null && item.donor_id !== userId && !isExpiredDonation(item, now);
 }
 
 function DonationsPage() {
@@ -68,6 +57,7 @@ function DonationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [pincode, setPincode] = useState("");
   const { user, profile } = useProfile();
+  const now = useNow();
 
   const profileCoords =
     profile?.latitude != null && profile?.longitude != null
@@ -123,10 +113,7 @@ function DonationsPage() {
     () =>
       donations.map((item) => ({
         item,
-        distance:
-          origin && item.pickup_latitude != null && item.pickup_longitude != null
-            ? distanceKm(origin, { lat: item.pickup_latitude, lon: item.pickup_longitude })
-            : null,
+        distance: donationDistance(origin, item),
       })),
     [donations, origin?.lat, origin?.lon],
   );
@@ -138,14 +125,21 @@ function DonationsPage() {
           filter === "All" || filter === "Nearby"
             ? true
             : filter === "Urgent"
-              ? isUrgent(item.pickup_deadline)
+              ? ["Urgent", "Critical"].includes(donationUrgency(item, now) ?? "")
               : item.diet === filter,
         )
         .filter(({ distance }) => (maxDistance === 0 ? true : distance != null && distance <= maxDistance))
-        .sort((a, b) =>
-          filter === "Nearby" ? (a.distance ?? Infinity) - (b.distance ?? Infinity) : 0,
-        ),
-    [withDistance, filter, maxDistance],
+        .sort((a, b) => {
+          if (filter === "Nearby") return byDistance(a.distance, b.distance);
+          // Once the viewer's location is known, claimable donations come first, nearest first;
+          // everything else keeps the newest-first order from the query.
+          if (!origin) return 0;
+          const claimableA = isClaimable(a.item, user?.id, now);
+          const claimableB = isClaimable(b.item, user?.id, now);
+          if (claimableA !== claimableB) return claimableA ? -1 : 1;
+          return claimableA ? byDistance(a.distance, b.distance) : 0;
+        }),
+    [withDistance, filter, maxDistance, now, origin == null, user?.id],
   );
 
   const mapMarkers = useMemo(
@@ -315,16 +309,18 @@ function DonationsPage() {
             const claimedByMe = user != null && item.claimed_by === user.id;
             const isMine = user != null && item.donor_id === user.id;
             const isClaimed = item.claimed_by != null;
-            const expired = isExpiredDonation(item);
-            const urgent = isUrgent(item.pickup_deadline) && !isClaimed && !expired;
+            const expired = isExpiredDonation(item, now);
+            const urgency = donationUrgency(item, now);
+            const until = safeUntil(item);
+            const pressing = urgency === "Urgent" || urgency === "Critical";
             return (
               <article key={item.id} className="flex flex-col bg-background p-4 sm:p-7">
                 <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
-                  <StatusBadge value={expired ? "Expired" : urgent ? "Urgent" : item.status} />
-                  {urgent && (
-                    <span className="flex min-w-0 items-center justify-end gap-1 text-xs text-accent">
-                      <AlertTriangle className="size-3.5 shrink-0" />
-                      <span className="truncate">Closing soon</span>
+                  <StatusBadge value={expired ? "Expired" : pressing && !isClaimed && urgency ? urgency : item.status} />
+                  {urgency && urgency !== "Expired" && until != null && (
+                    <span className={`flex min-w-0 items-center justify-end gap-1 text-xs ${pressing ? "text-accent" : "text-muted-foreground"}`}>
+                      {pressing && <AlertTriangle className="size-3.5 shrink-0" />}
+                      <span className="truncate">{urgency} · {formatTimeLeft(until - now)}</span>
                     </span>
                   )}
                 </div>
