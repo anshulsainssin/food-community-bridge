@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useLocationSync, useProfile } from "@/hooks/use-profile";
 import { formatCount, formatWeight, useMyStats } from "@/hooks/use-stats";
 import { displayStatus, donationUrgency } from "@/lib/donation-status";
+import { displayName } from "@/lib/roles";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -25,6 +26,13 @@ export const Route = createFileRoute("/")({
 
 type Donation = Tables<"donations">;
 
+const howItWorks = [
+  { step: "add", label: "Food added", detail: "A donor shares surplus food with a pickup deadline." },
+  { step: "claim", label: "NGO / volunteer claims", detail: "A nearby NGO or volunteer claims it." },
+  { step: "pickup", label: "Pickup", detail: "They collect it and scan the donor's QR code." },
+  { step: "done", label: "Completed", detail: "The food reaches people who need it." },
+] as const;
+
 function formatWhen(iso: string | null) {
   if (!iso) return "No pickup deadline";
   return `Pickup by ${new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
@@ -32,7 +40,7 @@ function formatWhen(iso: string | null) {
 
 function Index() {
   const navigate = useNavigate();
-  const { user, profile, updateProfile } = useProfile();
+  const { user, profile, updateProfile, loading: loadingUser } = useProfile();
   const [diet, setDiet] = useState("Vegetarian");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,13 +55,24 @@ function Index() {
     (coords) => updateProfile({ latitude: coords.latitude, longitude: coords.longitude }),
   );
 
-  const firstName = (profile?.full_name ?? user?.email?.split("@")[0] ?? "there").split(" ")[0];
+  const firstName = displayName(profile?.full_name, user?.email)?.split(" ")[0] ?? null;
+  const title = loadingUser ? (
+    <>Welcome.</>
+  ) : !user ? (
+    <>Welcome to <span className="italic">Food Waste Connect.</span></>
+  ) : firstName ? (
+    <>Welcome back, <span className="italic">{firstName}.</span></>
+  ) : (
+    <>Welcome <span className="italic">back.</span></>
+  );
 
+  // These are the signed-in user's own totals; a guest has none, so show a dash instead of 0.
+  const mine = (value: string) => (user ? value : "—");
   const statTiles = [
-    { label: "Food saved", value: formatWeight(stats.food_saved_kg), unit: "kg", icon: UtensilsCrossed },
-    { label: "People fed", value: formatCount(stats.people_fed), unit: "people", icon: Users },
-    { label: "Active donations", value: formatCount(stats.active_donations), unit: "in progress", icon: PackageOpen },
-    { label: "Completed pickups", value: formatCount(stats.completed_pickups), unit: "all time", icon: Check },
+    { label: "Food saved", value: mine(formatWeight(stats.food_saved_kg)), unit: "kg", icon: UtensilsCrossed },
+    { label: "People fed", value: mine(formatCount(stats.people_fed)), unit: "people", icon: Users },
+    { label: "Active donations", value: mine(formatCount(stats.active_donations)), unit: "in progress", icon: PackageOpen },
+    { label: "Completed pickups", value: mine(formatCount(stats.completed_pickups)), unit: "all time", icon: Check },
   ];
 
   const loadMine = useCallback(async (userId: string) => {
@@ -150,7 +169,7 @@ function Index() {
     <AppShell>
       <PageIntro
         eyebrow={`Overview / ${today}`}
-        title={<>Welcome back, <span className="italic">{firstName}.</span></>}
+        title={title}
         description={description}
         action={
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -159,6 +178,20 @@ function Index() {
           </div>
         }
       />
+
+      <section className="border-b border-border px-4 py-6 sm:px-8 lg:px-12" aria-labelledby="purpose">
+        <p id="purpose" className="font-display text-2xl italic sm:text-3xl">Bacha hua fresh khana waste mat hone do.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Extra food ko nearby NGOs aur volunteers tak pahunchao.</p>
+        <ol className="mt-5 grid grid-cols-2 gap-px border border-border bg-border sm:grid-cols-4">
+          {howItWorks.map(({ step, label, detail }, index) => (
+            <li key={step} className="bg-background p-4">
+              <p className="label-caps text-accent">Step {index + 1}</p>
+              <p className="mt-2 text-sm font-medium">{label}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <section className="grid grid-cols-2 border-b border-border xl:grid-cols-4">{statTiles.map(({ label, value, unit, icon: Icon }, index) => <article key={label} className={`min-w-0 p-4 sm:p-7 ${index % 2 === 0 ? "border-r border-border" : ""} ${index < 2 ? "border-b border-border xl:border-b-0" : ""} ${index === 1 ? "xl:border-r" : ""}`}><div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2"><p className="label-caps truncate text-muted-foreground">{label}</p><Icon className="size-4 shrink-0 text-accent" /></div><p className="mt-4 font-display text-3xl break-words sm:mt-5 sm:text-5xl">{value}</p><p className="mt-1 truncate text-xs text-muted-foreground">{unit}</p></article>)}</section>
 
@@ -190,7 +223,11 @@ function Index() {
               <p className="mt-3 text-xs leading-5 text-muted-foreground">These are your own confirmations as the donor. They don't guarantee that the food is safe — receivers should still check the food before serving it.</p>
             </fieldset>
             {error && <p className="text-sm text-accent">{error}</p>}
-            <Button type="submit" size="wide" className="w-full" disabled={saving}>{saving ? "Saving…" : user ? "Publish donation" : "Sign in to donate"}</Button>
+            {user ? (
+              <Button type="submit" size="wide" className="w-full" disabled={saving}>{saving ? "Saving…" : "Publish donation"}</Button>
+            ) : (
+              <Button type="button" size="wide" className="w-full" onClick={() => void navigate({ to: "/auth" })}>Sign in to donate</Button>
+            )}
           </form>}
         </section>
       </div>

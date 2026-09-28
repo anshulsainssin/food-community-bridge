@@ -7,6 +7,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount, useNetworkStats } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
+import { displayName, roleKind } from "@/lib/roles";
 
 const navItems = [
   { label: "Overview", to: "/", icon: Home },
@@ -86,7 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {user ? (
             <>
               <div className="hidden min-w-0 items-center gap-3 border-l border-border pl-4 sm:flex">
-                <div className="min-w-0 max-w-[9rem] lg:max-w-[14rem]"><p className="truncate text-sm font-medium">{profile?.full_name ?? user.email}</p><p className="truncate text-xs text-muted-foreground">{profile?.role ?? profile?.organization ?? "Member"}</p></div>
+                <div className="min-w-0 max-w-[9rem] lg:max-w-[14rem]"><p className="truncate text-sm font-medium">{displayName(profile?.full_name, user.email) ?? "Member"}</p><p className="truncate text-xs text-muted-foreground">{roleLabel(profile?.role, profile?.organization)}</p></div>
                 <Button variant="ghost" size="icon" aria-label="Sign out" onClick={signOut}><LogOut className="size-4" /></Button>
               </div>
               <Button variant="ghost" size="icon" className="sm:hidden" aria-label="Sign out" onClick={signOut}><LogOut className="size-4" /></Button>
@@ -105,10 +106,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="space-y-1">{navigation()}</nav>
           <div className="mt-auto border-t border-sidebar-border pt-5">
             <p className="label-caps text-muted-foreground">Network impact</p>
-            <p className="mt-2 font-display text-3xl">{formatCount(network.people_fed)} people</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              {network.people_fed > 0 ? "Fed through completed community pickups." : "No completed pickups recorded yet."}
-            </p>
+            {user ? (
+              <>
+                <p className="mt-2 font-display text-3xl">{formatCount(network.people_fed)} people</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {network.people_fed > 0 ? "Fed through completed community pickups." : "No completed pickups recorded yet."}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">Sign in to see the network's impact.</p>
+            )}
           </div>
         </aside>
         <main className="min-w-0 flex-1 pb-24 md:pb-10">{children}</main>
@@ -117,6 +124,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">{navItems.map(({ label, to, icon: Icon }) => <Button key={to} asChild variant="ghost" className={`h-16 min-w-0 flex-col gap-1 px-0 text-[9px] ${pathname === to ? "text-foreground" : ""}`}><Link to={to}><Icon className="size-4 shrink-0" /><span className="w-full truncate px-1 text-center">{label}</span></Link></Button>)}</nav>
     </div>
   );
+}
+
+/** "Donor" or "NGO / volunteer" (with the organization when there is one), from the free-text profile role. */
+function roleLabel(role: string | null | undefined, organization: string | null | undefined) {
+  const kind = roleKind(role);
+  const org = (organization ?? "").trim();
+  if (kind === "Receiver") return org ? `NGO / volunteer · ${org}` : "NGO / volunteer";
+  if (kind === "Donor") return org ? `Donor · ${org}` : "Donor";
+  return org || "Member";
 }
 
 export function PageIntro({ eyebrow, title, description, action }: { eyebrow: string; title: ReactNode; description: string; action?: ReactNode }) {

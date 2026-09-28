@@ -392,6 +392,7 @@ export type Database = {
       network_impact_stats: {
         Args: never
         Returns: {
+          active_donations: number
           claimed_donations: number
           donations_completed: number
           food_saved_kg: number

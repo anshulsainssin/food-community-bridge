@@ -18,6 +18,7 @@ export type NetworkStats = {
   total_donations: number;
   claimed_donations: number;
   on_time_pickups: number;
+  active_donations: number;
 };
 
 const EMPTY_MINE: MyStats = {
@@ -36,6 +37,7 @@ const EMPTY_NETWORK: NetworkStats = {
   total_donations: 0,
   claimed_donations: 0,
   on_time_pickups: 0,
+  active_donations: 0,
 };
 
 /** Totals for the signed-in person, calculated in the database. Zeroes until they have records. */
@@ -112,6 +114,7 @@ function normalizeNetwork(row: Record<string, unknown>): NetworkStats {
     total_donations: num(row["total_donations"]),
     claimed_donations: num(row["claimed_donations"]),
     on_time_pickups: num(row["on_time_pickups"]),
+    active_donations: num(row["active_donations"]),
   };
 }
 

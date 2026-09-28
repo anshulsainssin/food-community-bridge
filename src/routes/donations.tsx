@@ -56,7 +56,7 @@ function DonationsPage() {
   const [claiming, setClaiming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pincode, setPincode] = useState("");
-  const { user, profile } = useProfile();
+  const { user, profile, loading: loadingUser } = useProfile();
   const now = useNow();
 
   const profileCoords =
@@ -372,7 +372,11 @@ function DonationsPage() {
 
         {!loading && visible.length === 0 && (
           <p className="bg-background p-10 text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">
-            {donations.length === 0 ? "No donations yet." : "No donations match this filter right now."}
+            {!user && !loadingUser
+              ? "Sign in to see donations that are available near you."
+              : donations.length === 0
+                ? "No donations yet."
+                : "No donations match this filter right now."}
           </p>
         )}
       </section>

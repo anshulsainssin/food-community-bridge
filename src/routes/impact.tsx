@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, PackageCheck, Users, UtensilsCrossed } from "lucide-react";
+import { PackageCheck, PackageOpen, Users, UtensilsCrossed } from "lucide-react";
 
 import { AppShell, PageIntro } from "@/components/app-shell";
 import { useProfile } from "@/hooks/use-profile";
@@ -25,11 +25,13 @@ function ImpactPage() {
   const { user } = useProfile();
   const { stats, loading } = useNetworkStats(Boolean(user));
 
+  // Network totals are only loaded for signed-in users; guests see a dash rather than a made-up 0.
+  const shown = (value: string) => (user ? value : "—");
   const tiles = [
-    { label: "Total food saved", value: formatWeight(stats.food_saved_kg), unit: "kg", icon: UtensilsCrossed },
-    { label: "People fed", value: formatCount(stats.people_fed), unit: "people", icon: Users },
-    { label: "Donations completed", value: formatCount(stats.donations_completed), unit: "donations", icon: Check },
-    { label: "Pickups completed", value: formatCount(stats.pickups_completed), unit: "pickups", icon: PackageCheck },
+    { label: "Total food saved", value: shown(formatWeight(stats.food_saved_kg)), unit: "kg", icon: UtensilsCrossed },
+    { label: "People fed", value: shown(formatCount(stats.people_fed)), unit: "people served", icon: Users },
+    { label: "Active donations", value: shown(formatCount(stats.active_donations)), unit: "not yet completed", icon: PackageOpen },
+    { label: "Pickups completed", value: shown(formatCount(stats.pickups_completed)), unit: "pickups", icon: PackageCheck },
   ];
 
   const progress = [

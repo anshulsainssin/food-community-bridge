@@ -68,7 +68,7 @@ export function useLocationSync(
   hasStoredLocation: boolean,
   save: (coords: Coords) => Promise<void> | void,
 ) {
-  const [status, setStatus] = useState<"idle" | "asking" | "granted" | "denied" | "unsupported">("idle");
+  const [status, setStatus] = useState<"idle" | "asking" | "granted" | "denied" | "unavailable" | "unsupported">("idle");
 
   const request = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -81,7 +81,8 @@ export function useLocationSync(
         setStatus("granted");
         void save({ latitude: position.coords.latitude, longitude: position.coords.longitude });
       },
-      () => setStatus("denied"),
+      // Permission refused vs. no position (GPS off, timeout): the profile explains each differently.
+      (error) => setStatus(error.code === error.PERMISSION_DENIED ? "denied" : "unavailable"),
       { enableHighAccuracy: true, timeout: 10000 },
     );
   }, [save]);
