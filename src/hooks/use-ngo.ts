@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { lookupPincode } from "@/lib/geocode.functions";
@@ -147,14 +147,19 @@ export function useNgoStats(enabled: boolean) {
 
 /** Subscribes to donation changes so admin actions show up everywhere without a refresh. */
 export function useDonationsRealtime(onChange: () => void) {
+  // Always call the latest callback: the one from the first render still sees the signed-out state.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
   useEffect(() => {
     const channel = supabase
       .channel(`donations-sync-${Math.random().toString(36).slice(2)}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "donations" }, () => onChange())
+      .on("postgres_changes", { event: "*", schema: "public", table: "donations" }, () =>
+        onChangeRef.current(),
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }

@@ -42,6 +42,16 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    // A failed Google sign-in returns here with the reason in the query string or the hash.
+    const query = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const oauthError =
+      query.get("error_description") ??
+      hash.get("error_description") ??
+      query.get("error") ??
+      hash.get("error");
+    if (oauthError) setMessage(`Google sign-in failed: ${oauthError}`);
+
     void supabase.auth.getSession().then(({ data }) => {
       if (data.session) void navigate({ to: "/", replace: true });
     });

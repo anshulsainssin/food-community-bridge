@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { PickupCodeCard, PickupVerifier } from "@/components/pickup-qr";
 import { Button } from "@/components/ui/button";
+import { useDonationsRealtime } from "@/hooks/use-ngo";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { displayStatus } from "@/lib/donation-status";
@@ -95,6 +96,9 @@ function PickupPage() {
     setLoading(true);
     void load();
   }, [load]);
+
+  // The other party's step (claim, QR scan, completion) shows up here without a manual refresh.
+  useDonationsRealtime(() => void load());
 
   const expired = donation?.status === "Expired";
   const stage = Math.max(0, steps.indexOf(donation?.status ?? "Available"));

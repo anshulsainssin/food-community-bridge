@@ -32,8 +32,10 @@ export function useNotifications(userId: string | null | undefined) {
 
   useEffect(() => {
     if (!userId) return;
+    // A unique topic per mount: the shell remounts on every route change, and reusing the previous
+    // (still-leaving) channel either throws or leaves the bell without live updates.
     const channel = supabase
-      .channel(`notifications-${userId}`)
+      .channel(`notifications-${userId}-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
