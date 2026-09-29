@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useDonationsRealtime } from "@/hooks/use-ngo";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
-import { displayStatus } from "@/lib/donation-status";
+import { displayStatus, PICKUP_STEPS, statusLabel } from "@/lib/donation-status";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/pickup")({
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/pickup")({
   component: PickupPage,
 });
 
-const steps = ["Available", "Claimed", "Pickup in Progress", "Picked Up", "Completed"];
+const steps: readonly string[] = PICKUP_STEPS;
 
 type Donation = Tables<"donations">;
 type PickupEvent = Tables<"pickup_events">;
@@ -176,7 +176,7 @@ function PickupPage() {
                     <span className={`absolute left-[15px] top-8 h-12 w-px ${index < stage ? "bg-primary" : "bg-border"}`} />
                   )}
                   <div className="pt-1">
-                    <p className="font-medium">{step}</p>
+                    <p className="font-medium">{statusLabel(step)}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {moment ?? (index === stage ? "Current status" : index < stage ? "Completed" : "Pending")}
                     </p>

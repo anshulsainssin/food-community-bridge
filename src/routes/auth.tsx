@@ -48,7 +48,7 @@ function authErrorMessage(error: { code?: string | undefined; message: string })
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "reset" | "role">("signin");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
@@ -58,9 +58,15 @@ function AuthPage() {
   const [unconfirmed, setUnconfirmed] = useState(false);
 
   // Donors start on the donor dashboard, NGOs and volunteers on the NGO dashboard (role from their profile).
+  // Accounts without a role (created before sign-up asked for one) choose it once here.
   async function goHome() {
     const { data } = await supabase.auth.getUser();
     const profile = data.user ? await fetchProfile(data.user) : null;
+    if (data.user && !profile?.role?.trim()) {
+      setMode("role");
+      setMessage(null);
+      return;
+    }
     void navigate({ to: homePathFor(profile), replace: true });
   }
 
@@ -101,6 +107,14 @@ function AuthPage() {
     setMessage(null);
     setUnconfirmed(false);
     try {
+      if (mode === "role") {
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) return setMode("signin");
+        const { error } = await supabase.from("profiles").update({ role }).eq("id", data.user.id);
+        if (error) return setMessage(networkErrorMessage(error));
+        await goHome();
+        return;
+      }
       if (mode === "reset") {
         const { error } = await supabase.auth.updateUser({ password });
         if (error) return setMessage(networkErrorMessage(error));
@@ -184,7 +198,7 @@ function AuthPage() {
       <div className="w-full max-w-md">
         <p className="font-display text-3xl italic leading-none">Food Waste Connect</p>
         <p className="label-caps mt-2 text-muted-foreground">Community network</p>
-        <h1 className="mt-8 font-display text-4xl">{mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Set a new password"}</h1>
+        <h1 className="mt-8 font-display text-4xl">{mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : mode === "role" ? "How do you use Food Waste Connect?" : "Set a new password"}</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">Use your account to share surplus food and coordinate pickups.</p>
 
         <form className="mt-8 space-y-6" onSubmit={submit}>
@@ -194,7 +208,7 @@ function AuthPage() {
               <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
           )}
-          {mode === "signup" && (
+          {(mode === "signup" || mode === "role") && (
             <label className="block">
               <span className="label-caps text-muted-foreground">I am a</span>
               <select required name="role" value={role} onChange={(e) => setRole(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground">
@@ -203,24 +217,30 @@ function AuthPage() {
               </select>
             </label>
           )}
-          {mode !== "reset" && (
+          {mode !== "reset" && mode !== "role" && (
             <label className="block">
               <span className="label-caps text-muted-foreground">Email</span>
               <input required type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
           )}
-          <label className="block">
+          {mode !== "role" && <label className="block">
             <span className="label-caps text-muted-foreground">{mode === "reset" ? "New password" : "Password"}</span>
             <input required type="password" minLength={6} autoComplete={mode === "signin" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
-          </label>
+          </label>}
           {message && <p className="text-sm text-accent">{message}</p>}
           {unconfirmed && email && (
             <button type="button" className="text-xs text-muted-foreground underline" onClick={() => void resendConfirmation()}>Resend confirmation email</button>
           )}
-          <Button type="submit" size="wide" className="w-full" disabled={busy}>{mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Save new password"}</Button>
+          <Button type="submit" size="wide" className="w-full" disabled={busy}>{mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : mode === "role" ? "Continue" : "Save new password"}</Button>
         </form>
 
-        {mode !== "reset" && (
+        {mode === "role" && (
+          <button type="button" className="mt-6 text-xs text-muted-foreground underline" onClick={() => void supabase.auth.signOut().then(() => { setMode("signin"); setMessage(null); })}>
+            Sign out
+          </button>
+        )}
+
+        {mode !== "reset" && mode !== "role" && (
           <>
             <Button variant="outline" size="wide" className="mt-3 w-full" onClick={googleSignIn}>Continue with Google</Button>
 

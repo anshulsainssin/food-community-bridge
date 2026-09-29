@@ -4,6 +4,20 @@ export const CRITICAL_WINDOW_MS = 60 * 60 * 1000;
 
 export type Urgency = "Normal" | "Urgent" | "Critical" | "Expired";
 
+/** The pickup flow in order, as stored in the database. */
+export const PICKUP_STEPS = ["Available", "Claimed", "Pickup in Progress", "Picked Up", "Completed"] as const;
+
+/** Name shown to people for a stored status (the database keeps "Pickup in Progress"). */
+export function statusLabel(status: string) {
+  return status === "Pickup in Progress" ? "Pickup Started" : status;
+}
+
+/** Position of a status in the pickup flow (unknown statuses such as "Expired" sort last). */
+export function stepIndex(status: string) {
+  const index = (PICKUP_STEPS as readonly string[]).indexOf(status);
+  return index === -1 ? PICKUP_STEPS.length : index;
+}
+
 type Expirable = {
   status: string;
   created_at: string;

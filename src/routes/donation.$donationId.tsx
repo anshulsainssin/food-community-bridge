@@ -6,7 +6,7 @@ import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useNow } from "@/hooks/use-now";
 import { useProfile } from "@/hooks/use-profile";
-import { displayStatus, donationUrgency, formatTimeLeft, safeUntil } from "@/lib/donation-status";
+import { displayStatus, donationUrgency, formatTimeLeft, safeUntil, statusLabel, stepIndex } from "@/lib/donation-status";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -81,7 +81,12 @@ function DonationDetailsPage() {
         supabase.from("pickup_events").select("*").eq("donation_id", donationId).order("occurred_at", { ascending: true }),
         supabase.rpc("donation_parties", { p_donation_id: donationId }),
       ]);
-      setEvents((eventRows as PickupEvent[] | null) ?? []);
+      // Oldest first; events recorded at the same moment keep the pickup order (Claimed before Pickup Started).
+      setEvents(
+        [...((eventRows as PickupEvent[] | null) ?? [])].sort(
+          (a, b) => Date.parse(a.occurred_at) - Date.parse(b.occurred_at) || stepIndex(a.status) - stepIndex(b.status),
+        ),
+      );
       setParties(((partyRows as Parties[] | null) ?? [])[0] ?? null);
     } else {
       setEvents([]);
@@ -189,7 +194,7 @@ function DonationDetailsPage() {
                     <div key={event.id} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
                       <span className="mt-1.5 size-2 shrink-0 rounded-full bg-accent" />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium break-words">{event.status}</p>
+                        <p className="text-sm font-medium break-words">{statusLabel(event.status)}</p>
                         <p className="mt-1 text-xs text-muted-foreground">{formatStamp(event.occurred_at)}</p>
                       </div>
                     </div>

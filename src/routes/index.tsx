@@ -9,6 +9,7 @@ import { formatCount, formatWeight, useMyStats } from "@/hooks/use-stats";
 import { displayStatus, donationUrgency } from "@/lib/donation-status";
 import { displayName } from "@/lib/roles";
 import { supabase } from "@/integrations/supabase/client";
+import { geocodeAddress } from "@/lib/geocode.functions";
 import type { Tables } from "@/integrations/supabase/types";
 
 
@@ -135,7 +136,21 @@ function Index() {
     }
 
     setSaving(true);
-    const coords = await currentCoords();
+    // The donation's map pin and distances come from the pickup address the donor typed, never from
+    // the device (a laptop's browser location can be far off) or the donor's saved profile location.
+    let place: { latitude: number; longitude: number } | null = null;
+    let lookupFailed = false;
+    try {
+      place = await geocodeAddress({ data: { address } });
+    } catch (lookupError) {
+      console.error(lookupError);
+      lookupFailed = true;
+    }
+    if (!place && !lookupFailed) {
+      setSaving(false);
+      setError("We couldn't find this pickup location on the map. Add the area, city and pincode, for example: \"Civil Lines, Moradabad, 244001\".");
+      return;
+    }
     const { error: insertError } = await supabase.from("donations").insert({
       donor_id: user.id,
       food_type: String(form.get("food_type") ?? ""),
@@ -148,8 +163,8 @@ function Index() {
       contact_info: String(form.get("contact") ?? ""),
       notes: String(form.get("notes") ?? ""),
       pickup_address: address,
-      pickup_latitude: coords?.latitude ?? profile?.latitude ?? null,
-      pickup_longitude: coords?.longitude ?? profile?.longitude ?? null,
+      pickup_latitude: place?.latitude ?? null,
+      pickup_longitude: place?.longitude ?? null,
     });
     setSaving(false);
 
@@ -208,7 +223,7 @@ function Index() {
             <fieldset><legend className="label-caps text-muted-foreground">Dietary type</legend><div className="mt-2 grid grid-cols-2 gap-2">{["Vegetarian","Non-vegetarian"].map((option) => <Button key={option} type="button" variant={diet === option ? "primary" : "outline"} onClick={() => setDiet(option)}>{option}</Button>)}</div></fieldset>
             <div className="grid gap-6 sm:grid-cols-2"><Field name="quantity" label="Quantity / people served" type="number" /><Field name="weight_kg" label="Weight (kg, optional)" type="number" step="0.1" required={false} /></div>
             <div className="grid gap-6 sm:grid-cols-2"><Field name="prepared_at" label="Food prepared time" type="datetime-local" /><Field name="pickup_deadline" label="Pickup deadline" type="datetime-local" /></div>
-            <div className="grid gap-6 sm:grid-cols-2"><Field name="contact" label="Contact information" type="tel" /><Field name="pickup_location" label="Pickup location" /></div>
+            <div className="grid gap-6 sm:grid-cols-2"><Field name="contact" label="Contact information" type="tel" /><Field name="pickup_location" label="Pickup location" placeholder="Area, city, pincode" /></div>
             <label className="block"><span className="label-caps text-muted-foreground">Additional notes</span><textarea name="notes" rows={3} placeholder="Packaging details, allergens, or pickup instructions" className="mt-2 w-full resize-none border-b border-input bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 focus:border-foreground" /></label>
             <fieldset>
               <legend className="label-caps text-muted-foreground">Food-safety checklist</legend>
@@ -247,17 +262,6 @@ function toNumber(value: FormDataEntryValue | null) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function currentCoords(): Promise<{ latitude: number; longitude: number } | null> {
-  if (typeof navigator === "undefined" || !navigator.geolocation) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 8000 },
-    );
-  });
-}
-
-function Field({ label, name, type = "text", step, required = true }: { label: string; name: string; type?: string; step?: string; required?: boolean }) {
-  return <label className="block"><span className="label-caps text-muted-foreground">{label}</span><input required={required} name={name} type={type} step={step} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 focus:border-foreground" /></label>;
+function Field({ label, name, type = "text", step, required = true, placeholder }: { label: string; name: string; type?: string; step?: string; required?: boolean; placeholder?: string }) {
+  return <label className="block"><span className="label-caps text-muted-foreground">{label}</span><input required={required} name={name} type={type} step={step} placeholder={placeholder} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 focus:border-foreground" /></label>;
 }
