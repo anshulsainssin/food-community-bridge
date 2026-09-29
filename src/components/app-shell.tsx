@@ -25,13 +25,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user, profile } = useProfile();
   const { items: notifications, unread, markAllRead } = useNotifications(user?.id);
   const { stats: network } = useNetworkStats(Boolean(user));
+  // NGOs and volunteers (role from their profile) start from the NGO dashboard instead of the donor overview.
+  const items = roleKind(profile?.role) === "Receiver"
+    ? [{ label: "Dashboard", to: "/admin", icon: Home } as const, ...navItems.slice(1)]
+    : navItems;
 
   async function signOut() {
     await supabase.auth.signOut();
     void navigate({ to: "/auth", replace: true });
   }
 
-  const navigation = (mobile = false) => navItems.map(({ label, to, icon: Icon }) => (
+  const navigation = (mobile = false) => items.map(({ label, to, icon: Icon }) => (
     <Button key={to} asChild variant="nav" className={mobile ? "w-full justify-start" : "w-full justify-start"} data-active={pathname === to} onClick={() => mobile && setMobileMenu(false)}>
       <Link to={to}><Icon className="size-4" />{label}</Link>
     </Button>
@@ -121,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="min-w-0 flex-1 pb-24 md:pb-10">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">{navItems.map(({ label, to, icon: Icon }) => <Button key={to} asChild variant="ghost" className={`h-16 min-w-0 flex-col gap-1 px-0 text-[9px] ${pathname === to ? "text-foreground" : ""}`}><Link to={to}><Icon className="size-4 shrink-0" /><span className="w-full truncate px-1 text-center">{label}</span></Link></Button>)}</nav>
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">{items.map(({ label, to, icon: Icon }) => <Button key={to} asChild variant="ghost" className={`h-16 min-w-0 flex-col gap-1 px-0 text-[9px] ${pathname === to ? "text-foreground" : ""}`}><Link to={to}><Icon className="size-4 shrink-0" /><span className="w-full truncate px-1 text-center">{label}</span></Link></Button>)}</nav>
     </div>
   );
 }
