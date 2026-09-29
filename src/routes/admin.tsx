@@ -156,9 +156,9 @@ function AdminPage() {
 
   const metrics = [
     { label: "Total food claimed", value: `${formatWeight(stats.food_claimed_kg)} kg`, hint: `${formatCount(stats.meals_claimed)} meals claimed`, icon: Package },
-    { label: "Active distributions", value: formatCount(stats.active_distributions), hint: "Accepted, not yet delivered", icon: Truck },
+    { label: "Active distributions", value: formatCount(stats.active_distributions), hint: "Claimed, not yet completed", icon: Truck },
     { label: "Pending pickups", value: formatCount(stats.pending_pickups), hint: "Awaiting collection", icon: ClipboardList },
-    { label: "Impact analytics", value: `${formatCount(stats.people_served)} people`, hint: `${formatCount(stats.delivered)} deliveries completed`, icon: BadgeCheck },
+    { label: "Impact analytics", value: `${formatCount(stats.people_served)} people`, hint: `${formatCount(stats.delivered)} pickups completed`, icon: BadgeCheck },
   ];
 
   if (!user) {

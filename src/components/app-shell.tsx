@@ -1,12 +1,13 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { BarChart3, Bell, HandHeart, Home, LogOut, Menu, Truck, UserRound, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
-import { useProfile } from "@/hooks/use-profile";
+import { homePathFor, useProfile } from "@/hooks/use-profile";
 import { formatCount, useNetworkStats } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
+import { statusLabel } from "@/lib/donation-status";
 import { displayName, roleKind } from "@/lib/roles";
 
 const navItems = [
@@ -22,7 +23,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const navigate = useNavigate();
-  const { user, profile } = useProfile();
+  const { user, profile, loading } = useProfile();
+
+  // Every signed-in account needs a role (Donor, NGO or Volunteer) to get the right dashboard; accounts
+  // created before sign-up asked for one choose it once on the sign-in page.
+  useEffect(() => {
+    if (!loading && user && profile && !profile.role?.trim()) void navigate({ to: "/auth", replace: true });
+  }, [loading, user, profile, navigate]);
   const { items: notifications, unread, markAllRead } = useNotifications(user?.id);
   const { stats: network } = useNetworkStats(Boolean(user));
   // NGOs and volunteers (role from their profile) start from the NGO dashboard instead of the donor overview.
@@ -46,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 grid h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur sm:px-4 md:px-7">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button variant="ghost" size="icon" className="shrink-0 md:hidden" aria-label="Open menu" onClick={() => setMobileMenu(true)}><Menu className="size-5" /></Button>
-          <Link to="/" className="min-w-0"><p className="truncate font-display text-xl italic leading-none sm:text-2xl">Food Waste Connect</p><p className="label-caps mt-1 truncate text-muted-foreground">Community network</p></Link>
+          <Link to={user ? homePathFor(profile) : "/"} className="min-w-0"><p className="truncate font-display text-xl italic leading-none sm:text-2xl">Food Waste Connect</p><p className="label-caps mt-1 truncate text-muted-foreground">Community network</p></Link>
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -145,5 +152,5 @@ export function PageIntro({ eyebrow, title, description, action }: { eyebrow: st
 
 export function StatusBadge({ value }: { value: string }) {
   const style = value === "Urgent" || value === "Critical" || value === "Available" ? "bg-accent/15 text-accent" : value === "Completed" || value === "Picked Up" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary";
-  return <span className={`label-caps inline-flex rounded-sm px-2 py-1 ${style}`}>{value}</span>;
+  return <span className={`label-caps inline-flex rounded-sm px-2 py-1 ${style}`}>{statusLabel(value)}</span>;
 }

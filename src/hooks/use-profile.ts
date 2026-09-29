@@ -47,7 +47,13 @@ function pendingRole(user: User) {
 export async function fetchProfile(user: User): Promise<Profile | null> {
   const { data } = await supabase.from("profiles").select(PROFILE_COLUMNS).eq("id", user.id).maybeSingle();
   const profile = (data as Profile | null) ?? null;
-  const role = pendingRole(user);
+  let role = pendingRole(user);
+  if (profile && !profile.role?.trim() && !role) {
+    // An account that registered its organization in the NGO portal is an NGO, even if its profile
+    // role was never set (accounts created before sign-up asked for a role).
+    const { data: registration } = await supabase.from("ngo_registrations").select("id").eq("user_id", user.id).maybeSingle();
+    if (registration) role = "NGO";
+  }
   if (profile && !profile.role?.trim() && role) {
     const { error } = await supabase.from("profiles").update({ role }).eq("id", user.id);
     if (!error) profile.role = role;
