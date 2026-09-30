@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Clock3, MapPin, Phone, Truck, UserRound } from "lucide-react";
+import { Check, Clock3, MapPin, Navigation, Phone, Truck, UserRound } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
@@ -36,6 +36,8 @@ type Parties = {
   receiver_name: string | null;
   receiver_organization: string | null;
   receiver_phone: string | null;
+  // Pickup point → the claiming NGO/volunteer's area (null when not claimed or a location is unknown).
+  pickup_to_receiver_km?: number | null;
 };
 
 function formatMoment(iso: string | null) {
@@ -233,6 +235,17 @@ function PickupPage() {
               icon={Truck}
               label="NGO / volunteer"
               value={donation?.claimed_by ? personLine(parties?.receiver_name ?? null, parties?.receiver_organization ?? null) : "Not claimed yet"}
+            />
+            <Detail
+              icon={Navigation}
+              label="Distance to NGO / volunteer"
+              value={
+                !donation?.claimed_by
+                  ? "Not claimed yet"
+                  : parties?.pickup_to_receiver_km != null
+                    ? `${parties.pickup_to_receiver_km.toFixed(1)} km between the pickup point and the NGO / volunteer`
+                    : "Not available (the NGO / volunteer hasn't shared a location)"
+              }
             />
           </div>
           <div className="mt-8 border border-border-strong bg-card p-5">

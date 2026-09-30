@@ -65,29 +65,29 @@ export function useMyStats(userId: string | null | undefined) {
   return { stats, loading, reload: load };
 }
 
-/** Network-wide totals, calculated in the database. */
-export function useNetworkStats(enabled: boolean) {
+/**
+ * Network-wide totals, calculated in the database. Visitors who are not signed in get them too;
+ * `available` is false when the database did not return them (so the page can show "—", not 0).
+ */
+export function useNetworkStats() {
   const [stats, setStats] = useState<NetworkStats>(EMPTY_NETWORK);
+  const [available, setAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!enabled) {
-      setStats(EMPTY_NETWORK);
-      setLoading(false);
-      return;
-    }
-    const { data } = await supabase.rpc("network_impact_stats");
-    const row = Array.isArray(data) ? data[0] : null;
+    const { data, error } = await supabase.rpc("network_impact_stats");
+    const row = !error && Array.isArray(data) ? data[0] : null;
     setStats(row ? normalizeNetwork(row) : EMPTY_NETWORK);
+    setAvailable(Boolean(row));
     setLoading(false);
-  }, [enabled]);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
     void load();
   }, [load]);
 
-  return { stats, loading, reload: load };
+  return { stats, available, loading, reload: load };
 }
 
 function num(value: unknown) {

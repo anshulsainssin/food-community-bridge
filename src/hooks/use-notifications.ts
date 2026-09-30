@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { armNotificationSound, playNotificationSound } from "@/lib/notification-sound";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type Notification = Tables<"notifications">;
@@ -32,6 +33,7 @@ export function useNotifications(userId: string | null | undefined) {
 
   useEffect(() => {
     if (!userId) return;
+    armNotificationSound();
     // A unique topic per mount: the shell remounts on every route change, and reusing the previous
     // (still-leaving) channel either throws or leaves the bell without live updates.
     const channel = supabase
@@ -39,7 +41,11 @@ export function useNotifications(userId: string | null | undefined) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
-        () => void load(),
+        (payload) => {
+          // A brand-new notification (not a read/delete update) plays a sound so it isn't missed.
+          if (payload.eventType === "INSERT") playNotificationSound();
+          void load();
+        },
       )
       .subscribe();
     return () => {

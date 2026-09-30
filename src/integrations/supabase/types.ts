@@ -354,6 +354,7 @@ export type Database = {
           receiver_name: string
           receiver_organization: string
           receiver_phone: string
+          pickup_to_receiver_km: number | null
         }[]
       }
       expire_old_donations: { Args: never; Returns: number }

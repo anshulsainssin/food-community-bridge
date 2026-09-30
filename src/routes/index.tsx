@@ -5,7 +5,7 @@ import { Check, ChevronRight, ClipboardList, MapPin, PackageOpen, Plus, Truck, U
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLocationSync, useProfile } from "@/hooks/use-profile";
-import { formatCount, formatWeight, useMyStats } from "@/hooks/use-stats";
+import { formatCount, formatWeight, useMyStats, useNetworkStats } from "@/hooks/use-stats";
 import { displayStatus, donationUrgency } from "@/lib/donation-status";
 import { displayName } from "@/lib/roles";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,7 +52,7 @@ function Index() {
 
   useLocationSync(
     Boolean(user),
-    profile?.latitude != null && profile?.longitude != null,
+    profile?.latitude != null && profile?.longitude != null ? { latitude: profile.latitude, longitude: profile.longitude } : null,
     (coords) => updateProfile({ latitude: coords.latitude, longitude: coords.longitude }),
   );
 
@@ -67,14 +67,23 @@ function Index() {
     <>Welcome <span className="italic">back.</span></>
   );
 
-  // These are the signed-in user's own totals; a guest has none, so show a dash instead of 0.
-  const mine = (value: string) => (user ? value : "—");
-  const statTiles = [
-    { label: "Food saved", value: mine(formatWeight(stats.food_saved_kg)), unit: "kg", icon: UtensilsCrossed },
-    { label: "People fed", value: mine(formatCount(stats.people_fed)), unit: "people", icon: Users },
-    { label: "Active donations", value: mine(formatCount(stats.active_donations)), unit: "in progress", icon: PackageOpen },
-    { label: "Completed pickups", value: mine(formatCount(stats.completed_pickups)), unit: "all time", icon: Check },
-  ];
+  // Signed in: the user's own totals. Not signed in: the real totals of the whole network (read-only),
+  // or a dash if the database didn't return them.
+  const { stats: network, available: networkAvailable } = useNetworkStats();
+  const guestValue = (value: string) => (networkAvailable ? value : "—");
+  const statTiles = user
+    ? [
+        { label: "Food saved", value: formatWeight(stats.food_saved_kg), unit: "kg", icon: UtensilsCrossed },
+        { label: "People fed", value: formatCount(stats.people_fed), unit: "people", icon: Users },
+        { label: "Active donations", value: formatCount(stats.active_donations), unit: "in progress", icon: PackageOpen },
+        { label: "Completed pickups", value: formatCount(stats.completed_pickups), unit: "all time", icon: Check },
+      ]
+    : [
+        { label: "Food saved", value: guestValue(formatWeight(network.food_saved_kg)), unit: "kg · whole network", icon: UtensilsCrossed },
+        { label: "People fed", value: guestValue(formatCount(network.people_fed)), unit: "people · whole network", icon: Users },
+        { label: "Active donations", value: guestValue(formatCount(network.active_donations)), unit: "in progress · whole network", icon: PackageOpen },
+        { label: "Completed pickups", value: guestValue(formatCount(network.pickups_completed)), unit: "all time · whole network", icon: Check },
+      ];
 
   const loadMine = useCallback(async (userId: string) => {
     const { data } = await supabase
