@@ -1,4 +1,4 @@
-import { ClientOnly, createFileRoute, Link } from "@tanstack/react-router";
+import { ClientOnly, createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, Clock3, Crosshair, HeartHandshake, MapPin, Navigation, Search, Utensils } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
@@ -57,6 +57,7 @@ function DonationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [pincode, setPincode] = useState("");
   const { user, profile, loading: loadingUser } = useProfile();
+  const navigate = useNavigate();
   const now = useNow();
 
   const profileCoords =
@@ -348,8 +349,9 @@ function DonationsPage() {
                 <Button
                   className="mt-7 w-full"
                   variant={isClaimed || isMine || expired ? "outline" : "primary"}
-                  disabled={isClaimed || isMine || expired || !user || claiming === item.id}
-                  onClick={() => void claim(item.id)}
+                  disabled={isClaimed || isMine || expired || claiming === item.id}
+                  // Visitors can browse; claiming needs an NGO / volunteer account.
+                  onClick={() => (user ? void claim(item.id) : void navigate({ to: "/auth", search: { as: "ngo" } as never }))}
                 >
                   {expired
                     ? "Expired"
@@ -372,8 +374,8 @@ function DonationsPage() {
 
         {!loading && visible.length === 0 && (
           <p className="bg-background p-10 text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">
-            {!user && !loadingUser
-              ? "Sign in to see donations that are available near you."
+            {!user && !loadingUser && donations.length === 0
+              ? "No donations to show right now. Sign in to share or claim food."
               : donations.length === 0
                 ? "No donations yet."
                 : "No donations match this filter right now."}

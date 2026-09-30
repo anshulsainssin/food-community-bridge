@@ -23,10 +23,10 @@ function percent(part: number, total: number) {
 
 function ImpactPage() {
   const { user } = useProfile();
-  const { stats, loading } = useNetworkStats(Boolean(user));
+  const { stats, available, loading } = useNetworkStats();
 
-  // Network totals are only loaded for signed-in users; guests see a dash rather than a made-up 0.
-  const shown = (value: string) => (user ? value : "—");
+  // Real totals for everyone, signed in or not; a dash only if the database didn't return them.
+  const shown = (value: string) => (available ? value : "—");
   const tiles = [
     { label: "Total food saved", value: shown(formatWeight(stats.food_saved_kg)), unit: "kg", icon: UtensilsCrossed },
     { label: "People fed", value: shown(formatCount(stats.people_fed)), unit: "people served", icon: Users },
@@ -75,10 +75,10 @@ function ImpactPage() {
       <section className="p-4 sm:p-8 lg:p-12">
         <div className="max-w-4xl">
           <h2 className="font-display text-3xl italic">Progress</h2>
-          {!user ? (
-            <p className="mt-8 text-sm text-muted-foreground">Sign in to see community progress.</p>
-          ) : loading ? (
+          {loading ? (
             <p className="mt-8 text-sm text-muted-foreground">Loading impact…</p>
+          ) : !available ? (
+            <p className="mt-8 text-sm text-muted-foreground">Impact figures aren't available right now.</p>
           ) : stats.total_donations === 0 ? (
             <p className="mt-8 text-sm text-muted-foreground">No donations recorded yet, so there is nothing to measure.</p>
           ) : (

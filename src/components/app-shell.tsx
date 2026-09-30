@@ -31,7 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!loading && user && profile && !profile.role?.trim()) void navigate({ to: "/auth", replace: true });
   }, [loading, user, profile, navigate]);
   const { items: notifications, unread, markAllRead } = useNotifications(user?.id);
-  const { stats: network } = useNetworkStats(Boolean(user));
+  const { stats: network, available: networkAvailable } = useNetworkStats();
   // NGOs and volunteers (role from their profile) start from the NGO dashboard instead of the donor overview.
   const items = roleKind(profile?.role) === "Receiver"
     ? [{ label: "Dashboard", to: "/admin", icon: Home } as const, ...navItems.slice(1)]
@@ -117,7 +117,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="space-y-1">{navigation()}</nav>
           <div className="mt-auto border-t border-sidebar-border pt-5">
             <p className="label-caps text-muted-foreground">Network impact</p>
-            {user ? (
+            {networkAvailable ? (
               <>
                 <p className="mt-2 font-display text-3xl">{formatCount(network.people_fed)} people</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">

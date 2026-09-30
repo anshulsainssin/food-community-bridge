@@ -84,7 +84,9 @@ UPDATE public.donations SET contact_info = NULL WHERE contact_info IS NOT NULL;
 ALTER TABLE public.donations ENABLE TRIGGER donations_set_updated_at;
 
 -- Same result columns as before; the donor contact now comes from the private table.
-CREATE OR REPLACE FUNCTION public.donation_parties(p_donation_id UUID)
+-- Dropped first so this file can be re-run after 20261003090000 has added a column.
+DROP FUNCTION IF EXISTS public.donation_parties(UUID);
+CREATE FUNCTION public.donation_parties(p_donation_id UUID)
 RETURNS TABLE (
   donor_name TEXT, donor_organization TEXT, donor_phone TEXT,
   receiver_name TEXT, receiver_organization TEXT, receiver_phone TEXT

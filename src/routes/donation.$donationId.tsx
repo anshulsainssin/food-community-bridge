@@ -1,5 +1,5 @@
 import { ClientOnly, createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, Clock3, MapPin, NotebookPen, Phone, Scale, Utensils, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Clock3, MapPin, Navigation, NotebookPen, Phone, Scale, Utensils, Users } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
@@ -39,6 +39,8 @@ type Parties = {
   receiver_name: string | null;
   receiver_organization: string | null;
   receiver_phone: string | null;
+  // Pickup point → the claiming NGO/volunteer's area (null when not claimed or a location is unknown).
+  pickup_to_receiver_km?: number | null;
 };
 
 function formatStamp(iso: string | null) {
@@ -230,6 +232,12 @@ function DonationDetailsPage() {
                         <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                           <Phone className="size-3.5 shrink-0 text-accent" />
                           <span className="break-words">{parties.receiver_phone}</span>
+                        </p>
+                      )}
+                      {parties.pickup_to_receiver_km != null && (
+                        <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                          <Navigation className="size-3.5 shrink-0 text-accent" />
+                          <span className="break-words">{parties.pickup_to_receiver_km.toFixed(1)} km from the pickup point</span>
                         </p>
                       )}
                     </div>
