@@ -6,7 +6,7 @@ import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { PickupVerifier } from "@/components/pickup-qr";
 import { Button } from "@/components/ui/button";
 import { useDonationsRealtime, useNgoRegistration, useNgoStats } from "@/hooks/use-ngo";
-import { useProfile } from "@/hooks/use-profile";
+import { useLocationSync, useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { displayStatus, isExpiredDonation } from "@/lib/donation-status";
 import { byDistance, donationDistance, type LatLon } from "@/lib/geo";
@@ -35,7 +35,13 @@ function formatDate(iso: string | null) {
 }
 
 function AdminPage() {
-  const { user, profile } = useProfile();
+  const { user, profile, updateProfile } = useProfile();
+  // NGOs land here after signing in, so their own location is kept current here too.
+  useLocationSync(
+    Boolean(user),
+    profile?.latitude != null && profile?.longitude != null ? { latitude: profile.latitude, longitude: profile.longitude } : null,
+    (coords) => updateProfile({ latitude: coords.latitude, longitude: coords.longitude }),
+  );
   const { registration, loading: loadingRegistration, saving, error: registrationError, save } = useNgoRegistration(user?.id);
   const { stats, reload: reloadStats } = useNgoStats(Boolean(user));
 

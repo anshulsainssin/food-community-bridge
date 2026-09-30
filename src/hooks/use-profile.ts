@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
+import { distanceKm } from "@/lib/geo";
 import { ROLE_OPTIONS, roleKind } from "@/lib/roles";
 
 export type Profile = {
@@ -115,12 +116,19 @@ export function useProfile() {
 
 export type Coords = { latitude: number; longitude: number };
 
-/** Asks the browser for location permission once a user is signed in and stores the coordinates on their profile. */
+/**
+ * Keeps the signed-in user's own location on their profile. With no saved location it asks for
+ * permission; with a saved one it re-reads the position when the browser already allows location
+ * (no prompt) and saves it if the user is now more than 1 km away, so a location first saved from
+ * another device doesn't stay wrong forever.
+ */
 export function useLocationSync(
   enabled: boolean,
-  hasStoredLocation: boolean,
+  stored: Coords | null,
   save: (coords: Coords) => Promise<void> | void,
 ) {
+  const hasStoredLocation = stored != null;
+  const refreshed = useRef(false);
   const [status, setStatus] = useState<"idle" | "asking" | "granted" | "denied" | "unavailable" | "unsupported">("idle");
 
   const request = useCallback(() => {
@@ -144,6 +152,28 @@ export function useLocationSync(
     if (!enabled || hasStoredLocation || status !== "idle") return;
     request();
   }, [enabled, hasStoredLocation, status, request]);
+
+  useEffect(() => {
+    if (!enabled || !stored || refreshed.current) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation || !navigator.permissions) return;
+    refreshed.current = true;
+    const saved = { lat: stored.latitude, lon: stored.longitude };
+    void navigator.permissions
+      .query({ name: "geolocation" })
+      .then((permission) => {
+        if (permission.state !== "granted") return;
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const next = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+            if (distanceKm(saved, { lat: next.latitude, lon: next.longitude }) > 1) void save(next);
+          },
+          () => undefined,
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+        );
+      })
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, stored?.latitude, stored?.longitude, save]);
 
   return { status, request };
 }

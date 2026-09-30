@@ -4,7 +4,28 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { fetchProfile, homePathFor, rememberPendingRole } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
-import { ROLE_OPTIONS } from "@/lib/roles";
+import { ROLE_OPTIONS, roleKind, type RoleKind } from "@/lib/roles";
+
+// The account type picked before signing in ("Donor" or "Receiver" = NGO/volunteer), kept for this
+// tab so it survives the Google redirect.
+const LOGIN_AS_KEY = "fwc-login-as";
+function readLoginAs(): RoleKind | null {
+  try {
+    const value = sessionStorage.getItem(LOGIN_AS_KEY);
+    return value === "Donor" || value === "Receiver" ? value : null;
+  } catch {
+    return null;
+  }
+}
+function writeLoginAs(value: RoleKind | null) {
+  try {
+    if (value) sessionStorage.setItem(LOGIN_AS_KEY, value);
+    else sessionStorage.removeItem(LOGIN_AS_KEY);
+  } catch {
+    // Storage unavailable: the choice then only lasts until the page reloads.
+  }
+}
+const ACCOUNT_TYPE_LABEL: Record<RoleKind, string> = { Donor: "Donor", Receiver: "NGO / Volunteer" };
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -56,17 +77,47 @@ function AuthPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [unconfirmed, setUnconfirmed] = useState(false);
+  // Chosen before the sign-in form: Donor or NGO/Volunteer (null = still choosing).
+  const [accountType, setAccountTypeState] = useState<RoleKind | null>(null);
+  function setAccountType(value: RoleKind | null) {
+    setAccountTypeState(value);
+    writeLoginAs(value);
+    setRole(value === "Donor" ? "Donor" : "");
+    setMessage(null);
+  }
 
   // Donors start on the donor dashboard, NGOs and volunteers on the NGO dashboard (role from their profile).
   // Accounts without a role (created before sign-up asked for one) choose it once here.
+  // If an account type was chosen before signing in, the account's own role (from its profile) must
+  // match it; accounts without a role take the chosen type.
   async function goHome() {
     const { data } = await supabase.auth.getUser();
     const profile = data.user ? await fetchProfile(data.user) : null;
+    const chosen = readLoginAs();
+    if (data.user && profile && !profile.role?.trim() && chosen === "Donor") {
+      const { error } = await supabase.from("profiles").update({ role: "Donor" }).eq("id", data.user.id);
+      if (!error) profile.role = "Donor";
+    }
     if (data.user && !profile?.role?.trim()) {
+      setAccountTypeState(chosen);
+      setRole("");
       setMode("role");
       setMessage(null);
       return;
     }
+    const kind = roleKind(profile?.role);
+    if (chosen && kind && kind !== chosen) {
+      await supabase.auth.signOut();
+      setAccountTypeState(chosen);
+      setMode("signin");
+      setMessage(
+        kind === "Donor"
+          ? "This email is registered as a Donor account. Choose \"Donor\" to sign in with it, or use your NGO / Volunteer account here."
+          : "This email is registered as an NGO / Volunteer account. Choose \"NGO / Volunteer\" to sign in with it, or use your Donor account here.",
+      );
+      return;
+    }
+    writeLoginAs(null);
     void navigate({ to: homePathFor(profile), replace: true });
   }
 
@@ -93,6 +144,13 @@ function AuthPage() {
       query.get("error") ??
       hash.get("error");
     if (oauthError) setMessage(`Google sign-in failed: ${oauthError}`);
+
+    // A link can pre-select the account type (/auth?as=donor or ?as=ngo); otherwise keep this tab's choice.
+    const requested = query.get("as");
+    const initialType: RoleKind | null = requested === "donor" ? "Donor" : requested === "ngo" ? "Receiver" : readLoginAs();
+    setAccountTypeState(initialType);
+    writeLoginAs(initialType);
+    if (initialType === "Donor") setRole("Donor");
 
     void supabase.auth.getSession().then(({ data }) => {
       if (data.session && !recovering) void goHome();
@@ -176,6 +234,7 @@ function AuthPage() {
   async function googleSignIn() {
     setMessage(null);
     if (mode === "signup" && role) rememberPendingRole(role);
+    else if (accountType === "Donor") rememberPendingRole("Donor");
     // Goes through Supabase Auth's own Google provider (configured in the Supabase/Lovable
     // Cloud dashboard), not the Lovable OAuth broker (lovable.auth.signInWithOAuth), which
     // redirects to /~oauth/initiate — a route that only exists on Lovable's own hosting and
@@ -193,14 +252,37 @@ function AuthPage() {
     }
   }
 
+  const choosing = (mode === "signin" || mode === "signup") && accountType === null;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-5 py-12">
       <div className="w-full max-w-md">
         <p className="font-display text-3xl italic leading-none">Food Waste Connect</p>
         <p className="label-caps mt-2 text-muted-foreground">Community network</p>
-        <h1 className="mt-8 font-display text-4xl">{mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : mode === "role" ? "How do you use Food Waste Connect?" : "Set a new password"}</h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">Use your account to share surplus food and coordinate pickups.</p>
+        <h1 className="mt-8 font-display text-4xl">{choosing ? "Sign in" : mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : mode === "role" ? "How do you use Food Waste Connect?" : "Set a new password"}</h1>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">{choosing ? "First choose which kind of account you want to use." : "Use your account to share surplus food and coordinate pickups."}</p>
 
+        {choosing ? (
+          <div className="mt-8 space-y-3">
+            <Button variant="outline" size="wide" className="h-auto w-full flex-col items-start gap-1 py-4 text-left" onClick={() => setAccountType("Donor")}>
+              <span className="text-base font-medium normal-case tracking-normal">Donor</span>
+              <span className="text-xs font-normal normal-case tracking-normal text-muted-foreground">I want to donate surplus food</span>
+            </Button>
+            <Button variant="outline" size="wide" className="h-auto w-full flex-col items-start gap-1 py-4 text-left" onClick={() => setAccountType("Receiver")}>
+              <span className="text-base font-medium normal-case tracking-normal">NGO / Volunteer</span>
+              <span className="text-xs font-normal normal-case tracking-normal text-muted-foreground">I collect food and deliver it to people in need</span>
+            </Button>
+            {message && <p className="text-sm text-accent">{message}</p>}
+          </div>
+        ) : (
+        <>
+        {(mode === "signin" || mode === "signup") && accountType && (
+          <p className="mt-6 text-sm">
+            <span className="label-caps text-muted-foreground">Account type</span>{" "}
+            <span className="font-medium">{ACCOUNT_TYPE_LABEL[accountType]}</span>{" "}
+            <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setAccountType(null)}>Change</button>
+          </p>
+        )}
         <form className="mt-8 space-y-6" onSubmit={submit}>
           {mode === "signup" && (
             <label className="block">
@@ -208,12 +290,12 @@ function AuthPage() {
               <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
           )}
-          {(mode === "signup" || mode === "role") && (
+          {((mode === "signup" && accountType !== "Donor") || mode === "role") && (
             <label className="block">
               <span className="label-caps text-muted-foreground">I am a</span>
               <select required name="role" value={role} onChange={(e) => setRole(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground">
                 <option value="">Choose one</option>
-                {ROLE_OPTIONS.map((option) => <option key={option} value={option}>{option === "Donor" ? "Donor (I share surplus food)" : `${option} (I collect food)`}</option>)}
+                {ROLE_OPTIONS.filter((option) => accountType !== "Receiver" || option !== "Donor").map((option) => <option key={option} value={option}>{option === "Donor" ? "Donor (I share surplus food)" : `${option} (I collect food)`}</option>)}
               </select>
             </label>
           )}
@@ -253,6 +335,8 @@ function AuthPage() {
               )}
             </div>
           </>
+        )}
+        </>
         )}
       </div>
     </div>

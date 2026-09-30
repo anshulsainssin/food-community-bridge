@@ -19,7 +19,7 @@ function ProfilePage() {
 
   const { status: locationStatus, request: requestLocation } = useLocationSync(
     Boolean(user),
-    profile?.latitude != null && profile?.longitude != null,
+    profile?.latitude != null && profile?.longitude != null ? { latitude: profile.latitude, longitude: profile.longitude } : null,
     (coords) => updateProfile({ latitude: coords.latitude, longitude: coords.longitude }),
   );
 
