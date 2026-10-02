@@ -65,7 +65,7 @@ const copy = {
     ],
     receiverHeading: "If you are the NGO / volunteer",
     receiverIntro:
-      'Open Pickup, then tap "Confirm pickup (scan QR)". Use any one of these ways:',
+      'Open Pickup in your account. Under the status timeline there is a box "Scan the donor\'s QR to confirm pickup". Use any one of these ways:',
     methods: [
       {
         icon: ScanLine,
@@ -109,7 +109,7 @@ const copy = {
           },
           {
             title: "Paste it in the app",
-            body: 'Back on Pickup → "Confirm pickup", tap "Paste link" (or long-press the box and choose Paste), then tap Verify.',
+            body: 'Back on Pickup, tap "Paste link" (or long-press the box and choose Paste), then tap Verify.',
           },
         ],
       },
@@ -176,7 +176,7 @@ const copy = {
     ],
     receiverHeading: "अगर आप NGO / वॉलंटियर हैं",
     receiverIntro:
-      'Pickup खोलें, फिर "Confirm pickup (scan QR)" दबाएँ। इनमें से कोई भी एक तरीका अपनाएँ:',
+      'अपने अकाउंट में Pickup खोलें। स्टेटस टाइमलाइन के नीचे "Scan the donor\'s QR to confirm pickup" वाला बॉक्स मिलेगा। इनमें से कोई भी एक तरीका अपनाएँ:',
     methods: [
       {
         icon: ScanLine,
@@ -220,7 +220,7 @@ const copy = {
           },
           {
             title: "ऐप में पेस्ट करें",
-            body: 'वापस Pickup → "Confirm pickup" पर जाएँ, "Paste link" दबाएँ (या बॉक्स को देर तक दबाकर Paste चुनें), फिर Verify दबाएँ।',
+            body: 'वापस Pickup पर जाएँ, "Paste link" दबाएँ (या बॉक्स को देर तक दबाकर Paste चुनें), फिर Verify दबाएँ।',
           },
         ],
       },

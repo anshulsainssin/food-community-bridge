@@ -109,7 +109,6 @@ function PickupPage() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showVerifier, setShowVerifier] = useState(false);
   const [recenter, setRecenter] = useState(0);
   const now = useNow(5_000);
 
@@ -227,10 +226,9 @@ function PickupPage() {
       : null;
   const etaMinutes = remainingKm != null ? Math.max(1, Math.round((remainingKm / CITY_SPEED_KMH) * 60)) : null;
 
-  // Opened the QR link as the claimer: open the verifier, which checks the code straight away.
-  useEffect(() => {
-    if (qrForThis && isClaimer && needsQr) setShowVerifier(true);
-  }, [qrForThis, isClaimer, needsQr]);
+  // The claimer can scan / upload the donor's QR any time before pickup (the database accepts it from
+  // 'Claimed' too), so the scanner is always on screen for them — no extra button to find.
+  const canVerify = isClaimer && awaitingPickup;
 
   function clearQrFromUrl() {
     if (qrLink) void navigate({ to: "/pickup", search: { id: qrLink.donationId }, replace: true });
@@ -238,10 +236,7 @@ function PickupPage() {
 
   async function advance() {
     if (!donation || !nextStatus) return;
-    if (needsQr) {
-      setShowVerifier((open) => !open);
-      return;
-    }
+    if (needsQr) return;
     setError(null);
     setWorking(true);
     const { error: rpcError } = await supabase.rpc("advance_donation_status", {
@@ -478,25 +473,24 @@ function PickupPage() {
             </Button>
           ) : nextStatus ? (
             <>
-              <Button size="wide" className="mt-3 w-full" onClick={() => void advance()} disabled={working || stage === 0 || (needsQr && !isClaimer)}>
-                {stage === 0
-                  ? "Waiting to be claimed"
-                  : working
-                    ? "Updating…"
-                    : nextStatus === "Pickup in Progress"
-                      ? "Start pickup"
-                      : nextStatus === "Picked Up"
-                        ? isClaimer
-                          ? "Confirm pickup (scan QR)"
-                          : "Waiting for QR verification"
-                        : "Mark completed"}
-              </Button>
-              {needsQr && isClaimer && showVerifier && donation && (
+              {!(needsQr && isClaimer) && (
+                <Button size="wide" className="mt-3 w-full" onClick={() => void advance()} disabled={working || stage === 0 || (needsQr && !isClaimer)}>
+                  {stage === 0
+                    ? "Waiting to be claimed"
+                    : working
+                      ? "Updating…"
+                      : nextStatus === "Pickup in Progress"
+                        ? "Start pickup"
+                        : nextStatus === "Picked Up"
+                          ? "Waiting for QR verification"
+                          : "Mark completed"}
+                </Button>
+              )}
+              {canVerify && donation && (
                 <PickupVerifier
                   donationId={donation.id}
                   initialInput={qrForThis ? qrLink?.input : undefined}
                   onVerified={() => {
-                    setShowVerifier(false);
                     clearQrFromUrl();
                     void load();
                   }}
@@ -509,7 +503,7 @@ function PickupPage() {
             </Button>
           )}
           {showDonorCode && donation && <PickupCodeCard donationId={donation.id} />}
-          {needsQr && (isClaimer || isDonor) && (
+          {awaitingPickup && (isClaimer || isDonor) && (
             <Link to="/qr-guide" className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium underline underline-offset-4">
               <CircleHelp className="size-3.5 text-accent" />
               QR scan confusing? See the step-by-step guide
