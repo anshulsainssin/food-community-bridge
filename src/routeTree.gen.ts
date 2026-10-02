@@ -13,9 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DonationsRouteImport } from './routes/donations'
+import { Route as HistoryRouteImport } from './routes/history'
 import { Route as ImpactRouteImport } from './routes/impact'
 import { Route as PickupRouteImport } from './routes/pickup'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as QrGuideRouteImport } from './routes/qr-guide'
 import { Route as DonationDonationIdRouteImport } from './routes/donation.$donationId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -38,6 +40,11 @@ const DonationsRoute = DonationsRouteImport.update({
   path: '/donations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ImpactRoute = ImpactRouteImport.update({
   id: '/impact',
   path: '/impact',
@@ -53,6 +60,11 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QrGuideRoute = QrGuideRouteImport.update({
+  id: '/qr-guide',
+  path: '/qr-guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DonationDonationIdRoute = DonationDonationIdRouteImport.update({
   id: '/donation/$donationId',
   path: '/donation/$donationId',
@@ -64,9 +76,11 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/donations': typeof DonationsRoute
+  '/history': typeof HistoryRoute
   '/impact': typeof ImpactRoute
   '/pickup': typeof PickupRoute
   '/profile': typeof ProfileRoute
+  '/qr-guide': typeof QrGuideRoute
   '/donation/$donationId': typeof DonationDonationIdRoute
 }
 export interface FileRoutesByTo {
@@ -74,9 +88,11 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/donations': typeof DonationsRoute
+  '/history': typeof HistoryRoute
   '/impact': typeof ImpactRoute
   '/pickup': typeof PickupRoute
   '/profile': typeof ProfileRoute
+  '/qr-guide': typeof QrGuideRoute
   '/donation/$donationId': typeof DonationDonationIdRoute
 }
 export interface FileRoutesById {
@@ -85,9 +101,11 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/donations': typeof DonationsRoute
+  '/history': typeof HistoryRoute
   '/impact': typeof ImpactRoute
   '/pickup': typeof PickupRoute
   '/profile': typeof ProfileRoute
+  '/qr-guide': typeof QrGuideRoute
   '/donation/$donationId': typeof DonationDonationIdRoute
 }
 export interface FileRouteTypes {
@@ -97,9 +115,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/donations'
+    | '/history'
     | '/impact'
     | '/pickup'
     | '/profile'
+    | '/qr-guide'
     | '/donation/$donationId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -107,9 +127,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/donations'
+    | '/history'
     | '/impact'
     | '/pickup'
     | '/profile'
+    | '/qr-guide'
     | '/donation/$donationId'
   id:
     | '__root__'
@@ -117,9 +139,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/donations'
+    | '/history'
     | '/impact'
     | '/pickup'
     | '/profile'
+    | '/qr-guide'
     | '/donation/$donationId'
   fileRoutesById: FileRoutesById
 }
@@ -128,9 +152,11 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   DonationsRoute: typeof DonationsRoute
+  HistoryRoute: typeof HistoryRoute
   ImpactRoute: typeof ImpactRoute
   PickupRoute: typeof PickupRoute
   ProfileRoute: typeof ProfileRoute
+  QrGuideRoute: typeof QrGuideRoute
   DonationDonationIdRoute: typeof DonationDonationIdRoute
 }
 
@@ -164,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DonationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/impact': {
       id: '/impact'
       path: '/impact'
@@ -185,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/qr-guide': {
+      id: '/qr-guide'
+      path: '/qr-guide'
+      fullPath: '/qr-guide'
+      preLoaderRoute: typeof QrGuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/donation/$donationId': {
       id: '/donation/$donationId'
       path: '/donation/$donationId'
@@ -200,9 +240,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   DonationsRoute: DonationsRoute,
+  HistoryRoute: HistoryRoute,
   ImpactRoute: ImpactRoute,
   PickupRoute: PickupRoute,
   ProfileRoute: ProfileRoute,
+  QrGuideRoute: QrGuideRoute,
   DonationDonationIdRoute: DonationDonationIdRoute,
 }
 export const routeTree = rootRouteImport

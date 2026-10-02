@@ -294,6 +294,41 @@ export type Database = {
           },
         ]
       }
+      pickup_locations: {
+        Row: {
+          accuracy_m: number | null
+          donation_id: string
+          latitude: number
+          longitude: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          donation_id: string
+          latitude: number
+          longitude: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          donation_id?: string
+          latitude?: number
+          longitude?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_locations_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: true
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -423,6 +458,7 @@ export type Database = {
           verified_at: string
         }[]
       }
+      is_pickup_party: { Args: { p_donation_id: string }; Returns: boolean }
       my_dashboard_stats: {
         Args: never
         Returns: {
@@ -475,6 +511,29 @@ export type Database = {
           total_claims: number
         }[]
       }
+      share_pickup_location: {
+        Args: {
+          p_accuracy_m?: number
+          p_donation_id: string
+          p_latitude: number
+          p_longitude: number
+        }
+        Returns: {
+          accuracy_m: number | null
+          donation_id: string
+          latitude: number
+          longitude: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pickup_locations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      stop_pickup_location: { Args: { p_donation_id: string }; Returns: undefined }
       verify_pickup_code: {
         Args: { p_code: string; p_donation_id: string }
         Returns: {

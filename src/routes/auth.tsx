@@ -67,6 +67,12 @@ function authErrorMessage(error: { code?: string | undefined; message: string })
   return networkErrorMessage(error);
 }
 
+// Phone keyboards and autofill often add a space after the email; Supabase then answers
+// "Invalid login credentials" even though the email and password are right.
+function cleanEmail(value: string) {
+  return value.trim();
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup" | "reset" | "role">("signin");
@@ -181,7 +187,7 @@ function AuthPage() {
       }
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: cleanEmail(email),
           password,
           options: { emailRedirectTo: `${window.location.origin}/auth`, data: { full_name: fullName.trim(), role } },
         });
@@ -203,7 +209,7 @@ function AuthPage() {
         await goHome();
         return;
       }
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail(email), password });
       if (error) {
         setUnconfirmed(error.code === "email_not_confirmed" || /email not confirmed/i.test(error.message));
         return setMessage(authErrorMessage(error));
@@ -220,14 +226,14 @@ function AuthPage() {
 
   async function resendConfirmation() {
     setMessage(null);
-    const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: `${window.location.origin}/auth` } });
+    const { error } = await supabase.auth.resend({ type: "signup", email: cleanEmail(email), options: { emailRedirectTo: `${window.location.origin}/auth` } });
     setMessage(error ? networkErrorMessage(error) : "Confirmation email sent again. Check your inbox and spam folder.");
   }
 
   async function sendPasswordReset() {
     if (!email) return setMessage("Enter your email above, then choose \"Forgot password?\" again.");
     setMessage(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/auth` });
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail(email), { redirectTo: `${window.location.origin}/auth` });
     setMessage(error ? networkErrorMessage(error) : "If an account exists for this email, a password reset link is on its way. Check your inbox and spam folder.");
   }
 

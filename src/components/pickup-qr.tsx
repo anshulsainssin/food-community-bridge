@@ -1,11 +1,11 @@
+import { Link } from "@tanstack/react-router";
 import qrcode from "qrcode-generator";
-import { Camera, QrCode, ShieldCheck } from "lucide-react";
+import { Camera, CircleHelp, ClipboardPaste, QrCode, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-
-const PAYLOAD_PREFIX = "FWC-PICKUP";
+import { parsePickupPayload, pickupLink } from "@/lib/pickup-link";
 
 function formatCode(code: string) {
   return code.length > 5 ? `${code.slice(0, 5)}-${code.slice(5)}` : code;
@@ -77,11 +77,13 @@ export function PickupCodeCard({ donationId }: { donationId: string }) {
         </p>
       ) : code ? (
         <div className="mt-4 flex flex-col items-center gap-3 text-center">
-          <QrSvg value={`${PAYLOAD_PREFIX}:${donationId}:${code}`} />
+          <QrSvg value={pickupLink(donationId, code)} />
           <p className="font-mono text-lg tracking-widest">{formatCode(code)}</p>
           <p className="text-xs leading-5 text-muted-foreground">
-            Show this to the NGO/volunteer who claimed your donation when they collect it. They can scan it or type the code.
+            Show this to the NGO/volunteer who claimed your donation when they arrive. They scan it (or type the
+            code) to confirm the pickup. Don't share it before they have the food.
           </p>
+          <GuideLink />
         </div>
       ) : (
         <p className="mt-4 text-sm text-muted-foreground">Your pickup code appears here once the donation is claimed.</p>
@@ -100,21 +102,38 @@ function barcodeDetector(): BarcodeDetectorCtor | null {
 }
 
 /**
- * Accepts either the full QR payload (FWC-PICKUP:<donation id>:<code>) or just the code typed by hand.
+ * Accepts the QR link, the old QR payload, or just the code typed by hand.
  * Returns null when the QR code belongs to a different donation.
  */
 function codeFromInput(input: string, donationId: string) {
   const text = input.trim();
-  if (text.startsWith(`${PAYLOAD_PREFIX}:`)) {
-    const [, id, code] = text.split(":");
-    return id === donationId ? (code ?? "") : null;
-  }
+  const payload = parsePickupPayload(text);
+  if (payload) return payload.donationId.toLowerCase() === donationId.toLowerCase() ? payload.code : null;
+  if (/^https?:\/\//i.test(text)) return "";
   return text;
 }
 
+function GuideLink() {
+  return (
+    <Link to="/qr-guide" className="inline-flex items-center gap-1.5 text-xs font-medium underline underline-offset-4">
+      <CircleHelp className="size-3.5 text-accent" />
+      How does the pickup QR work?
+    </Link>
+  );
+}
+
 /** NGO/volunteer view: scan (or type) the donor's pickup code to confirm the handover. */
-export function PickupVerifier({ donationId, onVerified }: { donationId: string; onVerified: () => void }) {
-  const [manual, setManual] = useState("");
+export function PickupVerifier({
+  donationId,
+  onVerified,
+  initialInput,
+}: {
+  donationId: string;
+  onVerified: () => void;
+  /** A QR link the user opened (/pickup?id=…&code=…): filled in and verified straight away. */
+  initialInput?: string | undefined;
+}) {
+  const [manual, setManual] = useState(initialInput ?? "");
   const [scanning, setScanning] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +148,7 @@ export function PickupVerifier({ donationId, onVerified }: { donationId: string;
         return;
       }
       if (!code) {
-        setError("Enter the pickup code shown by the donor.");
+        setError("Paste the link from the QR code, or type the code shown under it.");
         return;
       }
       setError(null);
@@ -191,9 +210,31 @@ export function PickupVerifier({ donationId, onVerified }: { donationId: string;
     };
   }, [scanning, verify]);
 
+  // Opened from the QR link: verify once, without another tap.
+  const autoVerified = useRef(false);
+  useEffect(() => {
+    if (!initialInput || autoVerified.current) return;
+    autoVerified.current = true;
+    void verify(initialInput);
+  }, [initialInput, verify]);
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void verify(manual);
+  }
+
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setError("Nothing is copied yet. Copy the link from your scanner app first.");
+        return;
+      }
+      setManual(text.trim());
+      void verify(text);
+    } catch {
+      setError("Couldn't read the clipboard. Long-press the box below and choose Paste.");
+    }
   }
 
   return (
@@ -203,36 +244,51 @@ export function PickupVerifier({ donationId, onVerified }: { donationId: string;
         Verify pickup
       </p>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">
-        Scan the QR code on the donor's screen, or type the code shown under it.
+        {canScan
+          ? "Scan the QR code on the donor's screen. Or scan it with your phone's camera / Google Lens, copy the link it shows and paste it below. You can also type the code printed under the QR."
+          : "Scan the QR code on the donor's screen with your phone's camera or Google Lens. Tap the link it shows, or copy it and paste it below. You can also type the code printed under the QR."}
       </p>
-      {canScan &&
-        (scanning ? (
-          <div className="mt-4">
-            <video ref={videoRef} className="aspect-square w-full max-w-xs bg-black object-cover" muted playsInline />
-            <Button type="button" variant="outline" className="mt-3" onClick={() => setScanning(false)}>
+      {scanning && (
+        <div className="mt-4">
+          <video ref={videoRef} className="aspect-square w-full max-w-xs bg-black object-cover" muted playsInline />
+        </div>
+      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {canScan &&
+          (scanning ? (
+            <Button type="button" variant="outline" onClick={() => setScanning(false)}>
               Stop camera
             </Button>
-          </div>
-        ) : (
-          <Button type="button" variant="outline" className="mt-4" onClick={() => setScanning(true)} disabled={working}>
-            <Camera className="size-4" />
-            Scan QR code
-          </Button>
-        ))}
+          ) : (
+            <Button type="button" variant="outline" onClick={() => setScanning(true)} disabled={working}>
+              <Camera className="size-4" />
+              Scan QR code
+            </Button>
+          ))}
+        <Button type="button" variant="outline" onClick={() => void pasteFromClipboard()} disabled={working}>
+          <ClipboardPaste className="size-4" />
+          Paste link
+        </Button>
+      </div>
       <form onSubmit={submit} className="mt-4 flex gap-2">
         <input
           value={manual}
           onChange={(event) => setManual(event.target.value)}
-          placeholder="Pickup code, e.g. 1A2B3-C4D5E"
-          aria-label="Pickup code"
-          autoCapitalize="characters"
-          className="h-11 min-w-0 flex-1 border-b border-input bg-transparent font-mono text-sm uppercase outline-none focus:border-foreground"
+          placeholder="Paste the QR link or type the code"
+          aria-label="QR link or pickup code"
+          autoCapitalize="none"
+          autoComplete="off"
+          spellCheck={false}
+          className="h-11 min-w-0 flex-1 border-b border-input bg-transparent font-mono text-sm outline-none focus:border-foreground"
         />
         <Button type="submit" disabled={working}>
           {working ? "Verifying…" : "Verify"}
         </Button>
       </form>
       {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      <div className="mt-4">
+        <GuideLink />
+      </div>
     </div>
   );
 }
