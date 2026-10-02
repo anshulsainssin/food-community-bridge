@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, Bell, HandHeart, Home, LogOut, Menu, Truck, UserRound, X } from "lucide-react";
+import { BarChart3, Bell, CircleHelp, HandHeart, History, Home, LogOut, Menu, Truck, UserRound, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,13 @@ const navItems = [
   { label: "Overview", to: "/", icon: Home },
   { label: "Find food", to: "/donations", icon: HandHeart },
   { label: "Pickup", to: "/pickup", icon: Truck },
+  { label: "History", to: "/history", icon: History },
   { label: "Impact", to: "/impact", icon: BarChart3 },
   { label: "Profile", to: "/profile", icon: UserRound },
 ] as const;
+
+// Shown in the sidebar and the mobile menu, but not in the bottom bar.
+const helpItems = [{ label: "QR scan help", to: "/qr-guide", icon: CircleHelp }] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -42,7 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     void navigate({ to: "/auth", replace: true });
   }
 
-  const navigation = (mobile = false) => items.map(({ label, to, icon: Icon }) => (
+  const navigation = (mobile = false) => [...items, ...helpItems].map(({ label, to, icon: Icon }) => (
     <Button key={to} asChild variant="nav" className={mobile ? "w-full justify-start" : "w-full justify-start"} data-active={pathname === to} onClick={() => mobile && setMobileMenu(false)}>
       <Link to={to}><Icon className="size-4" />{label}</Link>
     </Button>
@@ -132,7 +136,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="min-w-0 flex-1 pb-24 md:pb-10">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">{items.map(({ label, to, icon: Icon }) => <Button key={to} asChild variant="ghost" className={`h-16 min-w-0 flex-col gap-1 px-0 text-[9px] ${pathname === to ? "text-foreground" : ""}`}><Link to={to}><Icon className="size-4 shrink-0" /><span className="w-full truncate px-1 text-center">{label}</span></Link></Button>)}</nav>
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-border bg-background/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">{items.map(({ label, to, icon: Icon }) => <Button key={to} asChild variant="ghost" className={`h-16 min-w-0 flex-col gap-1 px-0 text-[9px] ${pathname === to ? "text-foreground" : ""}`}><Link to={to}><Icon className="size-4 shrink-0" /><span className="w-full truncate px-1 text-center">{label}</span></Link></Button>)}</nav>
     </div>
   );
 }

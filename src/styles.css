@@ -172,3 +172,30 @@
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Live pickup tracking: the NGO/volunteer's position on the map. */
+.live-marker { position: relative; width: 22px; height: 22px; }
+.live-marker__dot {
+  position: absolute;
+  inset: 4px;
+  border-radius: 9999px;
+  background: var(--accent);
+  border: 2px solid var(--card);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.live-marker__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--accent);
+  opacity: 0.35;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .live-marker__pulse { animation: live-pulse 1.8s ease-out infinite; }
+}
+@keyframes live-pulse {
+  from { transform: scale(0.6); opacity: 0.5; }
+  to { transform: scale(2.2); opacity: 0; }
+}
+.live-route { stroke: var(--accent); }
+.live-accuracy { fill: var(--accent); }
