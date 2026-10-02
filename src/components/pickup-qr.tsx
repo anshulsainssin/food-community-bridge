@@ -81,8 +81,9 @@ export function PickupCodeCard({ donationId }: { donationId: string }) {
           <QrSvg value={pickupLink(donationId, code)} />
           <p className="font-mono text-lg tracking-widest">{formatCode(code)}</p>
           <p className="text-xs leading-5 text-muted-foreground">
-            Show this to the NGO/volunteer who claimed your donation when they arrive. They scan it (or type the
-            code) to confirm the pickup. Don't share it before they have the food.
+            Show this to the NGO/volunteer who claimed your donation when they arrive. They open the Pickup page in
+            their own account and tap "Scan QR code" (or upload a screenshot of it, or type the code) to confirm the
+            pickup. Don't share it before they have the food.
           </p>
           <GuideLink />
         </div>
@@ -329,7 +330,7 @@ export function PickupVerifier({
     <div className="mt-3 border border-border-strong bg-card p-5" onPaste={onPaste}>
       <p className="label-caps flex items-center gap-2 text-muted-foreground">
         <QrCode className="size-4 text-accent" />
-        Verify pickup
+        Scan the donor's QR to confirm pickup
       </p>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">
         Scan the QR code on the donor's screen, or upload a screenshot of it — it is read and verified automatically. You
