@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Camera,
   ClipboardPaste,
+  ImageUp,
   Keyboard,
   QrCode,
   ScanLine,
@@ -64,12 +65,12 @@ const copy = {
     ],
     receiverHeading: "If you are the NGO / volunteer",
     receiverIntro:
-      'Open Pickup, then tap "Confirm pickup (scan QR)". Use any one of these three ways:',
+      'Open Pickup, then tap "Confirm pickup (scan QR)". Use any one of these ways:',
     methods: [
       {
         icon: ScanLine,
         title: "1. Scan inside the app",
-        when: "Easiest — works in Chrome on Android.",
+        when: "Easiest — works on Android and iPhone (needs camera permission).",
         steps: [
           { title: 'Tap "Scan QR code"', body: "Allow camera access when your phone asks." },
           {
@@ -79,9 +80,24 @@ const copy = {
         ],
       },
       {
+        icon: ImageUp,
+        title: "2. Upload a screenshot of the QR",
+        when: "If the donor sent you a screenshot of their QR, or the camera won't open.",
+        steps: [
+          {
+            title: 'Tap "Upload QR screenshot"',
+            body: "Choose the screenshot or photo from your gallery (on a computer you can also drag it in or press Ctrl+V).",
+          },
+          {
+            title: "That's it",
+            body: "The app reads the QR from the image and confirms the pickup automatically. Make sure the whole QR is visible in the image.",
+          },
+        ],
+      },
+      {
         icon: Camera,
-        title: "2. Phone camera / Google Lens, then paste the link",
-        when: 'Use this if you don\'t see a "Scan QR code" button (for example on iPhone).',
+        title: "3. Phone camera / Google Lens, then paste the link",
+        when: "Another option if in-app scanning doesn't work on your phone.",
         steps: [
           {
             title: "Open your phone's camera or Google Lens",
@@ -99,8 +115,8 @@ const copy = {
       },
       {
         icon: Keyboard,
-        title: "3. Type the code",
-        when: "If the camera won't work at all.",
+        title: "4. Type the code",
+        when: "If nothing else works.",
         steps: [
           {
             title: "Read the code under the QR",
@@ -121,7 +137,7 @@ const copy = {
       },
       {
         title: '"Camera access was blocked"',
-        body: "Allow camera for this site in your browser settings, or use way 2 or 3 above.",
+        body: "Allow camera for this site in your browser settings, or upload a screenshot of the QR instead (way 2).",
       },
       {
         title: '"This pickup QR code has already been used"',
@@ -160,12 +176,12 @@ const copy = {
     ],
     receiverHeading: "अगर आप NGO / वॉलंटियर हैं",
     receiverIntro:
-      'Pickup खोलें, फिर "Confirm pickup (scan QR)" दबाएँ। इन तीन में से कोई भी एक तरीका अपनाएँ:',
+      'Pickup खोलें, फिर "Confirm pickup (scan QR)" दबाएँ। इनमें से कोई भी एक तरीका अपनाएँ:',
     methods: [
       {
         icon: ScanLine,
         title: "1. ऐप के अंदर स्कैन करें",
-        when: "सबसे आसान — Android पर Chrome में चलता है।",
+        when: "सबसे आसान — Android और iPhone दोनों पर चलता है (कैमरा की अनुमति चाहिए)।",
         steps: [
           { title: '"Scan QR code" दबाएँ', body: "फ़ोन पूछे तो कैमरा की अनुमति (Allow) दें।" },
           {
@@ -175,9 +191,24 @@ const copy = {
         ],
       },
       {
+        icon: ImageUp,
+        title: "2. QR का स्क्रीनशॉट अपलोड करें",
+        when: "अगर डोनर ने QR का स्क्रीनशॉट भेजा है, या कैमरा नहीं खुल रहा।",
+        steps: [
+          {
+            title: '"Upload QR screenshot" दबाएँ',
+            body: "गैलरी से स्क्रीनशॉट या फ़ोटो चुनें (कंप्यूटर पर ड्रैग करके या Ctrl+V से भी डाल सकते हैं)।",
+          },
+          {
+            title: "बस इतना ही",
+            body: "ऐप फ़ोटो में से QR पढ़कर पिकअप अपने-आप कन्फ़र्म कर देगा। ध्यान रखें कि फ़ोटो में पूरा QR दिख रहा हो।",
+          },
+        ],
+      },
+      {
         icon: Camera,
-        title: "2. फ़ोन का कैमरा / Google Lens, फिर लिंक पेस्ट करें",
-        when: 'अगर "Scan QR code" बटन नहीं दिख रहा (जैसे iPhone पर), तो यह तरीका अपनाएँ।',
+        title: "3. फ़ोन का कैमरा / Google Lens, फिर लिंक पेस्ट करें",
+        when: "अगर ऐप के अंदर स्कैन आपके फ़ोन पर न चले, तो यह भी एक तरीका है।",
         steps: [
           {
             title: "फ़ोन का कैमरा या Google Lens खोलें",
@@ -195,8 +226,8 @@ const copy = {
       },
       {
         icon: Keyboard,
-        title: "3. कोड टाइप करें",
-        when: "अगर कैमरा बिल्कुल काम न करे।",
+        title: "4. कोड टाइप करें",
+        when: "अगर कुछ भी काम न करे।",
         steps: [
           {
             title: "QR के नीचे लिखा कोड पढ़ें",
@@ -214,7 +245,7 @@ const copy = {
       },
       {
         title: '"Camera access was blocked"',
-        body: "ब्राउज़र सेटिंग में इस साइट के लिए कैमरा Allow करें, या ऊपर दिया तरीका 2 या 3 अपनाएँ।",
+        body: "ब्राउज़र सेटिंग में इस साइट के लिए कैमरा Allow करें, या QR का स्क्रीनशॉट अपलोड करें (तरीका 2)।",
       },
       {
         title: '"This pickup QR code has already been used"',

@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import qrcode from "qrcode-generator";
-import { Camera, CircleHelp, ClipboardPaste, QrCode, ShieldCheck } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Camera, CircleHelp, ClipboardPaste, ImageUp, QrCode, ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { parsePickupPayload, pickupLink } from "@/lib/pickup-link";
+import { canUseCamera, decodeQrFromImage, decodeQrFromVideo } from "@/lib/qr-decode";
 
 function formatCode(code: string) {
   return code.length > 5 ? `${code.slice(0, 5)}-${code.slice(5)}` : code;
@@ -92,15 +93,6 @@ export function PickupCodeCard({ donationId }: { donationId: string }) {
   );
 }
 
-type DetectedBarcode = { rawValue: string };
-type BarcodeDetectorLike = { detect: (source: HTMLVideoElement) => Promise<DetectedBarcode[]> };
-type BarcodeDetectorCtor = new (options: { formats: string[] }) => BarcodeDetectorLike;
-
-function barcodeDetector(): BarcodeDetectorCtor | null {
-  if (typeof window === "undefined") return null;
-  return (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector ?? null;
-}
-
 /**
  * Accepts the QR link, the old QR payload, or just the code typed by hand.
  * Returns null when the QR code belongs to a different donation.
@@ -122,7 +114,20 @@ function GuideLink() {
   );
 }
 
-/** NGO/volunteer view: scan (or type) the donor's pickup code to confirm the handover. */
+function imageFrom(items: DataTransferItemList | FileList | null | undefined) {
+  if (!items) return null;
+  const list: (DataTransferItem | File)[] = Array.from(items as ArrayLike<DataTransferItem | File>);
+  for (const item of list) {
+    const file = item instanceof File ? item : item.kind === "file" ? item.getAsFile() : null;
+    if (file && file.type.startsWith("image/")) return file;
+  }
+  return null;
+}
+
+/**
+ * NGO/volunteer view: confirm the handover with the donor's pickup QR — scan it with the camera, upload a
+ * screenshot / photo of it, paste its link, or type the code. A readable QR is verified straight away.
+ */
 export function PickupVerifier({
   donationId,
   onVerified,
@@ -135,10 +140,21 @@ export function PickupVerifier({
 }) {
   const [manual, setManual] = useState(initialInput ?? "");
   const [scanning, setScanning] = useState(false);
+  const [reading, setReading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canScan = barcodeDetector() != null;
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [cameraAvailable, setCameraAvailable] = useState(false);
+  useEffect(() => setCameraAvailable(canUseCamera()), []);
+  const busy = working || reading;
+
+  // Free the screenshot thumbnail's object URL when it changes or the verifier closes.
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview);
+  }, [preview]);
 
   const verify = useCallback(
     async (input: string) => {
@@ -165,13 +181,25 @@ export function PickupVerifier({
     [donationId, onVerified],
   );
 
+  // A QR read by the camera or from an image must be a Food Waste Connect pickup QR.
+  const verifyScanned = useCallback(
+    (text: string) => {
+      setManual(text);
+      if (!parsePickupPayload(text)) {
+        setError("A QR code was found, but it isn't a Food Waste Connect pickup QR. Scan the QR on the donor's Pickup page.");
+        return;
+      }
+      void verify(text);
+    },
+    [verify],
+  );
+
   useEffect(() => {
-    const Detector = barcodeDetector();
-    if (!scanning || !Detector) return;
+    if (!scanning) return;
     let stream: MediaStream | null = null;
     let timer: number | undefined;
     let stopped = false;
-    const detector = new Detector({ formats: ["qr_code"] });
+    const canvas = document.createElement("canvas");
 
     void navigator.mediaDevices
       .getUserMedia({ video: { facingMode: "environment" } })
@@ -187,19 +215,20 @@ export function PickupVerifier({
         await video.play();
         const tick = async () => {
           if (stopped) return;
-          const found = await detector.detect(video).catch(() => []);
-          if (found[0]?.rawValue) {
+          const text = await decodeQrFromVideo(video, canvas).catch(() => null);
+          if (stopped) return;
+          if (text) {
             stopped = true;
             setScanning(false);
-            void verify(found[0].rawValue);
+            verifyScanned(text);
             return;
           }
-          timer = window.setTimeout(() => void tick(), 300);
+          timer = window.setTimeout(() => void tick(), 250);
         };
         void tick();
       })
       .catch(() => {
-        setError("Camera access was blocked. Allow camera access or type the code instead.");
+        setError("Camera access was blocked. Allow camera access, or upload a screenshot of the QR instead.");
         setScanning(false);
       });
 
@@ -208,7 +237,7 @@ export function PickupVerifier({
       window.clearTimeout(timer);
       stream?.getTracks().forEach((track) => track.stop());
     };
-  }, [scanning, verify]);
+  }, [scanning, verifyScanned]);
 
   // Opened from the QR link: verify once, without another tap.
   const autoVerified = useRef(false);
@@ -218,16 +247,75 @@ export function PickupVerifier({
     void verify(initialInput);
   }, [initialInput, verify]);
 
+  async function readImage(file: File | Blob) {
+    setError(null);
+    setScanning(false);
+    setPreview(URL.createObjectURL(file));
+    setReading(true);
+    let text: string | null = null;
+    try {
+      text = await decodeQrFromImage(file);
+    } catch {
+      setReading(false);
+      setError("Couldn't open this file. Upload a screenshot or photo (PNG or JPG).");
+      return;
+    }
+    setReading(false);
+    if (!text) {
+      setError("No QR code found in this image. Upload a clear screenshot where the whole QR code is visible.");
+      return;
+    }
+    verifyScanned(text);
+  }
+
+  function onFileChosen(event: ChangeEvent<HTMLInputElement>) {
+    const file = imageFrom(event.target.files);
+    event.target.value = "";
+    if (file) void readImage(file);
+    else if (event.target.files?.length) setError("That file isn't an image. Upload a screenshot or photo of the QR code.");
+  }
+
+  function onDrop(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    setDragging(false);
+    const file = imageFrom(event.dataTransfer.files);
+    if (file) void readImage(file);
+    else setError("Drop a screenshot or photo of the QR code.");
+  }
+
+  // Ctrl+V / long-press paste of a copied screenshot anywhere in the verifier.
+  function onPaste(event: ClipboardEvent<HTMLElement>) {
+    const file = imageFrom(event.clipboardData.items);
+    if (!file) return;
+    event.preventDefault();
+    void readImage(file);
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void verify(manual);
   }
 
   async function pasteFromClipboard() {
+    // A copied screenshot (where the browser allows reading images), else the copied link / code.
+    try {
+      if (typeof navigator.clipboard.read === "function") {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const type = item.types.find((value) => value.startsWith("image/"));
+          if (type) {
+            void readImage(await item.getType(type));
+            return;
+          }
+        }
+      }
+    } catch {
+      // Image clipboard access refused or unsupported; try text below.
+    }
     try {
       const text = await navigator.clipboard.readText();
       if (!text.trim()) {
-        setError("Nothing is copied yet. Copy the link from your scanner app first.");
+        setError("Nothing is copied yet. Copy the link from your scanner app first, or upload a screenshot.");
         return;
       }
       setManual(text.trim());
@@ -238,38 +326,74 @@ export function PickupVerifier({
   }
 
   return (
-    <div className="mt-3 border border-border-strong bg-card p-5">
+    <div className="mt-3 border border-border-strong bg-card p-5" onPaste={onPaste}>
       <p className="label-caps flex items-center gap-2 text-muted-foreground">
         <QrCode className="size-4 text-accent" />
         Verify pickup
       </p>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">
-        {canScan
-          ? "Scan the QR code on the donor's screen. Or scan it with your phone's camera / Google Lens, copy the link it shows and paste it below. You can also type the code printed under the QR."
-          : "Scan the QR code on the donor's screen with your phone's camera or Google Lens. Tap the link it shows, or copy it and paste it below. You can also type the code printed under the QR."}
+        Scan the QR code on the donor's screen, or upload a screenshot of it — it is read and verified automatically. You
+        can also paste the QR link or type the code printed under the QR.
       </p>
+
       {scanning && (
         <div className="mt-4">
-          <video ref={videoRef} className="aspect-square w-full max-w-xs bg-black object-cover" muted playsInline />
+          <div className="relative w-full max-w-xs">
+            <video ref={videoRef} className="aspect-square w-full bg-black object-cover" muted playsInline />
+            <div className="pointer-events-none absolute inset-[15%] border-2 border-white/80" aria-hidden="true" />
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">Point the camera at the QR code and hold it steady.</p>
         </div>
       )}
+
       <div className="mt-4 flex flex-wrap gap-2">
-        {canScan &&
+        {cameraAvailable &&
           (scanning ? (
             <Button type="button" variant="outline" onClick={() => setScanning(false)}>
               Stop camera
             </Button>
           ) : (
-            <Button type="button" variant="outline" onClick={() => setScanning(true)} disabled={working}>
+            <Button type="button" onClick={() => setScanning(true)} disabled={busy}>
               <Camera className="size-4" />
               Scan QR code
             </Button>
           ))}
-        <Button type="button" variant="outline" onClick={() => void pasteFromClipboard()} disabled={working}>
+        <Button type="button" variant="outline" onClick={() => fileRef.current?.click()} disabled={busy}>
+          <ImageUp className="size-4" />
+          Upload QR screenshot
+        </Button>
+        <Button type="button" variant="outline" onClick={() => void pasteFromClipboard()} disabled={busy}>
           <ClipboardPaste className="size-4" />
           Paste link
         </Button>
       </div>
+
+      <label
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        className={`mt-4 flex cursor-pointer items-center gap-4 border border-dashed p-4 text-xs leading-5 transition-colors ${
+          dragging ? "border-foreground bg-muted" : "border-border-strong text-muted-foreground hover:bg-muted/50"
+        }`}
+      >
+        <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={onFileChosen} disabled={busy} />
+        {preview ? (
+          <img src={preview} alt="Uploaded QR screenshot" className="size-16 shrink-0 border border-border object-contain" />
+        ) : (
+          <ImageUp className="size-6 shrink-0 text-accent" />
+        )}
+        <span className="min-w-0">
+          {reading
+            ? "Reading the QR code…"
+            : working
+              ? "Verifying…"
+              : "Tap to choose a screenshot or photo of the donor's QR code, or drop / paste it here."}
+        </span>
+      </label>
+
       <form onSubmit={submit} className="mt-4 flex gap-2">
         <input
           value={manual}
@@ -281,7 +405,7 @@ export function PickupVerifier({
           spellCheck={false}
           className="h-11 min-w-0 flex-1 border-b border-input bg-transparent font-mono text-sm outline-none focus:border-foreground"
         />
-        <Button type="submit" disabled={working}>
+        <Button type="submit" disabled={busy}>
           {working ? "Verifying…" : "Verify"}
         </Button>
       </form>
