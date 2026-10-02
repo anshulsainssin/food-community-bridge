@@ -43,6 +43,32 @@ export type Database = {
           },
         ]
       }
+      donation_contacts: {
+        Row: {
+          contact_info: string
+          donation_id: string
+          updated_at: string
+        }
+        Insert: {
+          contact_info: string
+          donation_id: string
+          updated_at?: string
+        }
+        Update: {
+          contact_info?: string
+          donation_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_contacts_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: true
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donations: {
         Row: {
           claimed_at: string | null
@@ -204,6 +230,38 @@ export type Database = {
           },
         ]
       }
+      pickup_codes: {
+        Row: {
+          code: string
+          created_at: string
+          donation_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          donation_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          donation_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_codes_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: true
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pickup_events: {
         Row: {
           actor_id: string | null
@@ -351,12 +409,20 @@ export type Database = {
           donor_name: string
           donor_organization: string
           donor_phone: string
+          pickup_to_receiver_km: number
           receiver_name: string
           receiver_organization: string
           receiver_phone: string
         }[]
       }
       expire_old_donations: { Args: never; Returns: number }
+      get_pickup_code: {
+        Args: { p_donation_id: string }
+        Returns: {
+          code: string
+          verified_at: string
+        }[]
+      }
       my_dashboard_stats: {
         Args: never
         Returns: {
@@ -385,6 +451,7 @@ export type Database = {
       network_impact_stats: {
         Args: never
         Returns: {
+          active_donations: number
           claimed_donations: number
           donations_completed: number
           food_saved_kg: number
@@ -394,6 +461,7 @@ export type Database = {
           total_donations: number
         }[]
       }
+      new_pickup_code: { Args: never; Returns: string }
       ngo_admin_stats: {
         Args: never
         Returns: {
@@ -406,6 +474,37 @@ export type Database = {
           people_served: number
           total_claims: number
         }[]
+      }
+      verify_pickup_code: {
+        Args: { p_code: string; p_donation_id: string }
+        Returns: {
+          claimed_at: string | null
+          claimed_by: string | null
+          completed_at: string | null
+          contact_info: string | null
+          created_at: string
+          diet: string
+          donor_id: string
+          food_type: string
+          id: string
+          notes: string | null
+          pickup_address: string
+          pickup_deadline: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          prepared_at: string | null
+          quantity: string
+          servings: number | null
+          status: string
+          updated_at: string
+          weight_kg: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "donations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
