@@ -43,6 +43,32 @@ export type Database = {
           },
         ]
       }
+      donation_contacts: {
+        Row: {
+          contact_info: string
+          donation_id: string
+          updated_at: string
+        }
+        Insert: {
+          contact_info: string
+          donation_id: string
+          updated_at?: string
+        }
+        Update: {
+          contact_info?: string
+          donation_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_contacts_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: true
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donations: {
         Row: {
           claimed_at: string | null
@@ -204,6 +230,38 @@ export type Database = {
           },
         ]
       }
+      pickup_codes: {
+        Row: {
+          code: string
+          created_at: string
+          donation_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          donation_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          donation_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_codes_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: true
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pickup_events: {
         Row: {
           actor_id: string | null
@@ -351,10 +409,10 @@ export type Database = {
           donor_name: string
           donor_organization: string
           donor_phone: string
+          pickup_to_receiver_km: number
           receiver_name: string
           receiver_organization: string
           receiver_phone: string
-          pickup_to_receiver_km: number | null
         }[]
       }
       expire_old_donations: { Args: never; Returns: number }
@@ -362,7 +420,7 @@ export type Database = {
         Args: { p_donation_id: string }
         Returns: {
           code: string
-          verified_at: string | null
+          verified_at: string
         }[]
       }
       my_dashboard_stats: {
@@ -403,6 +461,7 @@ export type Database = {
           total_donations: number
         }[]
       }
+      new_pickup_code: { Args: never; Returns: string }
       ngo_admin_stats: {
         Args: never
         Returns: {
