@@ -3,8 +3,9 @@
 --   2. 20261005090000  NGO / volunteer verification, admin panel, reports, leaderboard, impact stats
 --   3. 20261006090000  monthly donor certificate
 --
--- HOW: copy this WHOLE file, paste it into the Supabase SQL Editor (or ask Lovable to run it as a SQL
--- migration) and run it once.
+-- HOW: run it in the database the app uses (Supabase project ref namplkcbmbfbbyyylquo).
+--   * Lovable Cloud: paste this WHOLE file into the Lovable chat and ask it to run it as a SQL migration.
+--   * Own Supabase project: open that project's SQL Editor, paste the whole file and click Run, once.
 --
 -- * All-or-nothing: everything runs in one transaction. If any step fails, nothing is changed.
 -- * Safe to run again: every step uses IF NOT EXISTS / CREATE OR REPLACE / DROP ... IF EXISTS.
@@ -16,10 +17,15 @@ BEGIN;
 
 -- 0) Pre-check: stop with a clear message if this isn't the FoodBridge database.
 DO $precheck$
+DECLARE
+  v_missing text[] := ARRAY[]::text[];
+  v_name text;
 BEGIN
-  IF to_regclass('public.donations') IS NULL OR to_regclass('public.ngo_registrations') IS NULL
-     OR to_regclass('public.pickup_codes') IS NULL THEN
-    RAISE EXCEPTION 'Wrong or outdated database: the FoodBridge tables (donations, ngo_registrations, pickup_codes) were not found. Nothing was changed.';
+  FOREACH v_name IN ARRAY ARRAY['public.profiles', 'public.donations', 'public.ngo_registrations', 'public.pickup_codes', 'public.notifications'] LOOP
+    IF to_regclass(v_name) IS NULL THEN v_missing := v_missing || v_name; END IF;
+  END LOOP;
+  IF array_length(v_missing, 1) > 0 THEN
+    RAISE EXCEPTION 'This is not the FoodBridge database (missing: %). Run this in the database the app uses: Supabase project ref namplkcbmbfbbyyylquo. With Lovable Cloud, paste this file into the Lovable chat and ask it to run it as a SQL migration. Nothing was changed.', array_to_string(v_missing, ', ');
   END IF;
   IF to_regclass('storage.buckets') IS NULL THEN
     RAISE EXCEPTION 'Supabase Storage is not available in this database. Nothing was changed.';
