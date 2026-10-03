@@ -3,6 +3,7 @@ import { Award, BadgeCheck, ClipboardList, ShieldAlert, ShieldCheck } from "luci
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { StatusBadge } from "@/components/app-shell";
+import { CertificatesSection } from "@/components/certificates";
 import { Button } from "@/components/ui/button";
 import { useIsAdmin } from "@/hooks/use-admin";
 import { useNgoRegistration } from "@/hooks/use-ngo";
@@ -115,6 +116,8 @@ export function ProfileExtras({
       )}
 
       <BadgesAndActivity userId={userId} />
+
+      {kind !== "Receiver" && <CertificatesSection userId={userId} />}
     </>
   );
 }

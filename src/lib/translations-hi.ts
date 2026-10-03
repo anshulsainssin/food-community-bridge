@@ -617,4 +617,31 @@ export const HINDI: Record<string, string> = {
   "Tap to choose the QR image the donor sent you (or a screenshot / photo of it), or drop / paste it here.":
     "डोनर की भेजी QR इमेज (या उसका स्क्रीनशॉट / फ़ोटो) चुनने के लिए टैप करें, या यहाँ डालें / पेस्ट करें।",
   "Paste the QR link or type the code": "QR लिंक पेस्ट करें या कोड टाइप करें",
+
+  // Monthly certificate
+  "Monthly donor certificate": "मासिक डोनर प्रमाणपत्र",
+  "Donate more than {kg} kg of food in a month (completed pickups with a recorded weight) to earn a certificate of appreciation for that month.":
+    "एक महीने में {kg} किलो से ज़्यादा खाना दान करें (पूरे हुए पिकअप, जिनका वज़न दर्ज हो) और उस महीने का प्रशंसा प्रमाणपत्र पाएँ।",
+  "This month ({month})": "इस महीने ({month})",
+  "Certificate unlocked — refresh to see it.": "प्रमाणपत्र मिल गया — देखने के लिए पेज रिफ़्रेश करें।",
+  "{kg} kg to go — the certificate unlocks once you pass {limit} kg this month.":
+    "{kg} किलो और — इस महीने {limit} किलो पार करते ही प्रमाणपत्र मिल जाएगा।",
+  "{kg} kg donated · {count} donations": "{kg} किलो दान · {count} डोनेशन",
+  "View / download": "देखें / डाउनलोड करें",
+  "Back to profile": "प्रोफ़ाइल पर वापस",
+  "Download / Print": "डाउनलोड / प्रिंट",
+  "Sign in to see your certificate.": "अपना प्रमाणपत्र देखने के लिए साइन इन करें।",
+  "No certificate for this month. A certificate is earned by donating more than {kg} kg of food in a month.":
+    "इस महीने का कोई प्रमाणपत्र नहीं है। एक महीने में {kg} किलो से ज़्यादा खाना दान करने पर प्रमाणपत्र मिलता है।",
+  "Certificate of Appreciation": "प्रशंसा प्रमाणपत्र",
+  "This certificate is proudly presented to": "यह प्रमाणपत्र गर्व के साथ प्रदान किया जाता है",
+  "for donating {kg} kg of surplus food through Food Waste Connect in {month}, across {count} completed donations that served {people} people — helping reduce food waste in the community.":
+    "{month} में Food Waste Connect के माध्यम से {count} पूरे डोनेशन में {kg} किलो बचा हुआ खाना दान करने के लिए, जिससे {people} लोगों को भोजन मिला — और समुदाय में खाने की बर्बादी कम करने में मदद मिली।",
+  "Food donated": "दान किया गया खाना",
+  "Issued on": "जारी करने की तारीख",
+  "Certificate no.": "प्रमाणपत्र संख्या",
+  "A certificate of appreciation based on completed donations recorded on Food Waste Connect. It is not a tax (80G) receipt.":
+    "यह Food Waste Connect पर दर्ज पूरे हुए डोनेशन पर आधारित प्रशंसा प्रमाणपत्र है। यह टैक्स (80G) रसीद नहीं है।",
+  'Tip: in the print window choose "Save as PDF" to download it.': 'सुझाव: डाउनलोड करने के लिए प्रिंट विंडो में "Save as PDF" चुनें।',
+  "You earned a certificate": "आपको प्रमाणपत्र मिला",
 };

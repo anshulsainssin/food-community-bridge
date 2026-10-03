@@ -732,6 +732,17 @@ export type Database = {
         }[]
       }
       is_pickup_party: { Args: { p_donation_id: string }; Returns: boolean }
+      my_certificates: {
+        Args: never
+        Returns: {
+          certificate_no: string
+          donations: number
+          month: string
+          people_served: number
+          recipient_name: string
+          total_kg: number
+        }[]
+      }
       my_dashboard_stats: {
         Args: never
         Returns: {
