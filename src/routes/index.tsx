@@ -17,9 +17,9 @@ import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
-    { title: "Donor Dashboard | Food Waste Connect" },
-    { name: "description", content: "Manage food donations, pickups, and community impact with Food Waste Connect." },
-    { property: "og:title", content: "Food Waste Connect Donor Dashboard" },
+    { title: "Donor Dashboard | FoodBridge" },
+    { name: "description", content: "Manage food donations, pickups, and community impact with FoodBridge." },
+    { property: "og:title", content: "FoodBridge Donor Dashboard" },
     { property: "og:description", content: "Manage donations and see the impact of rescued food." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
@@ -63,7 +63,7 @@ function Index() {
   const title = loadingUser ? (
     <>{t("Welcome.")}</>
   ) : !user ? (
-    <>{t("Welcome to")} <span className="italic">Food Waste Connect.</span></>
+    <>{t("Welcome to")} <span className="italic">FoodBridge.</span></>
   ) : firstName ? (
     <>{t("Welcome back,")} <span className="italic">{firstName}.</span></>
   ) : (

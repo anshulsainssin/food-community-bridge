@@ -27,7 +27,7 @@ export const Route = createFileRoute("/certificate")({
       : {},
   head: () => ({
     meta: [
-      { title: "Donor Certificate | Food Waste Connect" },
+      { title: "Donor Certificate | FoodBridge" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -143,7 +143,8 @@ function CertificatePage() {
             className="mx-auto mt-6 max-w-4xl border-4 border-double border-primary bg-card p-6 text-center text-card-foreground print:mt-0 print:border-black print:bg-white print:text-black sm:p-12"
           >
             <div className="border border-border-strong px-4 py-8 print:border-black sm:px-10 sm:py-12">
-              <p className="font-display text-2xl italic">Food Waste Connect</p>
+              <p className="font-display text-2xl italic">FoodBridge</p>
+              <p className="label-caps mt-1 text-muted-foreground print:text-black">{t("Good Food ♥ Greater Impact")}</p>
               <img src="/logo-mark.png" alt="" width={96} height={96} className="mx-auto mt-6 size-20" />
               <h1 className="mt-4 font-display text-4xl sm:text-6xl">
                 {t("Certificate of Appreciation")}
@@ -156,7 +157,7 @@ function CertificatePage() {
               </p>
               <p className="mx-auto mt-6 max-w-2xl text-base leading-7">
                 {t(
-                  "for donating {kg} kg of surplus food through Food Waste Connect in {month}, across {count} completed donations that served {people} people — helping reduce food waste in the community.",
+                  "for donating {kg} kg of surplus food through FoodBridge in {month}, across {count} completed donations that served {people} people — helping reduce food waste in the community.",
                   {
                     kg: formatWeight(certificate.total_kg),
                     month: monthLabel(certificate.month, lang),
@@ -191,7 +192,7 @@ function CertificatePage() {
           </article>
           <p className="mx-auto mt-4 max-w-4xl text-center text-xs leading-5 text-muted-foreground print:text-black">
             {t(
-              "A certificate of appreciation based on completed donations recorded on Food Waste Connect. It is not a tax (80G) receipt.",
+              "A certificate of appreciation based on completed donations recorded on FoodBridge. It is not a tax (80G) receipt.",
             )}
           </p>
           <p className="mx-auto mt-2 max-w-4xl text-center text-xs text-muted-foreground print:hidden">

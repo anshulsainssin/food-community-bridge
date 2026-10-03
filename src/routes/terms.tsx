@@ -16,13 +16,13 @@ import { useLanguage, useT } from "@/lib/i18n";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms & Mutual Disclaimer | Food Waste Connect" },
+      { title: "Terms & Mutual Disclaimer | FoodBridge" },
       {
         name: "description",
         content:
-          "Terms of use, donor and receiver responsibilities, and food safety guidelines for Food Waste Connect.",
+          "Terms of use, donor and receiver responsibilities, and food safety guidelines for FoodBridge.",
       },
-      { property: "og:title", content: "Terms & Mutual Disclaimer | Food Waste Connect" },
+      { property: "og:title", content: "Terms & Mutual Disclaimer | FoodBridge" },
       {
         property: "og:description",
         content: "Responsibilities of donors and receivers, and food safety guidelines.",
@@ -43,9 +43,9 @@ const content: Record<"en" | "hi", { sections: Section[]; note: string }> = {
     sections: [
       {
         icon: Scale,
-        title: "What Food Waste Connect does",
+        title: "What FoodBridge does",
         points: [
-          "Food Waste Connect is a platform that connects hotels, restaurants, caterers and other donors who have surplus food with verified NGOs and volunteers who can collect it.",
+          "FoodBridge is a platform that connects hotels, restaurants, caterers and other donors who have surplus food with verified NGOs and volunteers who can collect it.",
           "The platform only helps people find each other and coordinate pickups. It does not prepare, store, inspect, transport or serve any food, and it is not a party to the donation.",
           "Food is given free of charge. It must not be sold or used for commercial purposes.",
         ],
@@ -97,7 +97,7 @@ const content: Record<"en" | "hi", { sections: Section[]; note: string }> = {
         title: "Mutual disclaimer",
         points: [
           "Donors and receivers act voluntarily and in good faith. The donor's food-safety checklist and details are the donor's own declarations, made to the best of their knowledge.",
-          "Food Waste Connect does not guarantee the quality, safety or suitability of any food, or the conduct of any user, and is not responsible for loss, illness or damage arising from a donation.",
+          "FoodBridge does not guarantee the quality, safety or suitability of any food, or the conduct of any user, and is not responsible for loss, illness or damage arising from a donation.",
           "Each donor and receiver is responsible for following the food safety laws and rules that apply to them (in India, including the applicable FSSAI regulations).",
           "By posting or claiming food, you agree to these terms and to the responsibilities above.",
         ],
@@ -109,9 +109,9 @@ const content: Record<"en" | "hi", { sections: Section[]; note: string }> = {
     sections: [
       {
         icon: Scale,
-        title: "Food Waste Connect क्या करता है",
+        title: "FoodBridge क्या करता है",
         points: [
-          "Food Waste Connect एक प्लेटफ़ॉर्म है जो होटल, रेस्टोरेंट, कैटरर और दूसरे डोनर्स के बचे हुए खाने को सत्यापित NGOs और वॉलंटियर्स तक पहुँचाने में मदद करता है।",
+          "FoodBridge एक प्लेटफ़ॉर्म है जो होटल, रेस्टोरेंट, कैटरर और दूसरे डोनर्स के बचे हुए खाने को सत्यापित NGOs और वॉलंटियर्स तक पहुँचाने में मदद करता है।",
           "यह प्लेटफ़ॉर्म सिर्फ़ लोगों को जोड़ता है और पिकअप में मदद करता है। यह खुद खाना न बनाता है, न रखता है, न जाँचता है, न ले जाता है और न परोसता है, और डोनेशन में पक्षकार नहीं है।",
           "खाना मुफ़्त दिया जाता है। इसे बेचा नहीं जा सकता या व्यापार के लिए इस्तेमाल नहीं किया जा सकता।",
         ],
@@ -163,7 +163,7 @@ const content: Record<"en" | "hi", { sections: Section[]; note: string }> = {
         title: "आपसी अस्वीकरण (Mutual Disclaimer)",
         points: [
           "डोनर और रिसीवर अपनी इच्छा से और नेक नीयत से काम करते हैं। डोनर की फ़ूड-सेफ़्टी चेकलिस्ट और जानकारी डोनर की अपनी घोषणा है, जो उसकी पूरी जानकारी के अनुसार दी गई है।",
-          "Food Waste Connect किसी भी खाने की गुणवत्ता, सुरक्षा या उपयुक्तता, या किसी यूज़र के आचरण की गारंटी नहीं देता, और किसी डोनेशन से होने वाले नुकसान, बीमारी या क्षति के लिए ज़िम्मेदार नहीं है।",
+          "FoodBridge किसी भी खाने की गुणवत्ता, सुरक्षा या उपयुक्तता, या किसी यूज़र के आचरण की गारंटी नहीं देता, और किसी डोनेशन से होने वाले नुकसान, बीमारी या क्षति के लिए ज़िम्मेदार नहीं है।",
           "हर डोनर और रिसीवर अपने ऊपर लागू खाद्य सुरक्षा कानूनों और नियमों का पालन करने के लिए ज़िम्मेदार है (भारत में लागू FSSAI नियमों सहित)।",
           "खाना पोस्ट या क्लेम करके आप इन नियमों और ऊपर दी गई ज़िम्मेदारियों से सहमत होते हैं।",
         ],

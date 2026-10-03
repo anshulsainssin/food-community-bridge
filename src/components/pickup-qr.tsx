@@ -76,7 +76,7 @@ function ShareQr({ donationId, code }: { donationId: string; code: string }) {
   const [status, setStatus] = useState<string | null>(null);
   const link = pickupLink(donationId, code);
   const fileName = `pickup-qr-${donationId.slice(0, 8)}.png`;
-  const message = t("Pickup QR for the food you claimed on Food Waste Connect. Open this link (or upload this QR on your Pickup page) to confirm the pickup:");
+  const message = t("Pickup QR for the food you claimed on FoodBridge. Open this link (or upload this QR on your Pickup page) to confirm the pickup:");
 
   async function share() {
     setStatus(null);
@@ -293,12 +293,12 @@ export function PickupVerifier({
     [donationId, onVerified],
   );
 
-  // A QR read by the camera or from an image must be a Food Waste Connect pickup QR.
+  // A QR read by the camera or from an image must be a FoodBridge pickup QR.
   const verifyScanned = useCallback(
     (text: string) => {
       setManual(text);
       if (!parsePickupPayload(text)) {
-        setError("A QR code was found, but it isn't a Food Waste Connect pickup QR. Scan the QR on the donor's Pickup page.");
+        setError("A QR code was found, but it isn't a FoodBridge pickup QR. Scan the QR on the donor's Pickup page.");
         return;
       }
       void verify(text);

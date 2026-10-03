@@ -15,9 +15,9 @@ import type { Tables } from "@/integrations/supabase/types";
 export const Route = createFileRoute("/donation/$donationId")({
   head: () => ({
     meta: [
-      { title: "Donation Details | Food Waste Connect" },
+      { title: "Donation Details | FoodBridge" },
       { name: "description", content: "See the full details of a food donation: quantity, pickup window, location, contact and current status." },
-      { property: "og:title", content: "Donation Details | Food Waste Connect" },
+      { property: "og:title", content: "Donation Details | FoodBridge" },
       { property: "og:description", content: "Full details of a surplus food donation and its pickup status." },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary_large_image" },

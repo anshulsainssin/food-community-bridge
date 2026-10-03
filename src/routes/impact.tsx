@@ -8,9 +8,9 @@ import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/impact")({
   head: () => ({ meta: [
-    { title: "Community Impact | Food Waste Connect" },
+    { title: "Community Impact | FoodBridge" },
     { name: "description", content: "See food rescue and community meal impact totals." },
-    { property: "og:title", content: "Community Impact | Food Waste Connect" },
+    { property: "og:title", content: "Community Impact | FoodBridge" },
     { property: "og:description", content: "Track food saved, people fed, and completed pickups." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },

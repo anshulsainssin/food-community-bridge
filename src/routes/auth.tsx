@@ -33,10 +33,10 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in | Food Waste Connect" },
-      { name: "description", content: "Sign in to Food Waste Connect to share surplus food and coordinate community pickups." },
-      { property: "og:title", content: "Sign in | Food Waste Connect" },
-      { property: "og:description", content: "Access your Food Waste Connect account." },
+      { title: "Sign in | FoodBridge" },
+      { name: "description", content: "Sign in to FoodBridge to share surplus food and coordinate community pickups." },
+      { property: "og:title", content: "Sign in | FoodBridge" },
+      { property: "og:description", content: "Access your FoodBridge account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -269,12 +269,12 @@ function AuthPage() {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <img src="/logo.png" alt="FoodBridge" width={160} height={150} className="mb-4 h-auto w-32 sm:w-40" />
-            <p className="font-display text-3xl italic leading-none">Food Waste Connect</p>
-            <p className="label-caps mt-2 text-muted-foreground">{t("Community network")}</p>
+            <p className="font-display text-3xl italic leading-none">FoodBridge</p>
+            <p className="label-caps mt-2 text-muted-foreground">{t("Good Food ♥ Greater Impact")}</p>
           </div>
           <LanguageSwitcher />
         </div>
-        <h1 className="mt-8 font-display text-4xl">{t(choosing ? "Sign in" : mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : mode === "role" ? "How do you use Food Waste Connect?" : "Set a new password")}</h1>
+        <h1 className="mt-8 font-display text-4xl">{t(choosing ? "Sign in" : mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : mode === "role" ? "How do you use FoodBridge?" : "Set a new password")}</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">{t(choosing ? "First choose which kind of account you want to use." : "Use your account to share surplus food and coordinate pickups.")}</p>
 
         {choosing ? (
