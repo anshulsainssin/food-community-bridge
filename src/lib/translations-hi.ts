@@ -583,4 +583,38 @@ export const HINDI: Record<string, string> = {
   "Need an account? Create one": "अकाउंट नहीं है? बनाएँ",
   "Already have an account? Sign in": "पहले से अकाउंट है? साइन इन करें",
   "Forgot password?": "पासवर्ड भूल गए?",
+
+  // Pickup QR
+  "Pickup QR code": "पिकअप QR कोड",
+  "Loading pickup code…": "पिकअप कोड लोड हो रहा है…",
+  "Pickup verified {time}. This code can't be used again.": "पिकअप {time} को सत्यापित हुआ। यह कोड दोबारा इस्तेमाल नहीं हो सकता।",
+  'Show this to the NGO/volunteer who claimed your donation when they arrive. They open the Pickup page in their own account and tap "Scan QR code" (or upload a screenshot of it, or type the code) to confirm the pickup. Share it only at the time of handover — scanning it records that the food was handed over.':
+    'जब NGO/वॉलंटियर खाना लेने आएँ, उन्हें यह दिखाएँ। वे अपने अकाउंट में Pickup पेज खोलकर "Scan QR code" दबाते हैं (या इसका स्क्रीनशॉट अपलोड करते हैं, या कोड टाइप करते हैं) और पिकअप कन्फ़र्म करते हैं। इसे सिर्फ़ खाना सौंपते समय ही शेयर करें — स्कैन होने का मतलब है कि खाना सौंप दिया गया।',
+  "Your pickup code appears here once the donation is claimed.": "डोनेशन क्लेम होते ही आपका पिकअप कोड यहाँ दिखेगा।",
+  "NGO / volunteer not with you? Send them this QR. They upload it (or open the link) on their Pickup page to confirm the pickup.":
+    "NGO / वॉलंटियर आपके पास नहीं हैं? उन्हें यह QR भेजें। वे इसे अपने Pickup पेज पर अपलोड करके (या लिंक खोलकर) पिकअप कन्फ़र्म करेंगे।",
+  "Share QR": "QR शेयर करें",
+  "Save QR image": "QR इमेज सेव करें",
+  "Copy link": "लिंक कॉपी करें",
+  "Couldn't create the QR image.": "QR इमेज नहीं बन पाई।",
+  "QR image saved. Send it to the NGO / volunteer — they upload it on their Pickup page.":
+    "QR इमेज सेव हो गई। इसे NGO / वॉलंटियर को भेजें — वे इसे अपने Pickup पेज पर अपलोड करेंगे।",
+  "Link copied. Send it to the NGO / volunteer — opening it confirms the pickup.":
+    "लिंक कॉपी हो गया। इसे NGO / वॉलंटियर को भेजें — इसे खोलने से पिकअप कन्फ़र्म हो जाएगा।",
+  "Pickup QR for the food you claimed on Food Waste Connect. Open this link (or upload this QR on your Pickup page) to confirm the pickup:":
+    "Food Waste Connect पर आपके क्लेम किए खाने का पिकअप QR। पिकअप कन्फ़र्म करने के लिए यह लिंक खोलें (या यह QR अपने Pickup पेज पर अपलोड करें):",
+  "How does the pickup QR work?": "पिकअप QR कैसे काम करता है?",
+  "Scan the donor's QR to confirm pickup": "पिकअप कन्फ़र्म करने के लिए डोनर का QR स्कैन करें",
+  "The QR is on the donor's Pickup page. At the pickup, scan it from the donor's screen. If the donor sent you the QR (WhatsApp etc.), upload that image below — it is read and verified automatically. You can also open or paste the QR link, or type the code printed under the QR.":
+    "QR डोनर के Pickup पेज पर होता है। पिकअप के समय डोनर की स्क्रीन से उसे स्कैन करें। अगर डोनर ने QR भेजा है (WhatsApp आदि से), तो वह इमेज नीचे अपलोड करें — यह अपने-आप पढ़कर सत्यापित हो जाएगा। आप QR लिंक खोल या पेस्ट भी कर सकते हैं, या QR के नीचे लिखा कोड टाइप कर सकते हैं।",
+  "Point the camera at the QR code and hold it steady.": "कैमरा QR कोड पर रखें और स्थिर रखें।",
+  "Stop camera": "कैमरा बंद करें",
+  "Scan QR code": "QR कोड स्कैन करें",
+  "Upload QR screenshot": "QR इमेज अपलोड करें",
+  "Paste link": "लिंक पेस्ट करें",
+  "Reading the QR code…": "QR कोड पढ़ा जा रहा है…",
+  "Verifying…": "सत्यापित हो रहा है…",
+  "Tap to choose the QR image the donor sent you (or a screenshot / photo of it), or drop / paste it here.":
+    "डोनर की भेजी QR इमेज (या उसका स्क्रीनशॉट / फ़ोटो) चुनने के लिए टैप करें, या यहाँ डालें / पेस्ट करें।",
+  "Paste the QR link or type the code": "QR लिंक पेस्ट करें या कोड टाइप करें",
 };
