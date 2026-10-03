@@ -3,6 +3,7 @@ import { ArrowLeft, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AppShell, PageIntro } from "@/components/app-shell";
+import { CertificateDesign } from "@/components/certificate-design";
 import { CertificatesSection } from "@/components/certificates";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
@@ -26,9 +27,12 @@ export const Route = createFileRoute("/certificate")({
       ? { month: search["month"] }
       : {},
   head: () => ({
-    meta: [
-      { title: "Donor Certificate | FoodBridge" },
-      { name: "robots", content: "noindex" },
+    meta: [{ title: "Donor Certificate | FoodBridge" }, { name: "robots", content: "noindex" }],
+    links: [
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Great+Vibes&display=swap",
+      },
     ],
   }),
   component: CertificatePage,
@@ -100,7 +104,7 @@ function CertificatePage() {
   return (
     <div className="min-h-screen bg-background px-4 py-6 text-foreground print:bg-white print:p-0 sm:px-8">
       <style>{"@media print { @page { size: A4 landscape; margin: 12mm; } }"}</style>
-      <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 print:hidden">
+      <div className="mx-auto flex max-w-[1123px] flex-wrap items-center justify-between gap-3 print:hidden">
         <Button asChild variant="outline">
           <Link to="/profile">
             <ArrowLeft className="size-4" />
@@ -138,59 +142,20 @@ function CertificatePage() {
         </p>
       ) : (
         <>
-          <article
-            lang={lang}
-            className="mx-auto mt-6 max-w-4xl border-4 border-double border-primary bg-card p-6 text-center text-card-foreground print:mt-0 print:border-black print:bg-white print:text-black sm:p-12"
-          >
-            <div className="border border-border-strong px-4 py-8 print:border-black sm:px-10 sm:py-12">
-              <p className="font-display text-2xl italic">FoodBridge</p>
-              <p className="label-caps mt-1 text-muted-foreground print:text-black">{t("Good Food ♥ Greater Impact")}</p>
-              <img src="/logo-mark.png" alt="" width={96} height={96} className="mx-auto mt-6 size-20" />
-              <h1 className="mt-4 font-display text-4xl sm:text-6xl">
-                {t("Certificate of Appreciation")}
-              </h1>
-              <p className="mt-6 text-sm text-muted-foreground print:text-black">
-                {t("This certificate is proudly presented to")}
-              </p>
-              <p className="mt-3 font-display text-3xl break-words italic sm:text-5xl">
-                {certificate.recipient_name}
-              </p>
-              <p className="mx-auto mt-6 max-w-2xl text-base leading-7">
-                {t(
-                  "for donating {kg} kg of surplus food through FoodBridge in {month}, across {count} completed donations that served {people} people — helping reduce food waste in the community.",
-                  {
-                    kg: formatWeight(certificate.total_kg),
-                    month: monthLabel(certificate.month, lang),
-                    count: formatCount(certificate.donations),
-                    people: formatCount(certificate.people_served),
-                  },
-                )}
-              </p>
-              <div className="mx-auto mt-10 grid max-w-2xl gap-6 text-sm sm:grid-cols-3">
-                <div>
-                  <p className="label-caps text-muted-foreground print:text-black">
-                    {t("Food donated")}
-                  </p>
-                  <p className="mt-1 font-display text-2xl">
-                    {formatWeight(certificate.total_kg)} kg
-                  </p>
-                </div>
-                <div>
-                  <p className="label-caps text-muted-foreground print:text-black">
-                    {t("Issued on")}
-                  </p>
-                  <p className="mt-1">{issued}</p>
-                </div>
-                <div>
-                  <p className="label-caps text-muted-foreground print:text-black">
-                    {t("Certificate no.")}
-                  </p>
-                  <p className="mt-1 font-mono">{certificate.certificate_no}</p>
-                </div>
-              </div>
-            </div>
-          </article>
-          <p className="mx-auto mt-4 max-w-4xl text-center text-xs leading-5 text-muted-foreground print:text-black">
+          <div className="mx-auto mt-6 max-w-[1123px] print:mt-0">
+            <CertificateDesign
+              lang={lang}
+              t={t}
+              recipient={certificate.recipient_name}
+              kg={formatWeight(certificate.total_kg)}
+              month={monthLabel(certificate.month, lang)}
+              donations={formatCount(certificate.donations)}
+              people={formatCount(certificate.people_served)}
+              issued={issued}
+              certificateNo={certificate.certificate_no}
+            />
+          </div>
+          <p className="mx-auto mt-4 max-w-4xl text-center text-xs leading-5 text-muted-foreground print:hidden">
             {t(
               "A certificate of appreciation based on completed donations recorded on FoodBridge. It is not a tax (80G) receipt.",
             )}

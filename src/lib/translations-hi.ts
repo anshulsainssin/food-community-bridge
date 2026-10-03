@@ -653,4 +653,18 @@ export const HINDI: Record<string, string> = {
   "No certificate yet. It appears here automatically once your completed donations in a month pass {kg} kg.":
     "अभी कोई प्रमाणपत्र नहीं। किसी महीने में आपके पूरे हुए डोनेशन {kg} किलो पार करते ही यह अपने-आप यहाँ दिखेगा।",
   "Good Food ♥ Greater Impact": "अच्छा खाना ♥ बड़ा असर",
+  "ZERO|FOOD WASTE|CHAMPION": "ज़ीरो|फ़ूड वेस्ट|चैंपियन",
+  CERTIFICATE: "प्रमाणपत्र",
+  "OF IMPACT": "प्रभाव का",
+  "for donating {kg} of food in {month}": "{month} में {kg} खाना दान करने के लिए",
+  "Your generous contribution of {count} donations fed {people} people, helped reduce food waste and brought smiles to many lives.":
+    "आपके {count} डोनेशन के उदार योगदान से {people} लोगों को भोजन मिला, खाने की बर्बादी कम हुई और कई चेहरों पर मुस्कान आई।",
+  "Reduced Food Waste": "खाने की बर्बादी कम की",
+  "Supported Communities": "समुदायों की मदद की",
+  "Created Positive Change": "सकारात्मक बदलाव लाए",
+  "Your Food Creates Hope": "आपका खाना उम्मीद जगाता है",
+  Date: "तारीख",
+  "TOGETHER FOR A HUNGER FREE TOMORROW": "भूख मुक्त कल के लिए, साथ मिलकर",
+  "Team FoodBridge": "टीम FoodBridge",
+  "Certificate of appreciation · not a tax (80G) receipt": "प्रशंसा प्रमाणपत्र · यह टैक्स (80G) रसीद नहीं है",
 };
