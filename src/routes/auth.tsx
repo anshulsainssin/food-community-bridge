@@ -268,6 +268,7 @@ function AuthPage() {
       <div className="w-full max-w-md">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
+            <img src="/logo.png" alt="FoodBridge" width={160} height={150} className="mb-4 h-auto w-32 sm:w-40" />
             <p className="font-display text-3xl italic leading-none">Food Waste Connect</p>
             <p className="label-caps mt-2 text-muted-foreground">{t("Community network")}</p>
           </div>

@@ -66,9 +66,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 grid h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur sm:px-4 md:px-7">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-3">
           <Button variant="ghost" size="icon" className="shrink-0 md:hidden" aria-label="Open menu" onClick={() => setMobileMenu(true)}><Menu className="size-5" /></Button>
-          <Link to={user ? homePathFor(profile) : "/"} className="min-w-0"><p className="truncate font-display text-xl italic leading-none sm:text-2xl">Food Waste Connect</p><p className="label-caps mt-1 truncate text-muted-foreground">{t("Community network")}</p></Link>
+          <Link to={user ? homePathFor(profile) : "/"} className="flex min-w-0 items-center gap-1.5 sm:gap-2"><img src="/logo-mark.png" alt="" width={36} height={36} className="size-7 shrink-0 sm:size-9" /><span className="min-w-0"><p className="truncate font-display text-[17px] italic leading-none sm:text-2xl">Food Waste Connect</p><p className="label-caps mt-1 truncate text-muted-foreground">{t("Community network")}</p></span></Link>
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -126,7 +126,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {mobileMenu && <div className="fixed inset-0 z-50 bg-background p-5 md:hidden"><div className="flex items-center justify-between"><p className="font-display text-2xl italic">Food Waste Connect</p><div className="flex items-center gap-2"><LanguageSwitcher /><Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setMobileMenu(false)}><X className="size-5" /></Button></div></div><nav className="mt-10 space-y-2">{navigation(true)}</nav></div>}
+      {mobileMenu && <div className="fixed inset-0 z-50 bg-background p-5 md:hidden"><div className="flex items-center justify-between"><p className="flex min-w-0 items-center gap-2 font-display text-2xl italic"><img src="/logo-mark.png" alt="" width={36} height={36} className="size-9 shrink-0" /><span className="truncate">Food Waste Connect</span></p><div className="flex items-center gap-2"><LanguageSwitcher /><Button variant="ghost" size="icon" aria-label="Close menu" onClick={() => setMobileMenu(false)}><X className="size-5" /></Button></div></div><nav className="mt-10 space-y-2">{navigation(true)}</nav></div>}
 
       <div className="mx-auto flex max-w-[1600px]">
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 border-r border-border bg-sidebar p-4 md:flex md:flex-col">
