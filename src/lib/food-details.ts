@@ -39,7 +39,7 @@ export function isMissingSchemaError(
 ) {
   if (!error) return false;
   return (
-    ["PGRST204", "PGRST205", "42P01", "42703"].includes(error.code ?? "") ||
+    ["PGRST202", "PGRST204", "PGRST205", "42P01", "42703", "42883"].includes(error.code ?? "") ||
     /schema cache|does not exist/i.test(error.message ?? "")
   );
 }

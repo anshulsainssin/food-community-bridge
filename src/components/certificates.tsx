@@ -12,6 +12,7 @@ import {
   normalizeCertificates,
   type Certificate,
 } from "@/lib/certificate";
+import { isMissingSchemaError } from "@/lib/food-details";
 import { useLanguage, useT } from "@/lib/i18n";
 
 /**
@@ -23,6 +24,8 @@ export function CertificatesSection({ userId }: { userId: string }) {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [thisMonthKg, setThisMonthKg] = useState(0);
   const [loading, setLoading] = useState(true);
+  // The certificate migration (my_certificates) hasn't been applied to the database yet.
+  const [notSetUp, setNotSetUp] = useState(false);
   const currentMonth = monthKey(new Date());
 
   const load = useCallback(async () => {
@@ -36,6 +39,7 @@ export function CertificatesSection({ userId }: { userId: string }) {
         .eq("status", "Completed")
         .gte("completed_at", since),
     ]);
+    setNotSetUp(isMissingSchemaError(certResult.error));
     setCertificates(normalizeCertificates(certResult.data as Record<string, unknown>[] | null));
     const recent =
       (recentResult.data as { weight_kg: number | null; completed_at: string | null }[] | null) ??
@@ -69,6 +73,23 @@ export function CertificatesSection({ userId }: { userId: string }) {
           },
         )}
       </p>
+
+      {notSetUp && (
+        <p className="mt-3 border border-border-strong bg-card p-3 text-sm text-accent">
+          {t(
+            "Certificates aren't switched on yet: the database update (migration 20261006090000) still needs to be applied in Supabase.",
+          )}
+        </p>
+      )}
+
+      {!loading && certificates.length === 0 && !notSetUp && (
+        <p className="mt-3 text-sm text-muted-foreground">
+          {t(
+            "No certificate yet. It appears here automatically once your completed donations in a month pass {kg} kg.",
+            { kg: CERTIFICATE_THRESHOLD_KG },
+          )}
+        </p>
+      )}
 
       <div className="mt-4 max-w-xl">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-sm">

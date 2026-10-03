@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Award, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { AppShell, PageIntro } from "@/components/app-shell";
+import { CertificatesSection } from "@/components/certificates";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/use-profile";
@@ -61,6 +63,33 @@ function CertificatePage() {
       cancelled = true;
     };
   }, [user?.id, loadingUser, month]);
+
+  // Opened from the menu (no month): this month's progress and every certificate earned.
+  if (!month) {
+    return (
+      <AppShell>
+        <PageIntro
+          eyebrow="Donor / Certificates"
+          title={<>{t("Your certificates")}</>}
+          description="Donate more than 100 kg of food in a month and download a certificate of appreciation for that month."
+        />
+        {loadingUser ? (
+          <p className="px-4 py-8 text-sm text-muted-foreground sm:px-8 lg:px-10">
+            {t("Loading…")}
+          </p>
+        ) : user ? (
+          <CertificatesSection userId={user.id} />
+        ) : (
+          <p className="px-4 py-8 text-sm text-muted-foreground sm:px-8 lg:px-10">
+            {t("Sign in to see your certificate.")}{" "}
+            <Link to="/auth" className="underline">
+              {t("Sign in")}
+            </Link>
+          </p>
+        )}
+      </AppShell>
+    );
+  }
 
   const issued = new Date().toLocaleDateString(lang === "hi" ? "hi-IN" : "en-IN", {
     day: "numeric",
