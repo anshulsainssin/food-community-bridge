@@ -11,10 +11,10 @@ import {
   Store,
   Truck,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { AppShell, PageIntro } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
+import { setLanguage, useLanguage } from "@/lib/i18n";
 
 export const Route = createFileRoute("/qr-guide")({
   head: () => ({
@@ -40,7 +40,6 @@ type Lang = "en" | "hi";
 type Step = { title: string; body: string };
 type Method = { icon: typeof Camera; title: string; when: string; steps: Step[] };
 
-const LANG_KEY = "fwc-qr-guide-lang";
 
 const copy = {
   en: {
@@ -283,22 +282,9 @@ function StepList({ steps }: { steps: Step[] }) {
 }
 
 function QrGuidePage() {
-  const [lang, setLang] = useState<Lang>("en");
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(LANG_KEY) === "hi") setLang("hi");
-    } catch {
-      // Storage unavailable: stay in English.
-    }
-  }, []);
-  function choose(next: Lang) {
-    setLang(next);
-    try {
-      localStorage.setItem(LANG_KEY, next);
-    } catch {
-      // Not remembered; the choice still applies on this visit.
-    }
-  }
+  // Uses the site-wide language (the header switcher); these buttons change it too.
+  const lang: Lang = useLanguage();
+  const choose = setLanguage;
   const t = copy[lang];
 
   return (

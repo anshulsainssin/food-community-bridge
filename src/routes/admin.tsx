@@ -10,6 +10,8 @@ import { useLocationSync, useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { displayStatus, isExpiredDonation } from "@/lib/donation-status";
 import { byDistance, donationDistance, type LatLon } from "@/lib/geo";
+import { directionsUrl } from "@/lib/food-details";
+import { useT } from "@/lib/i18n";
 import { adminStage, nextAdminAction } from "@/lib/ngo-status";
 import { formatCount, formatWeight } from "@/hooks/use-stats";
 import type { Tables } from "@/integrations/supabase/types";
@@ -50,6 +52,7 @@ function AdminPage() {
   const [working, setWorking] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const t = useT();
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("donations").select("*").order("created_at", { ascending: false });
@@ -149,30 +152,32 @@ function AdminPage() {
   async function submitRegistration(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await save({
+    const file = form.get("document");
+    const ok = await save({
       organization_name: String(form.get("organization_name") ?? "").trim(),
       registration_80g: String(form.get("registration_80g") ?? "").trim(),
       contact_person: String(form.get("contact_person") ?? "").trim(),
       contact_phone: String(form.get("contact_phone") ?? "").trim(),
       contact_email: String(form.get("contact_email") ?? "").trim(),
       pincode: String(form.get("pincode") ?? "").trim(),
-    });
-    setShowForm(false);
+      registration_number: String(form.get("registration_number") ?? "").trim(),
+    }, file instanceof File && file.size > 0 ? file : null);
+    if (ok) setShowForm(false);
   }
 
   const metrics = [
-    { label: "Total food claimed", value: `${formatWeight(stats.food_claimed_kg)} kg`, hint: `${formatCount(stats.meals_claimed)} meals claimed`, icon: Package },
-    { label: "Active distributions", value: formatCount(stats.active_distributions), hint: "Claimed, not yet completed", icon: Truck },
-    { label: "Pending pickups", value: formatCount(stats.pending_pickups), hint: "Awaiting collection", icon: ClipboardList },
-    { label: "Impact analytics", value: `${formatCount(stats.people_served)} people`, hint: `${formatCount(stats.delivered)} pickups completed`, icon: BadgeCheck },
+    { label: "Total food claimed", value: `${formatWeight(stats.food_claimed_kg)} kg`, hint: t("{count} meals claimed", { count: formatCount(stats.meals_claimed) }), icon: Package },
+    { label: "Active distributions", value: formatCount(stats.active_distributions), hint: t("Claimed, not yet completed"), icon: Truck },
+    { label: "Pending pickups", value: formatCount(stats.pending_pickups), hint: t("Awaiting collection"), icon: ClipboardList },
+    { label: "Impact analytics", value: t("{count} people", { count: formatCount(stats.people_served) }), hint: t("{count} pickups completed", { count: formatCount(stats.delivered) }), icon: BadgeCheck },
   ];
 
   if (!user) {
     return (
       <AppShell>
-        <PageIntro eyebrow="NGO / Admin portal" title={<>Organization <span className="italic">control room.</span></>} description="Sign in with your organization account to manage incoming surplus food requests." />
+        <PageIntro eyebrow="NGO / Admin portal" title={<>{t("Organization")} <span className="italic">{t("control room.")}</span></>} description="Sign in with your organization account to manage incoming surplus food requests." />
         <section className="px-4 py-10 sm:px-8 lg:px-12">
-          <Button asChild><Link to="/auth">Sign in</Link></Button>
+          <Button asChild><Link to="/auth">{t("Sign in")}</Link></Button>
         </section>
       </AppShell>
     );
@@ -182,19 +187,19 @@ function AdminPage() {
     <AppShell>
       <PageIntro
         eyebrow="NGO / Admin portal"
-        title={<>Organization <span className="italic">control room.</span></>}
+        title={<>{t("Organization")} <span className="italic">{t("control room.")}</span></>}
         description="Live metrics, incoming surplus food requests and pickup management for your registered organization."
         action={
           <Button variant="outline" onClick={() => setShowForm((open) => !open)}>
             <Building2 className="size-4" />
-            {registration ? "Edit registration" : "Register your NGO"}
+            {registration ? t("Edit registration") : t("Register your NGO")}
           </Button>
         }
       />
 
       <section className="border-b border-border px-4 py-6 sm:px-8 lg:px-12">
         {loadingRegistration ? (
-          <p className="text-sm text-muted-foreground">Loading registration…</p>
+          <p className="text-sm text-muted-foreground">{t("Loading registration…")}</p>
         ) : registration ? (
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
             <div className="min-w-0">
@@ -203,7 +208,9 @@ function AdminPage() {
                 <StatusBadge value={registration.status} />
               </div>
               <div className="mt-3 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                <p className="break-words">80G certificate · {registration.registration_80g}</p>
+                <p className="break-words">{t("80G certificate")} · {registration.registration_80g}</p>
+                {registration.registration_number && <p className="break-words">{t("Registration number")} · {registration.registration_number}</p>}
+                <p className="break-words">{t("Verification document")} · {registration.document_name ? t("uploaded ({name})", { name: registration.document_name }) : t("not uploaded yet")}</p>
                 <p className="break-words">Contact · {registration.contact_person} · {registration.contact_phone}</p>
                 <p className="break-words">Operating pincode · {registration.pincode}</p>
                 <p className="break-words">
@@ -215,11 +222,22 @@ function AdminPage() {
             </div>
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="size-4 shrink-0 text-accent" />
-              {registration.status === "Verified" ? "Location verified" : "Verification pending"}
+              {registration.status === "Verified"
+                ? t("Verified by admin")
+                : registration.status === "Rejected"
+                  ? t("Not verified")
+                  : t("Waiting for admin verification")}
             </p>
+            {registration.status !== "Verified" && (
+              <p className="text-xs leading-5 text-muted-foreground sm:col-span-2">
+                {registration.status === "Rejected"
+                  ? `${t("Reason")}: ${registration.rejection_reason ?? "—"}. ${t("Edit your registration to resubmit it for review.")}`
+                  : t("An admin will check your details and document. You can browse requests now; claiming food unlocks once your NGO is verified.")}
+              </p>
+            )}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No organization registered on this account yet.</p>
+          <p className="text-sm text-muted-foreground">{t("No organization registered on this account yet.")}</p>
         )}
 
         {(showForm || (!registration && !loadingRegistration)) && (
@@ -231,9 +249,10 @@ function AdminPage() {
               { name: "contact_phone", label: "Contact phone", value: registration?.contact_phone ?? profile?.phone ?? "", required: true },
               { name: "contact_email", label: "Contact email", value: registration?.contact_email ?? profile?.email ?? "", required: false },
               { name: "pincode", label: "Operating pincode", value: registration?.pincode ?? "", required: true },
+              { name: "registration_number", label: "Registration number (Trust / Society / Section 8 / NGO Darpan ID)", value: registration?.registration_number ?? "", required: false },
             ].map((field) => (
               <label key={field.name} className="block min-w-0">
-                <span className="label-caps text-muted-foreground">{field.label}</span>
+                <span className="label-caps text-muted-foreground">{t(field.label)}</span>
                 <input
                   name={field.name}
                   defaultValue={field.value}
@@ -242,8 +261,23 @@ function AdminPage() {
                 />
               </label>
             ))}
+            <label className="block min-w-0 sm:col-span-2">
+              <span className="label-caps text-muted-foreground">{t("Verification document (registration or 80G certificate · PDF/JPG/PNG, max 5 MB)")}</span>
+              <input
+                name="document"
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                required={!registration?.document_path}
+                className="mt-2 block w-full text-sm file:mr-3 file:border file:border-border-strong file:bg-transparent file:px-3 file:py-2 file:text-sm"
+              />
+              <span className="mt-1 block text-xs text-muted-foreground">
+                {registration?.document_name
+                  ? t("Current document: {name}. Choose a new file only to replace it.", { name: registration.document_name })
+                  : t("Stored privately — only platform admins can see it.")}
+              </span>
+            </label>
             <div className="sm:col-span-2">
-              <Button type="submit" disabled={saving}>{saving ? "Verifying location…" : registration ? "Save registration" : "Register organization"}</Button>
+              <Button type="submit" disabled={saving}>{saving ? t("Saving…") : registration ? t("Save registration") : t("Register organization")}</Button>
               {registrationError && <p className="mt-3 text-xs text-accent">{registrationError}</p>}
             </div>
           </form>
@@ -253,7 +287,7 @@ function AdminPage() {
       <section className="grid gap-px border-b border-border bg-border sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map(({ label, value, hint, icon: Icon }) => (
           <article key={label} className="bg-background p-5 sm:p-7">
-            <p className="label-caps flex items-center gap-2 text-muted-foreground"><Icon className="size-4 text-accent" />{label}</p>
+            <p className="label-caps flex items-center gap-2 text-muted-foreground"><Icon className="size-4 text-accent" />{t(label)}</p>
             <p className="mt-4 font-display text-3xl sm:text-4xl">{value}</p>
             <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
           </article>
@@ -261,6 +295,12 @@ function AdminPage() {
       </section>
 
       {actionError && <p className="border-b border-border px-4 py-4 text-sm text-accent sm:px-8 lg:px-12">{actionError}</p>}
+
+      {!loadingRegistration && registration?.status !== "Verified" && (
+        <p className="border-b border-border px-4 py-4 text-sm sm:px-8 lg:px-12">
+          {t("Only verified NGOs and volunteers can claim food. Claiming unlocks once an admin verifies your registration.")}
+        </p>
+      )}
 
       <ManagementTable
         title="Incoming surplus food requests"
@@ -317,17 +357,18 @@ function ManagementTable({
   onReceipt: (item: Donation) => void;
 }) {
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const t = useT();
   return (
     <section className="border-b border-border px-4 py-6 sm:px-8 lg:px-12">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-        <h2 className="label-caps truncate text-foreground">{title}</h2>
+        <h2 className="label-caps truncate text-foreground">{t(title)}</h2>
         <span className="shrink-0 text-xs text-muted-foreground">{rows.length}</span>
       </div>
 
       {loading ? (
-        <p className="mt-4 text-sm text-muted-foreground">Loading requests…</p>
+        <p className="mt-4 text-sm text-muted-foreground">{t("Loading requests…")}</p>
       ) : rows.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">{empty}</p>
+        <p className="mt-4 text-sm text-muted-foreground">{t(empty)}</p>
       ) : (
         <div className="mt-5 grid gap-px bg-border">
           {rows.map((item) => {
@@ -340,7 +381,17 @@ function ManagementTable({
                     {item.food_type}
                   </Link>
                   <p className="mt-1 truncate text-xs text-muted-foreground">{item.quantity} · {item.diet}</p>
-                  <p className="mt-1 break-words text-xs text-muted-foreground">{item.pickup_address || "Location not available"}</p>
+                  <p className="mt-1 break-words text-xs text-muted-foreground">
+                    {item.pickup_address || t("Location not available")}
+                    {directionsUrl(item) && (
+                      <>
+                        {" · "}
+                        <a href={directionsUrl(item)!} target="_blank" rel="noreferrer" className="whitespace-nowrap underline">
+                          {t("Get Directions")}
+                        </a>
+                      </>
+                    )}
+                  </p>
                   {distances && (
                     <p className="mt-1 text-xs text-muted-foreground">
                       {distances.get(item.id) != null
@@ -351,8 +402,8 @@ function ManagementTable({
                 </div>
                 <div className="min-w-0 text-xs text-muted-foreground">
                   <StatusBadge value={adminStage(status)} />
-                  <p className="mt-2">Requested {formatDate(item.created_at)}</p>
-                  <p>Pickup by {formatDate(item.pickup_deadline)}</p>
+                  <p className="mt-2">{t("Requested {time}", { time: formatDate(item.created_at) })}</p>
+                  <p>{t("Pickup by {time}", { time: formatDate(item.pickup_deadline) })}</p>
                 </div>
                 <div className="flex flex-wrap gap-2 lg:justify-end">
                   {action && (
@@ -367,13 +418,13 @@ function ManagementTable({
                             : onAdvance(item.id, action.statuses)
                       }
                     >
-                      {working === item.id ? "Updating…" : action.label}
+                      {working === item.id ? t("Updating…") : t(action.label)}
                     </Button>
                   )}
                   {item.status === "Completed" && (
                     <Button variant="outline" onClick={() => onReceipt(item)}>
                       <Receipt className="size-4" />
-                      Receipt
+                      {t("Receipt")}
                     </Button>
                   )}
                 </div>

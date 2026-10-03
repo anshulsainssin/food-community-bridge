@@ -7,9 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useNearbyNgos, useSearchArea } from "@/hooks/use-nearby";
 import { useNow } from "@/hooks/use-now";
 import { useProfile } from "@/hooks/use-profile";
+import { useMyVerification } from "@/hooks/use-verification";
 import { supabase } from "@/integrations/supabase/client";
 import { displayStatus, donationUrgency, formatTimeLeft, isExpiredDonation, safeUntil } from "@/lib/donation-status";
+import { directionsUrl } from "@/lib/food-details";
 import { byDistance, donationDistance } from "@/lib/geo";
+import { useT } from "@/lib/i18n";
+import { roleKind } from "@/lib/roles";
 import type { Tables } from "@/integrations/supabase/types";
 
 
@@ -59,6 +63,11 @@ function DonationsPage() {
   const { user, profile, loading: loadingUser } = useProfile();
   const navigate = useNavigate();
   const now = useNow();
+  const t = useT();
+  // Only verified NGOs / volunteers can claim (also enforced in the database).
+  const verification = useMyVerification(user?.id);
+  const isReceiver = roleKind(profile?.role) === "Receiver";
+  const verifyPath = isReceiver && /volunteer/i.test(profile?.role ?? "") ? "/profile" : "/admin";
 
   const profileCoords =
     profile?.latitude != null && profile?.longitude != null
@@ -164,17 +173,34 @@ function DonationsPage() {
         eyebrow="Receiver / Available food"
         title={
           <>
-            Food ready for <span className="italic">collection.</span>
+            {t("Food ready for")} <span className="italic">{t("collection.")}</span>
           </>
         }
         description="Surplus donations shared by nearby kitchens and stores. Claim what your community can collect before the pickup deadline."
       />
 
+      {user && !verification.loading && (verification.suspended || (isReceiver && !verification.verified)) && (
+        <p className="border-b border-border px-4 py-4 text-sm sm:px-8 lg:px-12">
+          {verification.suspended
+            ? t("Your account is suspended, so you can't claim food. Contact the platform admin.")
+            : verification.ngoStatus === "Pending" || verification.volunteerStatus === "Pending"
+              ? t("Your verification is pending admin review. You can browse listings, and claiming unlocks once you're verified.")
+              : verification.ngoStatus === "Rejected" || verification.volunteerStatus === "Rejected"
+                ? t("Your verification was rejected. Update your details to resubmit; claiming unlocks once you're verified.")
+                : t("Only verified NGOs and volunteers can claim food.")}{" "}
+          {!verification.suspended && (
+            <Link to={verifyPath} className="underline">
+              {verifyPath === "/profile" ? t("Volunteer verification") : t("NGO registration")}
+            </Link>
+          )}
+        </p>
+      )}
+
       <section className="border-b border-border px-4 py-5 sm:px-8 lg:px-12">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <form onSubmit={submitPincode} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
             <label className="block min-w-0">
-              <span className="label-caps text-muted-foreground">Search by pincode</span>
+              <span className="label-caps text-muted-foreground">{t("Search by pincode")}</span>
               <div className="mt-2 flex min-w-0 items-center gap-2 border-b border-input">
                 <Search className="size-4 shrink-0 text-muted-foreground" />
                 <input
@@ -189,11 +215,11 @@ function DonationsPage() {
             </label>
             <div className="flex gap-2 sm:items-end">
               <Button type="submit" className="flex-1 sm:flex-none" disabled={searching}>
-                {searching ? "Searching…" : "Search"}
+                {searching ? t("Searching…") : t("Search")}
               </Button>
               <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={detect} disabled={detecting}>
                 <Crosshair className="size-4" />
-                {detecting ? "Locating…" : "Use my location"}
+                {detecting ? t("Locating…") : t("Use my location")}
               </Button>
             </div>
           </form>
@@ -213,7 +239,7 @@ function DonationsPage() {
               variant={filter === option ? "primary" : "outline"}
               onClick={() => setFilter(option)}
             >
-              {option}
+              {t(option)}
             </Button>
           ))}
           <select
@@ -224,17 +250,17 @@ function DonationsPage() {
           >
             {distanceOptions.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {t(option.label)}
               </option>
             ))}
           </select>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">{visible.length} donations</p>
+        <p className="mt-3 text-xs text-muted-foreground">{t("{count} donations", { count: visible.length })}</p>
       </section>
 
       <section className="border-b border-border px-4 py-6 sm:px-8 lg:px-12">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-          <h2 className="label-caps truncate text-foreground">Nearby urgent NGOs</h2>
+          <h2 className="label-caps truncate text-foreground">{t("Nearby urgent NGOs")}</h2>
           <span className="shrink-0 text-xs text-muted-foreground">{ngos.length}</span>
         </div>
         {!user ? (
@@ -325,8 +351,10 @@ function DonationsPage() {
                     </span>
                   )}
                 </div>
-                <h2 className="mt-5 font-display text-2xl leading-tight break-words sm:text-3xl">{item.food_type}</h2>
-                <p className="mt-2 text-xs text-muted-foreground">{item.diet}</p>
+                <h2 className="mt-5 font-display text-2xl leading-tight break-words sm:text-3xl">
+                  <Link to="/donation/$donationId" params={{ donationId: item.id }} className="hover:underline">{item.food_type}</Link>
+                </h2>
+                <p className="mt-2 text-xs text-muted-foreground">{item.food_name ? `${item.food_name} · ` : ""}{t(item.diet)}</p>
                 <div className="mt-6 space-y-3 text-sm">
                   <p className="flex items-start gap-2">
                     <Utensils className="mt-0.5 size-4 shrink-0 text-accent" />
@@ -334,38 +362,58 @@ function DonationsPage() {
                   </p>
                   <p className="flex items-start gap-2">
                     <Clock3 className="mt-0.5 size-4 shrink-0 text-accent" />
-                    <span className="min-w-0 break-words">Pickup by {formatDeadline(item.pickup_deadline)}</span>
+                    <span className="min-w-0 break-words">{t("Pickup by {time}", { time: formatDeadline(item.pickup_deadline) })}</span>
                   </p>
                   <p className="flex items-start gap-2">
                     <Navigation className="mt-0.5 size-4 shrink-0 text-accent" />
-                    <span className="min-w-0 break-words">{distance == null ? "Distance not available" : `${distance.toFixed(1)} km away`}</span>
+                    <span className="min-w-0 break-words">{distance == null ? t("Distance not available") : t("{km} km away", { km: distance.toFixed(1) })}</span>
                   </p>
                   <p className="flex items-start gap-2">
                     <MapPin className="mt-0.5 size-4 shrink-0 text-accent" />
-                    <span className="min-w-0 break-words">{item.pickup_address || "Location not available"}</span>
+                    <span className="min-w-0 break-words">
+                      {item.pickup_address || t("Location not available")}
+                      {directionsUrl(item) && (
+                        <>
+                          {" · "}
+                          <a href={directionsUrl(item)!} target="_blank" rel="noreferrer" className="whitespace-nowrap underline">
+                            {t("Get Directions")}
+                          </a>
+                        </>
+                      )}
+                    </span>
                   </p>
                 </div>
 
                 <Button
                   className="mt-7 w-full"
                   variant={isClaimed || isMine || expired ? "outline" : "primary"}
-                  disabled={isClaimed || isMine || expired || claiming === item.id}
-                  // Visitors can browse; claiming needs an NGO / volunteer account.
-                  onClick={() => (user ? void claim(item.id) : void navigate({ to: "/auth", search: { as: "ngo" } as never }))}
+                  disabled={isClaimed || isMine || expired || claiming === item.id || (user != null && !verification.loading && (verification.suspended || (!isReceiver && !verification.verified)))}
+                  // Visitors can browse; claiming needs an NGO / volunteer account that has been verified.
+                  onClick={() =>
+                    !user
+                      ? void navigate({ to: "/auth", search: { as: "ngo" } as never })
+                      : !verification.verified && !verification.loading
+                        ? void navigate({ to: verifyPath })
+                        : void claim(item.id)
+                  }
                 >
                   {expired
-                    ? "Expired"
+                    ? t("Expired")
                     : isMine
-                    ? "Your donation"
+                    ? t("Your donation")
                     : claimedByMe
-                      ? "Claimed by you"
+                      ? t("Claimed by you")
                       : isClaimed
-                        ? "Already claimed"
+                        ? t("Already claimed")
                         : !user
-                          ? "Sign in to claim"
+                          ? t("Sign in to claim")
                           : claiming === item.id
-                            ? "Claiming…"
-                            : "Claim food"}
+                            ? t("Claiming…")
+                            : !verification.loading && !verification.verified
+                              ? isReceiver
+                                ? t("Get verified to claim")
+                                : t("For verified NGOs / volunteers")
+                              : t("Claim food")}
                 </Button>
               </article>
             );

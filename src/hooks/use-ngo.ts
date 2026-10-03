@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { uploadVerificationDocument } from "@/hooks/use-verification";
+import { isMissingSchemaError } from "@/lib/food-details";
 import { lookupPincode } from "@/lib/geocode.functions";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -40,6 +42,7 @@ export type RegistrationInput = {
   contact_phone: string;
   contact_email: string;
   pincode: string;
+  registration_number: string;
 };
 
 /** The signed-in user's NGO registration record, with pincode-based location verification. */
@@ -66,10 +69,26 @@ export function useNgoRegistration(userId: string | null | undefined) {
   }, [load]);
 
   const save = useCallback(
-    async (input: RegistrationInput) => {
-      if (!userId) return;
+    async (input: RegistrationInput, document: File | null = null) => {
+      if (!userId) return false;
       setSaving(true);
       setError(null);
+
+      // Verification document (registration / 80G certificate) goes to the private bucket.
+      let uploaded: { path: string; name: string } | null = null;
+      if (document) {
+        const result = await uploadVerificationDocument(userId, "ngo-certificate", document);
+        if ("error" in result) {
+          // Before the verification migration there is no document bucket: register without the file.
+          if (!/bucket not found/i.test(result.error)) {
+            setSaving(false);
+            setError(result.error);
+            return false;
+          }
+        } else {
+          uploaded = result;
+        }
+      }
 
       let place: { label: string; latitude: number; longitude: number } | null = null;
       try {
@@ -86,20 +105,30 @@ export function useNgoRegistration(userId: string | null | undefined) {
         contact_phone: input.contact_phone,
         contact_email: input.contact_email || null,
         pincode: input.pincode,
+        registration_number: input.registration_number || null,
         area_label: place?.label ?? null,
         latitude: place?.latitude ?? null,
         longitude: place?.longitude ?? null,
-        status: place ? "Verified" : "Pending",
-        verified_at: place ? new Date().toISOString() : null,
+        // Verification status is set only by platform admins (enforced in the database).
+        ...(uploaded ? { document_path: uploaded.path, document_name: uploaded.name } : {}),
       };
 
-      const { error: saveError } = await supabase.from("ngo_registrations").upsert(row, { onConflict: "user_id" });
+      let { error: saveError } = await supabase.from("ngo_registrations").upsert(row, { onConflict: "user_id" });
+      // Database not migrated yet (no registration number / document columns): save the original fields.
+      if (isMissingSchemaError(saveError)) {
+        const { registration_number: _number, document_path: _path, document_name: _name, ...legacy } = row as typeof row & {
+          document_path?: string;
+          document_name?: string;
+        };
+        ({ error: saveError } = await supabase.from("ngo_registrations").upsert(legacy, { onConflict: "user_id" }));
+      }
       setSaving(false);
       if (saveError) {
         setError(saveError.message);
-        return;
+        return false;
       }
       await load();
+      return true;
     },
     [userId, load],
   );

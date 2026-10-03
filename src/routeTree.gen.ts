@@ -16,8 +16,10 @@ import { Route as DonationsRouteImport } from './routes/donations'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as ImpactRouteImport } from './routes/impact'
 import { Route as PickupRouteImport } from './routes/pickup'
+import { Route as PlatformAdminRouteImport } from './routes/platform-admin'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as QrGuideRouteImport } from './routes/qr-guide'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as DonationDonationIdRouteImport } from './routes/donation.$donationId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -55,6 +57,11 @@ const PickupRoute = PickupRouteImport.update({
   path: '/pickup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlatformAdminRoute = PlatformAdminRouteImport.update({
+  id: '/platform-admin',
+  path: '/platform-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -63,6 +70,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const QrGuideRoute = QrGuideRouteImport.update({
   id: '/qr-guide',
   path: '/qr-guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DonationDonationIdRoute = DonationDonationIdRouteImport.update({
@@ -79,8 +91,10 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/impact': typeof ImpactRoute
   '/pickup': typeof PickupRoute
+  '/platform-admin': typeof PlatformAdminRoute
   '/profile': typeof ProfileRoute
   '/qr-guide': typeof QrGuideRoute
+  '/terms': typeof TermsRoute
   '/donation/$donationId': typeof DonationDonationIdRoute
 }
 export interface FileRoutesByTo {
@@ -91,8 +105,10 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/impact': typeof ImpactRoute
   '/pickup': typeof PickupRoute
+  '/platform-admin': typeof PlatformAdminRoute
   '/profile': typeof ProfileRoute
   '/qr-guide': typeof QrGuideRoute
+  '/terms': typeof TermsRoute
   '/donation/$donationId': typeof DonationDonationIdRoute
 }
 export interface FileRoutesById {
@@ -104,8 +120,10 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/impact': typeof ImpactRoute
   '/pickup': typeof PickupRoute
+  '/platform-admin': typeof PlatformAdminRoute
   '/profile': typeof ProfileRoute
   '/qr-guide': typeof QrGuideRoute
+  '/terms': typeof TermsRoute
   '/donation/$donationId': typeof DonationDonationIdRoute
 }
 export interface FileRouteTypes {
@@ -118,8 +136,10 @@ export interface FileRouteTypes {
     | '/history'
     | '/impact'
     | '/pickup'
+    | '/platform-admin'
     | '/profile'
     | '/qr-guide'
+    | '/terms'
     | '/donation/$donationId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -130,8 +150,10 @@ export interface FileRouteTypes {
     | '/history'
     | '/impact'
     | '/pickup'
+    | '/platform-admin'
     | '/profile'
     | '/qr-guide'
+    | '/terms'
     | '/donation/$donationId'
   id:
     | '__root__'
@@ -142,8 +164,10 @@ export interface FileRouteTypes {
     | '/history'
     | '/impact'
     | '/pickup'
+    | '/platform-admin'
     | '/profile'
     | '/qr-guide'
+    | '/terms'
     | '/donation/$donationId'
   fileRoutesById: FileRoutesById
 }
@@ -155,8 +179,10 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   ImpactRoute: typeof ImpactRoute
   PickupRoute: typeof PickupRoute
+  PlatformAdminRoute: typeof PlatformAdminRoute
   ProfileRoute: typeof ProfileRoute
   QrGuideRoute: typeof QrGuideRoute
+  TermsRoute: typeof TermsRoute
   DonationDonationIdRoute: typeof DonationDonationIdRoute
 }
 
@@ -211,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PickupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/platform-admin': {
+      id: '/platform-admin'
+      path: '/platform-admin'
+      fullPath: '/platform-admin'
+      preLoaderRoute: typeof PlatformAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -223,6 +256,13 @@ declare module '@tanstack/react-router' {
       path: '/qr-guide'
       fullPath: '/qr-guide'
       preLoaderRoute: typeof QrGuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/donation/$donationId': {
@@ -243,8 +283,10 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   ImpactRoute: ImpactRoute,
   PickupRoute: PickupRoute,
+  PlatformAdminRoute: PlatformAdminRoute,
   ProfileRoute: ProfileRoute,
   QrGuideRoute: QrGuideRoute,
+  TermsRoute: TermsRoute,
   DonationDonationIdRoute: DonationDonationIdRoute,
 }
 export const routeTree = rootRouteImport

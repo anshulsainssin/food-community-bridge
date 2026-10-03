@@ -199,3 +199,6 @@
 }
 .live-route { stroke: var(--accent); }
 .live-accuracy { fill: var(--accent); }
+
+/* Hindi: the wide letter-spacing of label-caps breaks Devanagari letters apart. */
+.label-caps:lang(hi) { letter-spacing: normal; }
