@@ -39,9 +39,9 @@ export const Route = createFileRoute("/pickup")({
     typeof search["id"] === "string" && search["id"] ? { id: search["id"] } : {},
   head: () => ({
     meta: [
-      { title: "Pickup Tracking | Food Waste Connect" },
+      { title: "Pickup Tracking | FoodBridge" },
       { name: "description", content: "Track a community food donation pickup live on the map, from claim to completion." },
-      { property: "og:title", content: "Pickup Tracking | Food Waste Connect" },
+      { property: "og:title", content: "Pickup Tracking | FoodBridge" },
       { property: "og:description", content: "Live pickup location, status and coordination details." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

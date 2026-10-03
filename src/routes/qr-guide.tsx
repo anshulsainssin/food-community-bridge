@@ -19,12 +19,12 @@ import { setLanguage, useLanguage } from "@/lib/i18n";
 export const Route = createFileRoute("/qr-guide")({
   head: () => ({
     meta: [
-      { title: "How to Use the Pickup QR | Food Waste Connect" },
+      { title: "How to Use the Pickup QR | FoodBridge" },
       {
         name: "description",
         content: "Step-by-step guide to showing, scanning and verifying the pickup QR code.",
       },
-      { property: "og:title", content: "How to Use the Pickup QR | Food Waste Connect" },
+      { property: "og:title", content: "How to Use the Pickup QR | FoodBridge" },
       {
         property: "og:description",
         content: "Show, scan or paste the pickup QR link to confirm a food pickup.",
@@ -104,7 +104,7 @@ const copy = {
           },
           {
             title: "Tap the link — or copy it",
-            body: "Tapping opens Food Waste Connect and confirms the pickup straight away (you must be signed in). Or long-press the link and choose Copy.",
+            body: "Tapping opens FoodBridge and confirms the pickup straight away (you must be signed in). Or long-press the link and choose Copy.",
           },
           {
             title: "Paste it in the app",
@@ -215,7 +215,7 @@ const copy = {
           },
           {
             title: "लिंक दबाएँ — या कॉपी करें",
-            body: "लिंक दबाने पर Food Waste Connect खुलेगा और पिकअप तुरंत कन्फ़र्म हो जाएगा (आपका साइन-इन होना ज़रूरी है)। या लिंक को देर तक दबाकर Copy चुनें।",
+            body: "लिंक दबाने पर FoodBridge खुलेगा और पिकअप तुरंत कन्फ़र्म हो जाएगा (आपका साइन-इन होना ज़रूरी है)। या लिंक को देर तक दबाकर Copy चुनें।",
           },
           {
             title: "ऐप में पेस्ट करें",

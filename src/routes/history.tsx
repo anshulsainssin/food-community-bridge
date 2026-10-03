@@ -26,12 +26,12 @@ import type { Tables } from "@/integrations/supabase/types";
 export const Route = createFileRoute("/history")({
   head: () => ({
     meta: [
-      { title: "History | Food Waste Connect" },
+      { title: "History | FoodBridge" },
       {
         name: "description",
         content: "Every donation you posted or claimed, with its status and pickup dates.",
       },
-      { property: "og:title", content: "History | Food Waste Connect" },
+      { property: "og:title", content: "History | FoodBridge" },
       { property: "og:description", content: "Your past and current food donations and pickups." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

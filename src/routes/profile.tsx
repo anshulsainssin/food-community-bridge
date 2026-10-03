@@ -10,7 +10,7 @@ import { useLocationSync, useProfile } from "@/hooks/use-profile";
 import { useT } from "@/lib/i18n";
 import { displayName as nameFor, ROLE_OPTIONS, roleKind } from "@/lib/roles";
 
-export const Route = createFileRoute("/profile")({ ssr: false, head: () => ({ meta: [{ title: "Community Profile | Food Waste Connect" }, { name: "description", content: "View and edit your Food Waste Connect community profile." }, { property: "og:title", content: "Community Profile | Food Waste Connect" }, { property: "og:description", content: "Community member and organization profile details." }, { property: "og:type", content: "profile" }, { name: "twitter:card", content: "summary_large_image" }] }), component: ProfilePage });
+export const Route = createFileRoute("/profile")({ ssr: false, head: () => ({ meta: [{ title: "Community Profile | FoodBridge" }, { name: "description", content: "View and edit your FoodBridge community profile." }, { property: "og:title", content: "Community Profile | FoodBridge" }, { property: "og:description", content: "Community member and organization profile details." }, { property: "og:type", content: "profile" }, { name: "twitter:card", content: "summary_large_image" }] }), component: ProfilePage });
 
 function ProfilePage() {
   const { user, profile, updateProfile, loading } = useProfile();

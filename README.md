@@ -1,4 +1,4 @@
-# Food Waste Connect
+# FoodBridge
 
 A community food-donation app: donors publish surplus food, NGOs and volunteers claim it, and the
 pickup is tracked from claim to completion (with one-time QR verification at handover).

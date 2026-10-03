@@ -27,7 +27,7 @@ export const Route = createFileRoute("/platform-admin")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Admin Panel | Food Waste Connect" },
+      { title: "Admin Panel | FoodBridge" },
       {
         name: "description",
         content: "Platform administration: verification, donations, users and reports.",

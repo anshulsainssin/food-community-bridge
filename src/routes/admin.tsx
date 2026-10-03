@@ -19,9 +19,9 @@ import type { Tables } from "@/integrations/supabase/types";
 export const Route = createFileRoute("/admin")({
   ssr: false,
   head: () => ({ meta: [
-    { title: "NGO Admin Portal | Food Waste Connect" },
+    { title: "NGO Admin Portal | FoodBridge" },
     { name: "description", content: "Manage incoming surplus food requests, update pickup statuses and track distribution impact for your organization." },
-    { property: "og:title", content: "NGO Admin Portal | Food Waste Connect" },
+    { property: "og:title", content: "NGO Admin Portal | FoodBridge" },
     { property: "og:description", content: "Registration, verification and live claim management for receiving organizations." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
@@ -135,7 +135,7 @@ function AdminPage() {
       <style>body{font-family:ui-sans-serif,system-ui,sans-serif;padding:40px;color:#111}h1{font-size:20px;margin:0 0 4px}
       p.sub{color:#666;font-size:12px;margin:0 0 24px}table{width:100%;border-collapse:collapse;font-size:13px}
       td{padding:8px 0;border-bottom:1px solid #eee;vertical-align:top}td.k{color:#666;width:40%}</style></head>
-      <body><h1>Food Waste Connect — Pickup receipt</h1><p class="sub">Generated from live donation records.</p>
+      <body><h1>FoodBridge — Pickup receipt</h1><p class="sub">Generated from live donation records.</p>
       <table>${rows.map(([k, v]) => `<tr><td class="k">${escape(k)}</td><td>${escape(v)}</td></tr>`).join("")}</table>
       </body></html>`;
     const win = window.open("", "_blank", "width=720,height=900");

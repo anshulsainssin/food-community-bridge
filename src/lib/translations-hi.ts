@@ -12,7 +12,6 @@ export const HINDI: Record<string, string> = {
   "QR scan help": "QR स्कैन मदद",
   "Terms & safety": "नियम और सुरक्षा",
   "Admin panel": "एडमिन पैनल",
-  "Community network": "सामुदायिक नेटवर्क",
   Notifications: "सूचनाएँ",
   "Sign in to see your notifications.": "अपनी सूचनाएँ देखने के लिए साइन इन करें।",
   "No notifications": "कोई सूचना नहीं",
@@ -559,7 +558,7 @@ export const HINDI: Record<string, string> = {
 
   // Sign in
   "Create account": "अकाउंट बनाएँ",
-  "How do you use Food Waste Connect?": "आप Food Waste Connect का इस्तेमाल कैसे करते हैं?",
+  "How do you use FoodBridge?": "आप FoodBridge का इस्तेमाल कैसे करते हैं?",
   "Set a new password": "नया पासवर्ड सेट करें",
   "First choose which kind of account you want to use.":
     "पहले चुनें कि आप किस तरह का अकाउंट इस्तेमाल करना चाहते हैं।",
@@ -601,8 +600,8 @@ export const HINDI: Record<string, string> = {
     "QR इमेज सेव हो गई। इसे NGO / वॉलंटियर को भेजें — वे इसे अपने Pickup पेज पर अपलोड करेंगे।",
   "Link copied. Send it to the NGO / volunteer — opening it confirms the pickup.":
     "लिंक कॉपी हो गया। इसे NGO / वॉलंटियर को भेजें — इसे खोलने से पिकअप कन्फ़र्म हो जाएगा।",
-  "Pickup QR for the food you claimed on Food Waste Connect. Open this link (or upload this QR on your Pickup page) to confirm the pickup:":
-    "Food Waste Connect पर आपके क्लेम किए खाने का पिकअप QR। पिकअप कन्फ़र्म करने के लिए यह लिंक खोलें (या यह QR अपने Pickup पेज पर अपलोड करें):",
+  "Pickup QR for the food you claimed on FoodBridge. Open this link (or upload this QR on your Pickup page) to confirm the pickup:":
+    "FoodBridge पर आपके क्लेम किए खाने का पिकअप QR। पिकअप कन्फ़र्म करने के लिए यह लिंक खोलें (या यह QR अपने Pickup पेज पर अपलोड करें):",
   "How does the pickup QR work?": "पिकअप QR कैसे काम करता है?",
   "Scan the donor's QR to confirm pickup": "पिकअप कन्फ़र्म करने के लिए डोनर का QR स्कैन करें",
   "The QR is on the donor's Pickup page. At the pickup, scan it from the donor's screen. If the donor sent you the QR (WhatsApp etc.), upload that image below — it is read and verified automatically. You can also open or paste the QR link, or type the code printed under the QR.":
@@ -635,13 +634,13 @@ export const HINDI: Record<string, string> = {
     "इस महीने का कोई प्रमाणपत्र नहीं है। एक महीने में {kg} किलो से ज़्यादा खाना दान करने पर प्रमाणपत्र मिलता है।",
   "Certificate of Appreciation": "प्रशंसा प्रमाणपत्र",
   "This certificate is proudly presented to": "यह प्रमाणपत्र गर्व के साथ प्रदान किया जाता है",
-  "for donating {kg} kg of surplus food through Food Waste Connect in {month}, across {count} completed donations that served {people} people — helping reduce food waste in the community.":
-    "{month} में Food Waste Connect के माध्यम से {count} पूरे डोनेशन में {kg} किलो बचा हुआ खाना दान करने के लिए, जिससे {people} लोगों को भोजन मिला — और समुदाय में खाने की बर्बादी कम करने में मदद मिली।",
+  "for donating {kg} kg of surplus food through FoodBridge in {month}, across {count} completed donations that served {people} people — helping reduce food waste in the community.":
+    "{month} में FoodBridge के माध्यम से {count} पूरे डोनेशन में {kg} किलो बचा हुआ खाना दान करने के लिए, जिससे {people} लोगों को भोजन मिला — और समुदाय में खाने की बर्बादी कम करने में मदद मिली।",
   "Food donated": "दान किया गया खाना",
   "Issued on": "जारी करने की तारीख",
   "Certificate no.": "प्रमाणपत्र संख्या",
-  "A certificate of appreciation based on completed donations recorded on Food Waste Connect. It is not a tax (80G) receipt.":
-    "यह Food Waste Connect पर दर्ज पूरे हुए डोनेशन पर आधारित प्रशंसा प्रमाणपत्र है। यह टैक्स (80G) रसीद नहीं है।",
+  "A certificate of appreciation based on completed donations recorded on FoodBridge. It is not a tax (80G) receipt.":
+    "यह FoodBridge पर दर्ज पूरे हुए डोनेशन पर आधारित प्रशंसा प्रमाणपत्र है। यह टैक्स (80G) रसीद नहीं है।",
   'Tip: in the print window choose "Save as PDF" to download it.': 'सुझाव: डाउनलोड करने के लिए प्रिंट विंडो में "Save as PDF" चुनें।',
   "You earned a certificate": "आपको प्रमाणपत्र मिला",
   Certificates: "प्रमाणपत्र",
@@ -653,4 +652,5 @@ export const HINDI: Record<string, string> = {
     "प्रमाणपत्र अभी चालू नहीं हैं: Supabase में डेटाबेस अपडेट (माइग्रेशन 20261006090000) अभी लागू करना बाकी है।",
   "No certificate yet. It appears here automatically once your completed donations in a month pass {kg} kg.":
     "अभी कोई प्रमाणपत्र नहीं। किसी महीने में आपके पूरे हुए डोनेशन {kg} किलो पार करते ही यह अपने-आप यहाँ दिखेगा।",
+  "Good Food ♥ Greater Impact": "अच्छा खाना ♥ बड़ा असर",
 };
