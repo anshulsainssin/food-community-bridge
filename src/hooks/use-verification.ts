@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { isMissingSchemaError } from "@/lib/food-details";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type VolunteerVerification = Tables<"volunteer_verifications">;
@@ -38,8 +39,10 @@ export function useMyVerification(userId: string | null | undefined) {
     ]);
     const ngoStatus = (ngo.data as { status: string } | null)?.status ?? null;
     const volunteerStatus = (volunteer.data as { status: string } | null)?.status ?? null;
+    // Before the verification migration the database doesn't restrict claiming, so neither does the app.
+    const notMigrated = isMissingSchemaError(volunteer.error);
     setState({
-      verified: ngoStatus === "Verified" || volunteerStatus === "Verified",
+      verified: notMigrated || ngoStatus === "Verified" || volunteerStatus === "Verified",
       ngoStatus,
       volunteerStatus,
       suspended: Boolean(suspension.data),

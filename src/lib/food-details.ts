@@ -29,3 +29,17 @@ export function directionsUrl(donation: {
     ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`
     : null;
 }
+
+/**
+ * True when Supabase reports a column or table that doesn't exist yet — i.e. the database migration
+ * that adds it hasn't been applied. Callers then fall back to the previous behaviour.
+ */
+export function isMissingSchemaError(
+  error: { code?: string; message?: string } | null | undefined,
+) {
+  if (!error) return false;
+  return (
+    ["PGRST204", "PGRST205", "42P01", "42703"].includes(error.code ?? "") ||
+    /schema cache|does not exist/i.test(error.message ?? "")
+  );
+}

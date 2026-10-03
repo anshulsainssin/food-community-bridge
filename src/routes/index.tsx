@@ -9,7 +9,7 @@ import { formatCount, formatWeight, useMyStats, useNetworkStats } from "@/hooks/
 import { displayStatus, donationUrgency } from "@/lib/donation-status";
 import { displayName } from "@/lib/roles";
 import { supabase } from "@/integrations/supabase/client";
-import { PACKAGING_OPTIONS, STORAGE_OPTIONS } from "@/lib/food-details";
+import { isMissingSchemaError, PACKAGING_OPTIONS, STORAGE_OPTIONS } from "@/lib/food-details";
 import { geocodeAddress } from "@/lib/geocode.functions";
 import { useT } from "@/lib/i18n";
 import type { Tables } from "@/integrations/supabase/types";
@@ -163,12 +163,14 @@ function Index() {
       setError("We couldn't find this pickup location on the map. Add the area, city and pincode, for example: \"Civil Lines, Moradabad, 244001\".");
       return;
     }
-    const { error: insertError } = await supabase.from("donations").insert({
-      donor_id: user.id,
-      food_type: String(form.get("food_type") ?? ""),
+    const details = {
       food_name: String(form.get("food_name") ?? "").trim() || null,
       storage_condition: String(form.get("storage_condition") ?? "") || null,
       packaging: String(form.get("packaging") ?? "") || null,
+    };
+    const base = {
+      donor_id: user.id,
+      food_type: String(form.get("food_type") ?? ""),
       diet,
       quantity: servings != null ? `${servings} people served` : String(form.get("quantity") ?? ""),
       servings,
@@ -180,7 +182,10 @@ function Index() {
       pickup_address: address,
       pickup_latitude: place?.latitude ?? null,
       pickup_longitude: place?.longitude ?? null,
-    });
+    };
+    let { error: insertError } = await supabase.from("donations").insert({ ...base, ...details });
+    // Database not migrated yet (no food name / storage / packaging columns): save the donation without them.
+    if (isMissingSchemaError(insertError)) ({ error: insertError } = await supabase.from("donations").insert(base));
     setSaving(false);
 
     if (insertError) {

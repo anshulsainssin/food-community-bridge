@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { uploadVerificationDocument } from "@/hooks/use-verification";
+import { isMissingSchemaError } from "@/lib/food-details";
 import { lookupPincode } from "@/lib/geocode.functions";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -78,11 +79,15 @@ export function useNgoRegistration(userId: string | null | undefined) {
       if (document) {
         const result = await uploadVerificationDocument(userId, "ngo-certificate", document);
         if ("error" in result) {
-          setSaving(false);
-          setError(result.error);
-          return false;
+          // Before the verification migration there is no document bucket: register without the file.
+          if (!/bucket not found/i.test(result.error)) {
+            setSaving(false);
+            setError(result.error);
+            return false;
+          }
+        } else {
+          uploaded = result;
         }
-        uploaded = result;
       }
 
       let place: { label: string; latitude: number; longitude: number } | null = null;
@@ -108,7 +113,15 @@ export function useNgoRegistration(userId: string | null | undefined) {
         ...(uploaded ? { document_path: uploaded.path, document_name: uploaded.name } : {}),
       };
 
-      const { error: saveError } = await supabase.from("ngo_registrations").upsert(row, { onConflict: "user_id" });
+      let { error: saveError } = await supabase.from("ngo_registrations").upsert(row, { onConflict: "user_id" });
+      // Database not migrated yet (no registration number / document columns): save the original fields.
+      if (isMissingSchemaError(saveError)) {
+        const { registration_number: _number, document_path: _path, document_name: _name, ...legacy } = row as typeof row & {
+          document_path?: string;
+          document_name?: string;
+        };
+        ({ error: saveError } = await supabase.from("ngo_registrations").upsert(legacy, { onConflict: "user_id" }));
+      }
       setSaving(false);
       if (saveError) {
         setError(saveError.message);
