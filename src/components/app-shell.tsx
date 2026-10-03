@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, Bell, CircleHelp, FileText, HandHeart, History, Home, LogOut, Menu, ShieldCheck, Truck, UserRound, X } from "lucide-react";
+import { Award, BarChart3, Bell, CircleHelp, FileText, HandHeart, History, Home, LogOut, Menu, ShieldCheck, Truck, UserRound, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -26,6 +26,7 @@ const navItems = [
 const helpItems = [
   { label: "QR scan help", to: "/qr-guide", icon: CircleHelp },
   { label: "Terms & safety", to: "/terms", icon: FileText },
+  { label: "Certificates", to: "/certificate", icon: Award },
 ] as const;
 // Only for platform admins.
 const adminItem = { label: "Admin panel", to: "/platform-admin", icon: ShieldCheck } as const;
