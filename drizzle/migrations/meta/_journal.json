@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791045109132,
+      "tag": "0000_apply_pending_migrations_3",
+      "breakpoints": true
+    }
+  ]
+}
