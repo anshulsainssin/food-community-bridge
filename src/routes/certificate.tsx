@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Award, Printer } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AppShell, PageIntro } from "@/components/app-shell";
@@ -144,7 +144,7 @@ function CertificatePage() {
           >
             <div className="border border-border-strong px-4 py-8 print:border-black sm:px-10 sm:py-12">
               <p className="font-display text-2xl italic">Food Waste Connect</p>
-              <Award className="mx-auto mt-6 size-12 text-accent print:text-black" />
+              <img src="/logo-mark.png" alt="" width={96} height={96} className="mx-auto mt-6 size-20" />
               <h1 className="mt-4 font-display text-4xl sm:text-6xl">
                 {t("Certificate of Appreciation")}
               </h1>
