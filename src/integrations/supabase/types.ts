@@ -69,56 +69,6 @@ export type Database = {
           },
         ]
       }
-      donation_reports: {
-        Row: {
-          admin_note: string | null
-          created_at: string
-          details: string | null
-          donation_id: string | null
-          donation_label: string | null
-          id: string
-          reason: string
-          reporter_id: string
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-        }
-        Insert: {
-          admin_note?: string | null
-          created_at?: string
-          details?: string | null
-          donation_id?: string | null
-          donation_label?: string | null
-          id?: string
-          reason: string
-          reporter_id: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-        }
-        Update: {
-          admin_note?: string | null
-          created_at?: string
-          details?: string | null
-          donation_id?: string | null
-          donation_label?: string | null
-          id?: string
-          reason?: string
-          reporter_id?: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "donation_reports_donation_id_fkey"
-            columns: ["donation_id"]
-            isOneToOne: false
-            referencedRelation: "donations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       donations: {
         Row: {
           claimed_at: string | null
@@ -128,9 +78,6 @@ export type Database = {
           created_at: string
           diet: string
           donor_id: string
-          food_name: string | null
-          packaging: string | null
-          storage_condition: string | null
           food_type: string
           id: string
           notes: string | null
@@ -153,9 +100,6 @@ export type Database = {
           created_at?: string
           diet: string
           donor_id: string
-          food_name?: string | null
-          packaging?: string | null
-          storage_condition?: string | null
           food_type: string
           id?: string
           notes?: string | null
@@ -178,9 +122,6 @@ export type Database = {
           created_at?: string
           diet?: string
           donor_id?: string
-          food_name?: string | null
-          packaging?: string | null
-          storage_condition?: string | null
           food_type?: string
           id?: string
           notes?: string | null
@@ -207,12 +148,6 @@ export type Database = {
           id: string
           latitude: number | null
           longitude: number | null
-          document_name: string | null
-          document_path: string | null
-          registration_number: string | null
-          rejection_reason: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
           organization_name: string
           pincode: string
           registration_80g: string
@@ -230,12 +165,6 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
-          document_name?: string | null
-          document_path?: string | null
-          registration_number?: string | null
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
           organization_name: string
           pincode: string
           registration_80g: string
@@ -253,12 +182,6 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
-          document_name?: string | null
-          document_path?: string | null
-          registration_number?: string | null
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
           organization_name?: string
           pincode?: string
           registration_80g?: string
@@ -371,41 +294,6 @@ export type Database = {
           },
         ]
       }
-      pickup_locations: {
-        Row: {
-          accuracy_m: number | null
-          donation_id: string
-          latitude: number
-          longitude: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          accuracy_m?: number | null
-          donation_id: string
-          latitude: number
-          longitude: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          accuracy_m?: number | null
-          donation_id?: string
-          latitude?: number
-          longitude?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pickup_locations_donation_id_fkey"
-            columns: ["donation_id"]
-            isOneToOne: true
-            referencedRelation: "donations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           created_at: string
@@ -448,179 +336,11 @@ export type Database = {
         }
         Relationships: []
       }
-      user_roles: {
-        Row: {
-          created_at: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          role: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_suspensions: {
-        Row: {
-          reason: string | null
-          suspended_at: string
-          suspended_by: string | null
-          user_id: string
-        }
-        Insert: {
-          reason?: string | null
-          suspended_at?: string
-          suspended_by?: string | null
-          user_id: string
-        }
-        Update: {
-          reason?: string | null
-          suspended_at?: string
-          suspended_by?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      volunteer_verifications: {
-        Row: {
-          area: string
-          contact_phone: string
-          created_at: string
-          document_name: string | null
-          document_path: string | null
-          full_name: string
-          id_last4: string
-          id_type: string
-          pincode: string | null
-          rejection_reason: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          area: string
-          contact_phone: string
-          created_at?: string
-          document_name?: string | null
-          document_path?: string | null
-          full_name: string
-          id_last4: string
-          id_type: string
-          pincode?: string | null
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          area?: string
-          contact_phone?: string
-          created_at?: string
-          document_name?: string | null
-          document_path?: string | null
-          full_name?: string
-          id_last4?: string
-          id_type?: string
-          pincode?: string | null
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      admin_list_users: {
-        Args: { p_search?: string }
-        Returns: {
-          created_at: string
-          donations_posted: number
-          email: string
-          full_name: string
-          id: string
-          is_admin: boolean
-          ngo_status: string
-          organization: string
-          phone: string
-          pickups_claimed: number
-          role: string
-          suspended: boolean
-          suspension_reason: string
-          volunteer_status: string
-        }[]
-      }
-      admin_overview: {
-        Args: never
-        Returns: {
-          admins: number
-          donations_available: number
-          donations_claimed: number
-          donations_completed: number
-          donations_expired: number
-          donations_in_pickup: number
-          donations_picked_up: number
-          donations_total: number
-          donors: number
-          food_donated_kg: number
-          food_saved_kg: number
-          ngo_accounts: number
-          ngo_pending: number
-          ngo_rejected: number
-          ngo_verified: number
-          open_reports: number
-          people_fed: number
-          suspended: number
-          total_users: number
-          volunteer_accounts: number
-          volunteer_pending: number
-          volunteer_rejected: number
-          volunteer_verified: number
-        }[]
-      }
-      admin_remove_donation: {
-        Args: { p_donation_id: string; p_reason: string }
-        Returns: undefined
-      }
-      admin_review_report: {
-        Args: { p_note?: string; p_report_id: string; p_status: string }
-        Returns: Database["public"]["Tables"]["donation_reports"]["Row"]
-      }
-      admin_set_admin: {
-        Args: { p_make_admin: boolean; p_user_id: string }
-        Returns: undefined
-      }
-      admin_set_ngo_status: {
-        Args: { p_reason?: string; p_registration_id: string; p_status: string }
-        Returns: Database["public"]["Tables"]["ngo_registrations"]["Row"]
-      }
-      admin_set_suspension: {
-        Args: { p_reason?: string; p_suspend: boolean; p_user_id: string }
-        Returns: undefined
-      }
-      admin_set_user_role: {
-        Args: { p_role: string; p_user_id: string }
-        Returns: undefined
-      }
-      admin_set_volunteer_status: {
-        Args: { p_reason?: string; p_status: string; p_user_id: string }
-        Returns: Database["public"]["Tables"]["volunteer_verifications"]["Row"]
-      }
       advance_donation_status: {
         Args: { p_donation_id: string; p_status: string }
         Returns: {
@@ -631,9 +351,6 @@ export type Database = {
           created_at: string
           diet: string
           donor_id: string
-          food_name: string | null
-          packaging: string | null
-          storage_condition: string | null
           food_type: string
           id: string
           notes: string | null
@@ -665,9 +382,6 @@ export type Database = {
           created_at: string
           diet: string
           donor_id: string
-          food_name: string | null
-          packaging: string | null
-          storage_condition: string | null
           food_type: string
           id: string
           notes: string | null
@@ -707,40 +421,6 @@ export type Database = {
         Returns: {
           code: string
           verified_at: string
-        }[]
-      }
-      is_platform_admin: { Args: never; Returns: boolean }
-      is_user_suspended: { Args: { p_user: string }; Returns: boolean }
-      is_verified_receiver: { Args: { p_user: string }; Returns: boolean }
-      leaderboard: {
-        Args: never
-        Returns: {
-          board: string
-          completed: number
-          display_name: string
-          food_kg: number
-          is_me: boolean
-          people_served: number
-          rank: number
-        }[]
-      }
-      my_badges: {
-        Args: never
-        Returns: {
-          badge: string
-          detail: string
-        }[]
-      }
-      is_pickup_party: { Args: { p_donation_id: string }; Returns: boolean }
-      my_certificates: {
-        Args: never
-        Returns: {
-          certificate_no: string
-          donations: number
-          month: string
-          people_served: number
-          recipient_name: string
-          total_kg: number
         }[]
       }
       my_dashboard_stats: {
@@ -795,40 +475,6 @@ export type Database = {
           total_claims: number
         }[]
       }
-      platform_impact_stats: {
-        Args: never
-        Returns: {
-          active_volunteers: number
-          completed_pickups: number
-          food_donated_kg: number
-          food_saved_kg: number
-          verified_ngos: number
-          waste_reduced_kg: number
-        }[]
-      }
-      share_pickup_location: {
-        Args: {
-          p_accuracy_m?: number
-          p_donation_id: string
-          p_latitude: number
-          p_longitude: number
-        }
-        Returns: {
-          accuracy_m: number | null
-          donation_id: string
-          latitude: number
-          longitude: number
-          updated_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "pickup_locations"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      stop_pickup_location: { Args: { p_donation_id: string }; Returns: undefined }
       verify_pickup_code: {
         Args: { p_code: string; p_donation_id: string }
         Returns: {
@@ -839,9 +485,6 @@ export type Database = {
           created_at: string
           diet: string
           donor_id: string
-          food_name: string | null
-          packaging: string | null
-          storage_condition: string | null
           food_type: string
           id: string
           notes: string | null
