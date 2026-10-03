@@ -125,3 +125,96 @@ export function formatCount(value: number) {
 export function formatWeight(value: number) {
   return Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 1 });
 }
+
+export type PlatformImpact = {
+  food_donated_kg: number;
+  food_saved_kg: number;
+  completed_pickups: number;
+  verified_ngos: number;
+  active_volunteers: number;
+  waste_reduced_kg: number;
+};
+
+const EMPTY_PLATFORM: PlatformImpact = {
+  food_donated_kg: 0,
+  food_saved_kg: 0,
+  completed_pickups: 0,
+  verified_ngos: 0,
+  active_volunteers: 0,
+  waste_reduced_kg: 0,
+};
+
+function toNumber(value: unknown) {
+  const parsed = typeof value === "string" ? Number.parseFloat(value) : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/** Platform-wide impact totals (public, calculated live in the database). */
+export function usePlatformImpact() {
+  const [stats, setStats] = useState<PlatformImpact>(EMPTY_PLATFORM);
+  const [available, setAvailable] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const { data, error } = await supabase.rpc("platform_impact_stats");
+    const row = Array.isArray(data) ? (data[0] as Record<string, unknown> | undefined) : undefined;
+    setAvailable(!error && row != null);
+    setStats(
+      row
+        ? {
+            food_donated_kg: toNumber(row["food_donated_kg"]),
+            food_saved_kg: toNumber(row["food_saved_kg"]),
+            completed_pickups: toNumber(row["completed_pickups"]),
+            verified_ngos: toNumber(row["verified_ngos"]),
+            active_volunteers: toNumber(row["active_volunteers"]),
+            waste_reduced_kg: toNumber(row["waste_reduced_kg"]),
+          }
+        : EMPTY_PLATFORM,
+    );
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { stats, available, loading, reload: load };
+}
+
+export type LeaderboardRow = {
+  board: "donors" | "volunteers";
+  rank: number;
+  display_name: string;
+  completed: number;
+  food_kg: number;
+  people_served: number;
+  is_me: boolean;
+};
+
+/** Top 5 donors and top 5 volunteers by completed donations / pickups (live from the database). */
+export function useLeaderboard() {
+  const [rows, setRows] = useState<LeaderboardRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.rpc("leaderboard");
+    setRows(
+      ((data as Record<string, unknown>[] | null) ?? []).map((row) => ({
+        board: row["board"] === "volunteers" ? "volunteers" : "donors",
+        rank: toNumber(row["rank"]),
+        display_name: String(row["display_name"] ?? ""),
+        completed: toNumber(row["completed"]),
+        food_kg: toNumber(row["food_kg"]),
+        people_served: toNumber(row["people_served"]),
+        is_me: row["is_me"] === true,
+      })),
+    );
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { rows, loading, reload: load };
+}

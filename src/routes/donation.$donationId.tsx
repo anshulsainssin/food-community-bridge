@@ -1,12 +1,14 @@
 import { ClientOnly, createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, Clock3, MapPin, Navigation, NotebookPen, Phone, Scale, Utensils, Users } from "lucide-react";
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { AlertTriangle, ArrowLeft, Clock3, Flag, MapPin, Navigation, NotebookPen, Package, Phone, Scale, ShieldCheck, Thermometer, Utensils, Users } from "lucide-react";
+import { lazy, Suspense, useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { AppShell, PageIntro, StatusBadge } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useNow } from "@/hooks/use-now";
 import { useProfile } from "@/hooks/use-profile";
 import { displayStatus, donationUrgency, formatTimeLeft, safeUntil, statusLabel, stepIndex } from "@/lib/donation-status";
+import { directionsUrl } from "@/lib/food-details";
+import { useT } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -48,7 +50,86 @@ function formatStamp(iso: string | null) {
   return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+const REPORT_REASONS = ["Unsafe or spoiled food", "Wrong or misleading details", "Spam or fake listing", "Donor did not hand over food", "Other"] as const;
+
+/** Signed-in users (other than the donor) can flag a problematic listing for the admins. */
+function ReportListing({ donationId, userId }: { donationId: string; userId: string }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void supabase
+      .from("donation_reports")
+      .select("id")
+      .eq("donation_id", donationId)
+      .eq("reporter_id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setReported(Boolean(data));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [donationId, userId]);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setSending(true);
+    setError(null);
+    const { error: insertError } = await supabase.from("donation_reports").insert({
+      donation_id: donationId,
+      reporter_id: userId,
+      reason: String(form.get("reason") ?? ""),
+      details: String(form.get("details") ?? "").trim().slice(0, 1000) || null,
+    });
+    setSending(false);
+    if (insertError) {
+      setError(insertError.code === "23505" ? t("You have already reported this listing.") : insertError.message);
+      return;
+    }
+    setReported(true);
+    setOpen(false);
+  }
+
+  if (reported) {
+    return <span className="flex items-center gap-1 text-xs text-muted-foreground"><Flag className="size-3.5 shrink-0" />{t("You reported this listing. An admin will review it.")}</span>;
+  }
+  return (
+    <div className="w-full sm:w-auto">
+      <Button variant="ghost" className="h-9 px-2 text-xs" onClick={() => setOpen((value) => !value)}>
+        <Flag className="size-3.5" />
+        {t("Report listing")}
+      </Button>
+      {open && (
+        <form onSubmit={submit} className="mt-3 grid gap-3 border border-border-strong bg-card p-4 sm:min-w-[22rem]">
+          <label className="block">
+            <span className="label-caps text-muted-foreground">{t("What's wrong?")}</span>
+            <select name="reason" required className="mt-2 h-11 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground">
+              {REPORT_REASONS.map((reason) => <option key={reason} value={reason}>{t(reason)}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="label-caps text-muted-foreground">{t("Details (optional)")}</span>
+            <textarea name="details" rows={2} maxLength={1000} className="mt-2 w-full resize-none border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
+          </label>
+          {error && <p className="text-xs text-accent">{error}</p>}
+          <div className="flex gap-2">
+            <Button type="submit" disabled={sending}>{sending ? t("Sending…") : t("Send report")}</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("Cancel")}</Button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function UrgencyNote({ donation, now }: { donation: Donation; now: number }) {
+  const t = useT();
   const urgency = donationUrgency(donation, now);
   const until = safeUntil(donation);
   if (!urgency || until == null) return null;
@@ -58,8 +139,8 @@ function UrgencyNote({ donation, now }: { donation: Donation; now: number }) {
     <span className={`flex items-center gap-1 text-xs ${pressing || urgency === "Expired" ? "text-accent" : "text-muted-foreground"}`}>
       {(pressing || urgency === "Expired") && <AlertTriangle className="size-3.5 shrink-0" />}
       {urgency === "Expired"
-        ? `Urgency: Expired · safe pickup window ended ${ends}`
-        : `Urgency: ${urgency} · ${formatTimeLeft(until - now)} (safe pickup window ends ${ends})`}
+        ? t("Urgency: Expired · safe pickup window ended {time}", { time: ends ?? "" })
+        : t("Urgency: {urgency} · {left} (safe pickup window ends {time})", { urgency: t(urgency), left: formatTimeLeft(until - now), time: ends ?? "" })}
     </span>
   );
 }
@@ -72,6 +153,7 @@ function DonationDetailsPage() {
   const [parties, setParties] = useState<Parties | null>(null);
   const [loading, setLoading] = useState(true);
   const now = useNow();
+  const t = useT();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -103,12 +185,15 @@ function DonationDetailsPage() {
 
   const facts = donation
     ? [
+        { label: "Food name", value: donation.food_name || "Not recorded", icon: Utensils },
         { label: "Quantity", value: donation.quantity || "Not recorded", icon: Utensils },
         { label: "People served", value: donation.servings != null ? `${donation.servings} people` : "Not recorded", icon: Users },
         { label: "Weight", value: donation.weight_kg != null ? `${donation.weight_kg} kg` : "Not recorded", icon: Scale },
         { label: "Prepared", value: formatStamp(donation.prepared_at) ?? "Not recorded", icon: Clock3 },
         { label: "Pickup deadline", value: formatStamp(donation.pickup_deadline) ?? "No deadline set", icon: Clock3 },
         { label: "Pickup location", value: donation.pickup_address || "Not recorded", icon: MapPin },
+        { label: "Storage condition", value: donation.storage_condition || "Not recorded", icon: Thermometer },
+        { label: "Packaging", value: donation.packaging || "Not recorded", icon: Package },
       ]
     : [];
 
@@ -118,25 +203,25 @@ function DonationDetailsPage() {
         eyebrow="Donation / Details"
         title={
           loading ? (
-            <>Loading donation…</>
+            <>{t("Loading donation…")}</>
           ) : donation ? (
             <>{donation.food_type}</>
           ) : (
-            <>Donation <span className="italic">not found.</span></>
+            <>{t("Donation")} <span className="italic">{t("not found.")}</span></>
           )
         }
         description={
           loading
             ? "Fetching the latest details for this donation."
             : donation
-              ? `${donation.diet} · added ${formatStamp(donation.created_at) ?? ""}`
+              ? `${t(donation.diet)} · ${t("added {time}", { time: formatStamp(donation.created_at) ?? "" })}`
               : "This donation may have been removed, or you need to sign in to view it."
         }
         action={
           <Button asChild variant="outline" size="wide">
             <Link to="/donations">
               <ArrowLeft className="size-4" />
-              Back to donations
+              {t("Back to donations")}
             </Link>
           </Button>
         }
@@ -147,21 +232,40 @@ function DonationDetailsPage() {
           <section className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-5 sm:px-8 lg:px-12">
             <StatusBadge value={displayStatus(donation, now)} />
             <span className="text-xs text-muted-foreground">
-              {donation.claimed_at ? `Claimed ${formatStamp(donation.claimed_at)}` : "Not claimed yet"}
+              {donation.claimed_at ? t("Claimed {time}", { time: formatStamp(donation.claimed_at) ?? "" }) : t("Not claimed yet")}
             </span>
             <UrgencyNote donation={donation} now={now} />
+            {directionsUrl(donation) && (
+              <Button asChild variant="outline" className="h-9 px-3 text-xs">
+                <a href={directionsUrl(donation)!} target="_blank" rel="noreferrer">
+                  <Navigation className="size-3.5" />
+                  {t("Get Directions")}
+                </a>
+              </Button>
+            )}
+            {user && user.id !== donation.donor_id && <ReportListing donationId={donation.id} userId={user.id} />}
           </section>
 
           <section className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-3">
             {facts.map(({ label, value, icon: Icon }) => (
               <article key={label} className="min-w-0 bg-background p-5 sm:p-7">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-                  <p className="label-caps truncate text-muted-foreground">{label}</p>
+                  <p className="label-caps truncate text-muted-foreground">{t(label)}</p>
                   <Icon className="size-4 shrink-0 text-accent" />
                 </div>
-                <p className="mt-4 text-sm leading-6 break-words">{value}</p>
+                <p className="mt-4 text-sm leading-6 break-words">{t(value)}</p>
               </article>
             ))}
+          </section>
+
+          <section className="border-b border-border px-4 py-4 sm:px-8 lg:px-12">
+            <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-accent" />
+              <span>
+                {t("Food safety: the donor's details are their own declaration. Check the food (look, smell, temperature, packaging) before accepting it, keep hot food hot and cold food cold, and distribute it quickly.")}{" "}
+                <Link to="/terms" className="underline">{t("Food safety guidelines & terms")}</Link>
+              </span>
+            </p>
           </section>
 
           {donation.pickup_latitude != null && donation.pickup_longitude != null && (
@@ -187,16 +291,16 @@ function DonationDetailsPage() {
 
           <section className="grid lg:grid-cols-2">
             <div className="border-b border-border px-4 py-8 sm:px-8 lg:border-b-0 lg:border-r lg:px-10">
-              <h2 className="label-caps">Pickup timeline</h2>
+              <h2 className="label-caps">{t("Pickup timeline")}</h2>
               <div className="mt-6 space-y-5">
                 {events.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No pickup activity recorded yet.</p>
+                  <p className="text-sm text-muted-foreground">{t("No pickup activity recorded yet.")}</p>
                 ) : (
                   events.map((event) => (
                     <div key={event.id} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
                       <span className="mt-1.5 size-2 shrink-0 rounded-full bg-accent" />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium break-words">{statusLabel(event.status)}</p>
+                        <p className="text-sm font-medium break-words">{t(statusLabel(event.status))}</p>
                         <p className="mt-1 text-xs text-muted-foreground">{formatStamp(event.occurred_at)}</p>
                       </div>
                     </div>
@@ -206,7 +310,7 @@ function DonationDetailsPage() {
             </div>
 
             <div className="px-4 py-8 sm:px-8 lg:px-10">
-              <h2 className="label-caps">People involved</h2>
+              <h2 className="label-caps">{t("People involved")}</h2>
               <div className="mt-6 space-y-6 text-sm">
                 {parties ? (
                   <>
@@ -249,10 +353,10 @@ function DonationDetailsPage() {
                 )}
 
                 <div>
-                  <p className="label-caps text-muted-foreground">Notes</p>
+                  <p className="label-caps text-muted-foreground">{t("Notes")}</p>
                   <p className="mt-2 flex items-start gap-2 leading-6">
                     <NotebookPen className="mt-0.5 size-4 shrink-0 text-accent" />
-                    <span className="break-words">{donation.notes || "No additional notes."}</span>
+                    <span className="break-words">{donation.notes || t("No additional notes.")}</span>
                   </p>
                 </div>
               </div>

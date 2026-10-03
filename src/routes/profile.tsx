@@ -3,9 +3,11 @@ import { BadgeCheck, Building2, Mail, MapPin, Navigation, Phone, UserRound } fro
 import { useState, type FormEvent } from "react";
 
 import { AppShell, PageIntro } from "@/components/app-shell";
+import { ProfileExtras } from "@/components/profile-extras";
 import { Button } from "@/components/ui/button";
 import { useNgoRegistration } from "@/hooks/use-ngo";
 import { useLocationSync, useProfile } from "@/hooks/use-profile";
+import { useT } from "@/lib/i18n";
 import { displayName as nameFor, ROLE_OPTIONS, roleKind } from "@/lib/roles";
 
 export const Route = createFileRoute("/profile")({ ssr: false, head: () => ({ meta: [{ title: "Community Profile | Food Waste Connect" }, { name: "description", content: "View and edit your Food Waste Connect community profile." }, { property: "og:title", content: "Community Profile | Food Waste Connect" }, { property: "og:description", content: "Community member and organization profile details." }, { property: "og:type", content: "profile" }, { name: "twitter:card", content: "summary_large_image" }] }), component: ProfilePage });
@@ -16,6 +18,7 @@ function ProfilePage() {
   const kind = roleKind(profile?.role);
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const t = useT();
 
   const { status: locationStatus, request: requestLocation } = useLocationSync(
     Boolean(user),
@@ -62,9 +65,9 @@ function ProfilePage() {
   const roleOptions = profile?.role && !(ROLE_OPTIONS as readonly string[]).includes(profile.role) ? [...ROLE_OPTIONS, profile.role] : ROLE_OPTIONS;
   const [first, ...rest] = displayName.split(" ");
 
-  return <AppShell><PageIntro eyebrow="Profile / Community member" title={<>{first} <span className="italic">{rest.join(" ")}</span></>} description="Manage the contact and organization information shown during donation coordination." action={!editing ? <Button size="wide" onClick={() => { setEditing(true); setSaved(false); }}>Edit profile</Button> : undefined} />
+  return <AppShell><PageIntro eyebrow="Profile / Community member" title={<>{first} <span className="italic">{rest.join(" ")}</span></>} description="Manage the contact and organization information shown during donation coordination." action={!editing ? <Button size="wide" onClick={() => { setEditing(true); setSaved(false); }}>{t("Edit profile")}</Button> : undefined} />
     <section className="grid lg:grid-cols-[0.7fr_1.3fr]"><div className="border-b border-border p-4 sm:p-8 lg:border-b-0 lg:border-r lg:p-10"><div className="flex size-24 items-center justify-center rounded-full bg-primary font-display text-4xl text-primary-foreground">{initials(displayName)}</div><h2 className="mt-6 font-display text-2xl break-words sm:text-3xl">{profile?.organization || "Your organization"}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Community food distribution and neighborhood support.</p><div className="mt-6 space-y-2 text-sm">
-      <p><span className="label-caps text-muted-foreground">Account type</span><br />{kind === "Receiver" ? "NGO / volunteer (claims and collects food)" : kind === "Donor" ? "Donor (shares surplus food)" : "Not set yet: edit your profile to choose Donor, NGO or Volunteer."}</p>
+      <p><span className="label-caps text-muted-foreground">{t("Account type")}</span><br />{t(kind === "Receiver" ? "NGO / volunteer (claims and collects food)" : kind === "Donor" ? "Donor (shares surplus food)" : "Not set yet: edit your profile to choose Donor, NGO or Volunteer.")}</p>
       {kind === "Receiver" && (
         <p className="flex items-start gap-2">
           <BadgeCheck className="mt-0.5 size-4 shrink-0 text-accent" />
@@ -74,13 +77,16 @@ function ProfilePage() {
               : !registration
                 ? "NGO registration: not registered yet."
                 : registration.status === "Verified"
-                  ? `NGO registration: location verified${registration.area_label ? ` (${registration.area_label})` : ""}.`
-                  : "NGO registration: verification pending."}
-            {" "}<Link to="/admin" className="underline">Open NGO portal</Link>
+                  ? `${t("NGO registration: verified by admin")}${registration.area_label ? ` (${registration.area_label})` : ""}.`
+                  : registration.status === "Rejected"
+                    ? t("NGO registration: not verified (see the NGO portal).")
+                    : t("NGO registration: waiting for admin verification.")}
+            {" "}<Link to="/admin" className="underline">{t("Open NGO portal")}</Link>
           </span>
         </p>
       )}
-    </div>{(locationStatus === "denied" || locationStatus === "unavailable") && <Button variant="outline" className="mt-6" onClick={requestLocation}>{locationStatus === "denied" ? "Enable location" : "Try location again"}</Button>}{saved && <p className="mt-6 border border-border-strong bg-card p-4 text-sm">Profile details saved.</p>}</div><div className="bg-muted/25 p-4 sm:p-8 lg:p-10">{editing ? <form className="grid gap-6 sm:grid-cols-2" onSubmit={submit}>{details.filter((item) => item.editable).map(({ key, label, value }) => <label key={key} className="block"><span className="label-caps text-muted-foreground">{label}</span>{key === "role" ? <select name={key} defaultValue={value} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground"><option value="">Choose a role</option>{roleOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select> : <input name={key} defaultValue={value} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />}</label>)}<div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row"><Button type="submit" className="w-full sm:flex-1">Save profile</Button><Button type="button" variant="outline" onClick={() => setEditing(false)}>Cancel</Button></div></form> : <div className="grid gap-px bg-border sm:grid-cols-2">{details.map(({ key, label, value, icon: Icon }) => <article key={key} className="bg-background p-5"><Icon className="size-4 text-accent" /><p className="label-caps mt-5 text-muted-foreground">{label}</p><p className="mt-2 text-sm font-medium break-words">{value || "—"}</p></article>)}</div>}</div></section>
+    </div>{(locationStatus === "denied" || locationStatus === "unavailable") && <Button variant="outline" className="mt-6" onClick={requestLocation}>{locationStatus === "denied" ? "Enable location" : "Try location again"}</Button>}{saved && <p className="mt-6 border border-border-strong bg-card p-4 text-sm">{t("Profile details saved.")}</p>}</div><div className="bg-muted/25 p-4 sm:p-8 lg:p-10">{editing ? <form className="grid gap-6 sm:grid-cols-2" onSubmit={submit}>{details.filter((item) => item.editable).map(({ key, label, value }) => <label key={key} className="block"><span className="label-caps text-muted-foreground">{t(label)}</span>{key === "role" ? <select name={key} defaultValue={value} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground"><option value="">Choose a role</option>{roleOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select> : <input name={key} defaultValue={value} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />}</label>)}<div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row"><Button type="submit" className="w-full sm:flex-1">{t("Save profile")}</Button><Button type="button" variant="outline" onClick={() => setEditing(false)}>{t("Cancel")}</Button></div></form> : <div className="grid gap-px bg-border sm:grid-cols-2">{details.map(({ key, label, value, icon: Icon }) => <article key={key} className="bg-background p-5"><Icon className="size-4 text-accent" /><p className="label-caps mt-5 text-muted-foreground">{t(label)}</p><p className="mt-2 text-sm font-medium break-words">{value || "—"}</p></article>)}</div>}</div></section>
+    {user && <ProfileExtras userId={user.id} role={profile?.role} defaults={{ full_name: profile?.full_name ?? "", phone: profile?.phone ?? "", area: profile?.location_label ?? "" }} />}
   </AppShell>;
 }
 

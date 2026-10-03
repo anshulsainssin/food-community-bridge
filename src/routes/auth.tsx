@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
 import { fetchProfile, homePathFor, rememberPendingRole } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
+import { useT } from "@/lib/i18n";
 import { ROLE_OPTIONS, roleKind, type RoleKind } from "@/lib/roles";
 
 // The account type picked before signing in ("Donor" or "Receiver" = NGO/volunteer), kept for this
@@ -82,6 +84,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const t = useT();
   const [unconfirmed, setUnconfirmed] = useState(false);
   // Chosen before the sign-in form: Donor or NGO/Volunteer (null = still choosing).
   const [accountType, setAccountTypeState] = useState<RoleKind | null>(null);
@@ -263,20 +266,25 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-5 py-12">
       <div className="w-full max-w-md">
-        <p className="font-display text-3xl italic leading-none">Food Waste Connect</p>
-        <p className="label-caps mt-2 text-muted-foreground">Community network</p>
-        <h1 className="mt-8 font-display text-4xl">{choosing ? "Sign in" : mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : mode === "role" ? "How do you use Food Waste Connect?" : "Set a new password"}</h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">{choosing ? "First choose which kind of account you want to use." : "Use your account to share surplus food and coordinate pickups."}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-display text-3xl italic leading-none">Food Waste Connect</p>
+            <p className="label-caps mt-2 text-muted-foreground">{t("Community network")}</p>
+          </div>
+          <LanguageSwitcher />
+        </div>
+        <h1 className="mt-8 font-display text-4xl">{t(choosing ? "Sign in" : mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : mode === "role" ? "How do you use Food Waste Connect?" : "Set a new password")}</h1>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">{t(choosing ? "First choose which kind of account you want to use." : "Use your account to share surplus food and coordinate pickups.")}</p>
 
         {choosing ? (
           <div className="mt-8 space-y-3">
             <Button variant="outline" size="wide" className="h-auto w-full flex-col items-start gap-1 py-4 text-left" onClick={() => setAccountType("Donor")}>
-              <span className="text-base font-medium normal-case tracking-normal">Donor</span>
-              <span className="text-xs font-normal normal-case tracking-normal text-muted-foreground">I want to donate surplus food</span>
+              <span className="text-base font-medium normal-case tracking-normal">{t("Donor")}</span>
+              <span className="text-xs font-normal normal-case tracking-normal text-muted-foreground">{t("I want to donate surplus food")}</span>
             </Button>
             <Button variant="outline" size="wide" className="h-auto w-full flex-col items-start gap-1 py-4 text-left" onClick={() => setAccountType("Receiver")}>
-              <span className="text-base font-medium normal-case tracking-normal">NGO / Volunteer</span>
-              <span className="text-xs font-normal normal-case tracking-normal text-muted-foreground">I collect food and deliver it to people in need</span>
+              <span className="text-base font-medium normal-case tracking-normal">{t("NGO / Volunteer")}</span>
+              <span className="text-xs font-normal normal-case tracking-normal text-muted-foreground">{t("I collect food and deliver it to people in need")}</span>
             </Button>
             {message && <p className="text-sm text-accent">{message}</p>}
           </div>
@@ -284,60 +292,60 @@ function AuthPage() {
         <>
         {(mode === "signin" || mode === "signup") && accountType && (
           <p className="mt-6 text-sm">
-            <span className="label-caps text-muted-foreground">Account type</span>{" "}
-            <span className="font-medium">{ACCOUNT_TYPE_LABEL[accountType]}</span>{" "}
-            <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setAccountType(null)}>Change</button>
+            <span className="label-caps text-muted-foreground">{t("Account type")}</span>{" "}
+            <span className="font-medium">{t(ACCOUNT_TYPE_LABEL[accountType])}</span>{" "}
+            <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setAccountType(null)}>{t("Change")}</button>
           </p>
         )}
         <form className="mt-8 space-y-6" onSubmit={submit}>
           {mode === "signup" && (
             <label className="block">
-              <span className="label-caps text-muted-foreground">Full name</span>
+              <span className="label-caps text-muted-foreground">{t("Full name")}</span>
               <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
           )}
           {((mode === "signup" && accountType !== "Donor") || mode === "role") && (
             <label className="block">
-              <span className="label-caps text-muted-foreground">I am a</span>
+              <span className="label-caps text-muted-foreground">{t("I am a")}</span>
               <select required name="role" value={role} onChange={(e) => setRole(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground">
-                <option value="">Choose one</option>
-                {ROLE_OPTIONS.filter((option) => accountType !== "Receiver" || option !== "Donor").map((option) => <option key={option} value={option}>{option === "Donor" ? "Donor (I share surplus food)" : `${option} (I collect food)`}</option>)}
+                <option value="">{t("Choose one")}</option>
+                {ROLE_OPTIONS.filter((option) => accountType !== "Receiver" || option !== "Donor").map((option) => <option key={option} value={option}>{option === "Donor" ? t("Donor (I share surplus food)") : `${t(option)} (${t("I collect food")})`}</option>)}
               </select>
             </label>
           )}
           {mode !== "reset" && mode !== "role" && (
             <label className="block">
-              <span className="label-caps text-muted-foreground">Email</span>
+              <span className="label-caps text-muted-foreground">{t("Email")}</span>
               <input required type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
             </label>
           )}
           {mode !== "role" && <label className="block">
-            <span className="label-caps text-muted-foreground">{mode === "reset" ? "New password" : "Password"}</span>
+            <span className="label-caps text-muted-foreground">{t(mode === "reset" ? "New password" : "Password")}</span>
             <input required type="password" minLength={6} autoComplete={mode === "signin" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 h-12 w-full border-b border-input bg-transparent text-sm outline-none focus:border-foreground" />
           </label>}
           {message && <p className="text-sm text-accent">{message}</p>}
           {unconfirmed && email && (
-            <button type="button" className="text-xs text-muted-foreground underline" onClick={() => void resendConfirmation()}>Resend confirmation email</button>
+            <button type="button" className="text-xs text-muted-foreground underline" onClick={() => void resendConfirmation()}>{t("Resend confirmation email")}</button>
           )}
-          <Button type="submit" size="wide" className="w-full" disabled={busy}>{mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : mode === "role" ? "Continue" : "Save new password"}</Button>
+          <Button type="submit" size="wide" className="w-full" disabled={busy}>{t(mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : mode === "role" ? "Continue" : "Save new password")}</Button>
         </form>
 
         {mode === "role" && (
           <button type="button" className="mt-6 text-xs text-muted-foreground underline" onClick={() => void supabase.auth.signOut().then(() => { setMode("signin"); setMessage(null); })}>
-            Sign out
+            {t("Sign out")}
           </button>
         )}
 
         {mode !== "reset" && mode !== "role" && (
           <>
-            <Button variant="outline" size="wide" className="mt-3 w-full" onClick={googleSignIn}>Continue with Google</Button>
+            <Button variant="outline" size="wide" className="mt-3 w-full" onClick={googleSignIn}>{t("Continue with Google")}</Button>
 
             <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2">
               <button type="button" className="text-xs text-muted-foreground underline" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMessage(null); setUnconfirmed(false); }}>
-                {mode === "signin" ? "Need an account? Create one" : "Already have an account? Sign in"}
+                {t(mode === "signin" ? "Need an account? Create one" : "Already have an account? Sign in")}
               </button>
               {mode === "signin" && (
-                <button type="button" className="text-xs text-muted-foreground underline" onClick={() => void sendPasswordReset()}>Forgot password?</button>
+                <button type="button" className="text-xs text-muted-foreground underline" onClick={() => void sendPasswordReset()}>{t("Forgot password?")}</button>
               )}
             </div>
           </>

@@ -20,6 +20,7 @@ import { useProfile } from "@/hooks/use-profile";
 import { formatCount, formatWeight } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
 import { displayStatus } from "@/lib/donation-status";
+import { useT } from "@/lib/i18n";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/history")({
@@ -68,6 +69,7 @@ function HistoryPage() {
   const [roleTab, setRoleTab] = useState<RoleTab>("All");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
   const now = useNow();
+  const t = useT();
 
   const load = useCallback(async () => {
     if (!user) {
@@ -139,13 +141,13 @@ function HistoryPage() {
           eyebrow="History"
           title={
             <>
-              Your <span className="italic">history.</span>
+              {t("Your")} <span className="italic">{t("history.")}</span>
             </>
           }
           description="Sign in to see every donation you posted or claimed."
           action={
             <Button asChild size="wide">
-              <Link to="/auth">Sign in</Link>
+              <Link to="/auth">{t("Sign in")}</Link>
             </Button>
           }
         />
@@ -166,7 +168,7 @@ function HistoryPage() {
         eyebrow="History / All activity"
         title={
           <>
-            Everything you've <span className="italic">shared and collected.</span>
+            {t("Everything you've")} <span className="italic">{t("shared and collected.")}</span>
           </>
         }
         description="Every donation you posted and every donation you claimed, newest first. Open one to see its full details and pickup timeline."
@@ -176,7 +178,7 @@ function HistoryPage() {
         {tiles.map(({ label, value, icon: Icon }) => (
           <article key={label} className="min-w-0 bg-background p-4 sm:p-7">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-              <p className="label-caps truncate text-muted-foreground">{label}</p>
+              <p className="label-caps truncate text-muted-foreground">{t(label)}</p>
               <Icon className="size-4 shrink-0 text-accent" />
             </div>
             <p className="mt-4 font-display text-3xl sm:text-4xl">{loading ? "—" : value}</p>
@@ -193,7 +195,7 @@ function HistoryPage() {
               variant={roleTab === option ? "primary" : "outline"}
               onClick={() => setRoleTab(option)}
             >
-              {option === "Donated" ? "I donated" : option === "Claimed" ? "I claimed" : "All"}
+              {t(option === "Donated" ? "I donated" : option === "Claimed" ? "I claimed" : "All")}
             </Button>
           ))}
         </div>
@@ -205,29 +207,29 @@ function HistoryPage() {
               variant={statusFilter === option ? "primary" : "outline"}
               onClick={() => setStatusFilter(option)}
             >
-              {option}
+              {t(option)}
             </Button>
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          {loading ? "Loading…" : `${visible.length} ${visible.length === 1 ? "entry" : "entries"}`}
+          {loading ? t("Loading…") : t(visible.length === 1 ? "{count} entry" : "{count} entries", { count: visible.length })}
         </p>
       </section>
 
       {loading ? (
         <p className="px-4 py-10 text-sm text-muted-foreground sm:px-8 lg:px-12">
-          Loading your history…
+          {t("Loading your history…")}
         </p>
       ) : visible.length === 0 ? (
         <div className="px-4 py-10 sm:px-8 lg:px-12">
           <p className="text-sm text-muted-foreground">
             {rows.length === 0
-              ? "Nothing here yet. Donations you post or claim will show up in this list."
-              : "Nothing matches these filters."}
+              ? t("Nothing here yet. Donations you post or claim will show up in this list.")
+              : t("Nothing matches these filters.")}
           </p>
           {rows.length === 0 && (
             <Button asChild variant="outline" className="mt-4">
-              <Link to="/donations">Find food</Link>
+              <Link to="/donations">{t("Find food")}</Link>
             </Button>
           )}
         </div>
@@ -251,10 +253,10 @@ function HistoryPage() {
                         <StatusBadge value={status} />
                         <span className="label-caps rounded-sm border border-border px-2 py-1 text-muted-foreground">
                           {donated && claimed
-                            ? "Donated & claimed"
+                            ? t("Donated & claimed")
                             : donated
-                              ? "You donated"
-                              : "You claimed"}
+                              ? t("You donated")
+                              : t("You claimed")}
                         </span>
                       </div>
                       <h3 className="mt-3 font-display text-2xl leading-tight break-words">
@@ -296,13 +298,13 @@ function HistoryPage() {
                         <Button asChild>
                           <Link to="/pickup" search={{ id: row.id }}>
                             <Truck className="size-4" />
-                            Track
+                            {t("Track")}
                           </Link>
                         </Button>
                       )}
                       <Button asChild variant="outline">
                         <Link to="/donation/$donationId" params={{ donationId: row.id }}>
-                          Details
+                          {t("Details")}
                           <ArrowUpRight className="size-4" />
                         </Link>
                       </Button>

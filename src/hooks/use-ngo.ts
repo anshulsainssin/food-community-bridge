@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { uploadVerificationDocument } from "@/hooks/use-verification";
 import { lookupPincode } from "@/lib/geocode.functions";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -40,6 +41,7 @@ export type RegistrationInput = {
   contact_phone: string;
   contact_email: string;
   pincode: string;
+  registration_number: string;
 };
 
 /** The signed-in user's NGO registration record, with pincode-based location verification. */
@@ -66,10 +68,22 @@ export function useNgoRegistration(userId: string | null | undefined) {
   }, [load]);
 
   const save = useCallback(
-    async (input: RegistrationInput) => {
-      if (!userId) return;
+    async (input: RegistrationInput, document: File | null = null) => {
+      if (!userId) return false;
       setSaving(true);
       setError(null);
+
+      // Verification document (registration / 80G certificate) goes to the private bucket.
+      let uploaded: { path: string; name: string } | null = null;
+      if (document) {
+        const result = await uploadVerificationDocument(userId, "ngo-certificate", document);
+        if ("error" in result) {
+          setSaving(false);
+          setError(result.error);
+          return false;
+        }
+        uploaded = result;
+      }
 
       let place: { label: string; latitude: number; longitude: number } | null = null;
       try {
@@ -86,20 +100,22 @@ export function useNgoRegistration(userId: string | null | undefined) {
         contact_phone: input.contact_phone,
         contact_email: input.contact_email || null,
         pincode: input.pincode,
+        registration_number: input.registration_number || null,
         area_label: place?.label ?? null,
         latitude: place?.latitude ?? null,
         longitude: place?.longitude ?? null,
-        status: place ? "Verified" : "Pending",
-        verified_at: place ? new Date().toISOString() : null,
+        // Verification status is set only by platform admins (enforced in the database).
+        ...(uploaded ? { document_path: uploaded.path, document_name: uploaded.name } : {}),
       };
 
       const { error: saveError } = await supabase.from("ngo_registrations").upsert(row, { onConflict: "user_id" });
       setSaving(false);
       if (saveError) {
         setError(saveError.message);
-        return;
+        return false;
       }
       await load();
+      return true;
     },
     [userId, load],
   );

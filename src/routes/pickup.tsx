@@ -24,7 +24,9 @@ import { useNow } from "@/hooks/use-now";
 import { useProfile } from "@/hooks/use-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { displayStatus, PICKUP_STEPS, statusLabel } from "@/lib/donation-status";
+import { directionsUrl } from "@/lib/food-details";
 import { distanceKm } from "@/lib/geo";
+import { useT } from "@/lib/i18n";
 import { pickupLink } from "@/lib/pickup-link";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -111,6 +113,7 @@ function PickupPage() {
   const [error, setError] = useState<string | null>(null);
   const [recenter, setRecenter] = useState(0);
   const now = useNow(5_000);
+  const t = useT();
 
   // Opened from the donor's QR link (/pickup?id=…&code=…).
   const qrLink = useMemo(() => {
@@ -258,7 +261,7 @@ function PickupPage() {
       <AppShell>
         <PageIntro
           eyebrow="Pickup / Tracking"
-          title={<>No pickup <span className="italic">in progress.</span></>}
+          title={<>{t("No pickup")} <span className="italic">{t("in progress.")}</span></>}
           description={
             user
               ? "Claim a donation or publish one of your own, and its pickup will be tracked here."
@@ -430,7 +433,7 @@ function PickupPage() {
 
       <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
         <section className="border-b border-border p-4 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
-          <h2 className="label-caps">Status timeline</h2>
+          <h2 className="label-caps">{t("Status timeline")}</h2>
           <div className="mt-8">
             {steps.map((step, index) => {
               const moment = formatMoment(eventByStatus.get(step)?.occurred_at ?? null);
@@ -449,9 +452,9 @@ function PickupPage() {
                     <span className={`absolute left-[15px] top-8 h-12 w-px ${index < stage ? "bg-primary" : "bg-border"}`} />
                   )}
                   <div className="pt-1">
-                    <p className="font-medium">{statusLabel(step)}</p>
+                    <p className="font-medium">{t(statusLabel(step))}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {moment ?? (index === stage ? "Current status" : index < stage ? "Completed" : "Pending")}
+                      {moment ?? t(index === stage ? "Current status" : index < stage ? "Completed" : "Pending")}
                     </p>
                   </div>
                 </div>
@@ -469,13 +472,13 @@ function PickupPage() {
           )}
           {expired ? (
             <Button size="wide" className="mt-3 w-full" disabled>
-              Donation expired
+              {t("Donation expired")}
             </Button>
           ) : nextStatus ? (
             <>
               {!(needsQr && isClaimer) && (
                 <Button size="wide" className="mt-3 w-full" onClick={() => void advance()} disabled={working || stage === 0 || (needsQr && !isClaimer)}>
-                  {stage === 0
+                  {t(stage === 0
                     ? "Waiting to be claimed"
                     : working
                       ? "Updating…"
@@ -483,7 +486,7 @@ function PickupPage() {
                         ? "Start pickup"
                         : nextStatus === "Picked Up"
                           ? "Waiting for QR verification"
-                          : "Mark completed"}
+                          : "Mark completed")}
                 </Button>
               )}
               {canVerify && donation && (
@@ -499,7 +502,7 @@ function PickupPage() {
             </>
           ) : (
             <Button size="wide" className="mt-3 w-full" disabled>
-              Pickup completed
+              {t("Pickup completed")}
             </Button>
           )}
           {showDonorCode && donation && <PickupCodeCard donationId={donation.id} />}
@@ -511,9 +514,19 @@ function PickupPage() {
           )}
         </section>
         <section className="bg-muted/25 p-4 sm:p-8 lg:p-10">
-          <h2 className="font-display text-2xl italic sm:text-3xl">Pickup details</h2>
+          <h2 className="font-display text-2xl italic sm:text-3xl">{t("Pickup details")}</h2>
           <div className="mt-7 divide-y divide-border">
             <Detail icon={MapPin} label="Pickup area" value={donation?.pickup_address || "Location not available"} />
+            {donation && directionsUrl(donation) && (
+              <div className="py-4">
+                <Button asChild variant="outline" className="h-9 px-3 text-xs">
+                  <a href={directionsUrl(donation)!} target="_blank" rel="noreferrer">
+                    <Navigation className="size-3.5" />
+                    {t("Get Directions")}
+                  </a>
+                </Button>
+              </div>
+            )}
             <Detail icon={Clock3} label="Pickup deadline" value={formatMoment(donation?.pickup_deadline ?? null) ?? "No deadline set"} />
             <Detail icon={UserRound} label="Donor" value={personLine(parties?.donor_name ?? null, parties?.donor_organization ?? null)} />
             <Detail icon={Phone} label="Donor contact" value={parties?.donor_phone || donation?.contact_info || "Not provided"} />
@@ -540,8 +553,8 @@ function PickupPage() {
             />
           </div>
           <div className="mt-8 border border-border-strong bg-card p-5">
-            <p className="label-caps text-muted-foreground">Donation information</p>
-            <p className="mt-3 font-display text-2xl break-words">{donation?.quantity || "Quantity not recorded"}</p>
+            <p className="label-caps text-muted-foreground">{t("Donation information")}</p>
+            <p className="mt-3 font-display text-2xl break-words">{donation?.quantity || t("Quantity not recorded")}</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {donation?.diet ?? ""}
               {donation?.prepared_at ? `. Prepared ${formatMoment(donation.prepared_at)}` : ""}
@@ -555,14 +568,15 @@ function PickupPage() {
 }
 
 function TrackFact({ icon: Icon, label, value, live = false }: { icon: typeof MapPin; label: string; value: string; live?: boolean }) {
+  const t = useT();
   return (
     <div className="flex min-w-0 gap-3 bg-background px-4 py-4 sm:px-6">
       <Icon className="mt-0.5 size-4 shrink-0 text-accent" />
       <div className="min-w-0">
-        <p className="label-caps text-muted-foreground">{label}</p>
+        <p className="label-caps text-muted-foreground">{t(label)}</p>
         <p className="mt-1 flex items-center gap-2 text-sm break-words">
           {live && <span className="size-2 shrink-0 animate-pulse rounded-full bg-accent" aria-hidden="true" />}
-          {value}
+          {t(value)}
         </p>
       </div>
     </div>
@@ -570,12 +584,13 @@ function TrackFact({ icon: Icon, label, value, live = false }: { icon: typeof Ma
 }
 
 function Detail({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) {
+  const t = useT();
   return (
     <div className="flex gap-3 py-5 first:pt-0">
       <Icon className="mt-0.5 size-4 shrink-0 text-accent" />
       <div className="min-w-0">
-        <p className="label-caps text-muted-foreground">{label}</p>
-        <p className="mt-1 text-sm break-words">{value}</p>
+        <p className="label-caps text-muted-foreground">{t(label)}</p>
+        <p className="mt-1 text-sm break-words">{t(value)}</p>
       </div>
     </div>
   );
