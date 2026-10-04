@@ -7,12 +7,11 @@ import { formatWeight } from "@/hooks/use-stats";
 import { supabase } from "@/integrations/supabase/client";
 import {
   CERTIFICATE_THRESHOLD_KG,
+  loadMyCertificates,
   monthKey,
   monthLabel,
-  normalizeCertificates,
   type Certificate,
 } from "@/lib/certificate";
-import { isMissingSchemaError } from "@/lib/food-details";
 import { useLanguage, useT } from "@/lib/i18n";
 
 /**
@@ -24,14 +23,12 @@ export function CertificatesSection({ userId }: { userId: string }) {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [thisMonthKg, setThisMonthKg] = useState(0);
   const [loading, setLoading] = useState(true);
-  // The certificate migration (my_certificates) hasn't been applied to the database yet.
-  const [notSetUp, setNotSetUp] = useState(false);
   const currentMonth = monthKey(new Date());
 
   const load = useCallback(async () => {
     const since = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
-    const [certResult, recentResult] = await Promise.all([
-      supabase.rpc("my_certificates"),
+    const [earned, recentResult] = await Promise.all([
+      loadMyCertificates(userId),
       supabase
         .from("donations")
         .select("weight_kg, completed_at")
@@ -39,8 +36,7 @@ export function CertificatesSection({ userId }: { userId: string }) {
         .eq("status", "Completed")
         .gte("completed_at", since),
     ]);
-    setNotSetUp(isMissingSchemaError(certResult.error));
-    setCertificates(normalizeCertificates(certResult.data as Record<string, unknown>[] | null));
+    setCertificates(earned);
     const recent =
       (recentResult.data as { weight_kg: number | null; completed_at: string | null }[] | null) ??
       [];
@@ -74,15 +70,7 @@ export function CertificatesSection({ userId }: { userId: string }) {
         )}
       </p>
 
-      {notSetUp && (
-        <p className="mt-3 border border-border-strong bg-card p-3 text-sm text-accent">
-          {t(
-            "Certificates aren't switched on yet: the database update (migration 20261006090000) still needs to be applied in Supabase.",
-          )}
-        </p>
-      )}
-
-      {!loading && certificates.length === 0 && !notSetUp && (
+      {!loading && certificates.length === 0 && (
         <p className="mt-3 text-sm text-muted-foreground">
           {t(
             "No certificate yet. It appears here automatically once your completed donations in a month pass {kg} kg.",

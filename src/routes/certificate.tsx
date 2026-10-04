@@ -9,11 +9,10 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/use-profile";
 import { formatCount, formatWeight } from "@/hooks/use-stats";
-import { supabase } from "@/integrations/supabase/client";
 import {
   CERTIFICATE_THRESHOLD_KG,
+  loadMyCertificates,
   monthLabel,
-  normalizeCertificates,
   type Certificate,
 } from "@/lib/certificate";
 import { useLanguage, useT } from "@/lib/i18n";
@@ -57,9 +56,8 @@ function CertificatePage() {
       return;
     }
     let cancelled = false;
-    void supabase.rpc("my_certificates").then(({ data }) => {
+    void loadMyCertificates(user.id).then((all) => {
       if (cancelled) return;
-      const all = normalizeCertificates(data as Record<string, unknown>[] | null);
       setCertificate(all.find((item) => item.month.startsWith(month)) ?? null);
       setLoading(false);
     });
