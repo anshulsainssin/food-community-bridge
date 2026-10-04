@@ -648,8 +648,6 @@ export const HINDI: Record<string, string> = {
   "Your certificates": "आपके प्रमाणपत्र",
   "Donate more than 100 kg of food in a month and download a certificate of appreciation for that month.":
     "एक महीने में 100 किलो से ज़्यादा खाना दान करें और उस महीने का प्रशंसा प्रमाणपत्र डाउनलोड करें।",
-  "Certificates aren't switched on yet: the database update (migration 20261006090000) still needs to be applied in Supabase.":
-    "प्रमाणपत्र अभी चालू नहीं हैं: Supabase में डेटाबेस अपडेट (माइग्रेशन 20261006090000) अभी लागू करना बाकी है।",
   "No certificate yet. It appears here automatically once your completed donations in a month pass {kg} kg.":
     "अभी कोई प्रमाणपत्र नहीं। किसी महीने में आपके पूरे हुए डोनेशन {kg} किलो पार करते ही यह अपने-आप यहाँ दिखेगा।",
   "Good Food ♥ Greater Impact": "अच्छा खाना ♥ बड़ा असर",
