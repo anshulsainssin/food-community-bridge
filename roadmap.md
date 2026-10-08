@@ -9,3 +9,5 @@
 ## Open
 - [ ] Browser-based signed-in UI test — blocked: session minting doesn't reach this sandbox; needs user sign-in in the preview
 - [x] Pincode search flies map to location; fallback message when no listings (done)
+- [ ] Remove ALL donations from DB (user request, no other changes)
+- [ ] Re-apply apply-pending-migrations-2026-10_3.sql: create verification-docs bucket via storage tool first, then migration without storage.buckets INSERT
