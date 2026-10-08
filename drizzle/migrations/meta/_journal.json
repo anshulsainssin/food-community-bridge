@@ -8,6 +8,13 @@
       "when": 1791045109132,
       "tag": "0000_apply_pending_migrations_3",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791476425141,
+      "tag": "0001_apply_pending_migrations_2026_10",
+      "breakpoints": true
     }
   ]
 }
